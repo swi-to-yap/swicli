@@ -36,7 +36,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows.Forms;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
 using SbsSW.SwiPlCs.Exceptions;
@@ -117,7 +116,18 @@ namespace Swicli.Library
             PingThreadFactories();
             lock (ThreadRegLock)
             {
-                Application.ThreadExit += new EventHandler(OnThreadExit);
+                var fa = Type.GetType("System.Windows.Forms.Application");
+                if (fa != null)
+                {
+                    var evinfo = fa.GetEvent("ThreadExit");
+                    if (evinfo != null)
+                    {
+                        evinfo.AddEventHandler(null, new EventHandler(OnThreadExit));
+                    }
+                } else
+                {
+                    ConsoleWriteLine("Cannot install hook ThreadExit to Mono");
+                }
                 var t = Thread.CurrentThread.ManagedThreadId;
                 //libpl.PL_thread_at_exit((DelegateParameter0)PrologThreadAtExitGlobal, IntPtr.Zero, 1);
               //  SafeThreads.Add(t, new IntPtr(libpl.PL_ENGINE_MAIN));
