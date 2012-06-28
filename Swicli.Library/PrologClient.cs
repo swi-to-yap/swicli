@@ -330,7 +330,8 @@ namespace Swicli.Library
             {
                 try
                 {
-                    SwiHomeDir = System.Windows.Forms.Application.StartupPath;
+                    //SwiHomeDir = System.Windows.Forms.Application.StartupPath;
+                    SwiHomeDir = Path.GetDirectoryName(Environment.CommandLine);
                     if (!IsUseableSwiProlog(SwiHomeDir))
                     {
                         SwiHomeDir = null;
