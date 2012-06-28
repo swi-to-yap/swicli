@@ -270,27 +270,17 @@ namespace Swicli.Library
                 return plvar.FromObject(ret1) && SpecialUnify(plTerm, plvar);
             }
         }
-        private static Type[] GetParamSpec(PlTerm memberSpec, bool isObjects)
+        private static Type[] GetParamSpec(PlTerm memberSpec)
+        {
+            return memberSpec.IsCompound ? GetParamSpec(ToTermArray(memberSpec), false) : null;
+        }
+        private static Type[] GetParamSpec(PlTerm[] memberSpec, bool isObjects)
         {
             return GetParamSpec(memberSpec, isObjects, 0, -1);
         }
-        private static Type[] GetParamSpec(PlTerm memberSpec, bool isObjects, int start, int length)
+        private static Type[] GetParamSpec(PlTerm[] memberSpec, bool isObjects, int start, int length)
         {
-            if (memberSpec.IsInteger)
-            {
-                Type[] lenType = new Type[memberSpec.intValue()];
-                for (int i = 0; i < lenType.Length; i++)
-                {
-                    lenType[i] = null;
-                }
-                return lenType;
-            }
-            if (memberSpec.IsAtomic) return ZERO_TYPES;
-            if (memberSpec.IsList)
-            {
-                memberSpec = memberSpec.Copy();
-            }
-            var specArray = memberSpec.ToArray();
+            var specArray = memberSpec;
             int arity = specArray.Length - start;
             if (length > -1)
             {
@@ -349,31 +339,42 @@ namespace Swicli.Library
             EventInfo ei = c.GetEvent(memberSpec.Name, BindingFlagsALL);
             if (ei != null) return ei;
             var members = c.GetEvents(BindingFlagsALL);
-            int arity = memberSpec.Arity;
-            if (paramz == null)
+            if (members.Length == 0) return null;
+            int arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
+            EventInfo candidate = null;
+            foreach (var info in members)
             {
-                Warn("using paramSpec {0}", ToString(memberSpec));
-                paramz = GetParamSpec(memberSpec, false);
-            }
-            foreach (var infos in members)
-            {
-                ParameterInfo[] getParmeters = GetParmeters(infos);
-                if (getParmeters != null && getParmeters.Length == arity)
+                var infos = info.GetRaiseMethod();
+                ParameterInfo[] paramTypes = infos.GetParameters();
+                if (paramTypes.Length == arity)
                 {
-                    return infos;
+                    if (ParamsMatch(paramz, paramTypes)) return info;
+                    if (infos.IsStatic)
+                    {
+                        if (candidate == null)
+                        {
+                            candidate = info;
+                        }
+                    }
+                    else
+                    {
+                        if (candidate == null)
+                        {
+                            candidate = info;
+                        }
+                    }
                 }
             }
-            return null;
+            return candidate ?? members[0];
         }
         private static MemberInfo findMember(PlTerm memberSpec, Type c)
         {
-            Type[] paramz = null;
             if (IsTaggedObject(memberSpec))
             {
                 var r = GetInstance(memberSpec) as MemberInfo;
                 if (r != null) return r;
             }
-            paramz = GetParamSpec(memberSpec, false);
+            Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             return findField(memberSpec, c) ??
                    (MemberInfo)
                    findPropertyInfo(memberSpec, c, true, true, ref paramz) ??
@@ -450,11 +451,6 @@ namespace Swicli.Library
                 var r = tag_to_object(memberSpec[1].Name) as PropertyInfo;
                 if (r != null) return r;
             }
-            if (paramz == null)
-            {
-                Warn("using paramSpec {0}", ToString(memberSpec));
-                paramz = GetParamSpec(memberSpec, false);
-            } 
             if (memberSpec.IsCompound)
             {
                 if (memberSpec.Name == "p")
@@ -463,6 +459,11 @@ namespace Swicli.Library
                     return findPropertyInfo(memberSpec.Arg(0), c, false, assumeParamTypes, ref paramzN);
                 }
                 if (mustHaveP) return null;
+            }
+            if (paramz == null)
+            {
+                Warn("using paramSpec {0}", ToString(memberSpec));
+                paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             }
             string fn = memberSpec.Name;
             if (fn == "[]") fn = "Item";
@@ -556,7 +557,7 @@ namespace Swicli.Library
                 if (memberSpec.IsCompound)
                 {
 
-                    Type[] t = GetParamSpec(memberSpec, false, 0, typeparams.Length);
+                    Type[] t = GetParamSpec(ToTermArray(memberSpec), false, 0, typeparams.Length);
                     if (t.Length == typeparams.Length)
                     {
                         mi = mi.MakeGenericMethod(t);
@@ -620,37 +621,46 @@ namespace Swicli.Library
             if (paramz == null)
             {
                 Warn("using paramSpec {0}", ToString(memberSpec));
-                paramz = GetParamSpec(memberSpec, false);
+                paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             }
             try
             {
                 mi = c.GetMethod(fn, BindingFlagsALL, null, CallingConventions.Any, paramz, null);
-                if (mi != null) return mi;
+                if (mi != null)
+                {
+                    return mi;
+                }
             }
-            catch (/*AmbiguousMatch*/ Exception e)
+            catch ( /*AmbiguousMatch*/ Exception e)
             {
                 Debug("AME: " + e + " fn = " + fn);
             }
             MethodInfo[] members = c.GetMethods(BindingFlagsALL);
-            if (arity < 0) arity = paramz.Length;// memberSpec.Arity;
+            if (arity < 0) arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
+
             string fnLower = fn.ToLower();
-            MethodInfo candidate = null;
+            var candidates = new MethodInfo[2];
             foreach (var infos in members)
             {
-                if (infos.GetParameters().Length == arity)
+                var methodParams = infos.GetParameters();
+                if (methodParams.Length == arity)
                 {
                     if (infos.Name == fn)
                     {
-                        return infos;
+                        candidates[0] = infos;
                     }
-                    if (candidate == null && infos.Name.ToLower() == fnLower)
+                    else if (infos.Name.ToLower() == fnLower)
                     {
-                        candidate = infos;
+                        candidates[1] = infos;
                     }
+                    else
+                    {
+                        continue;
+                    }
+                    if (ParamsMatch(paramz, methodParams)) return infos;
                 }
             }
-            if (candidate != null) return candidate;
-            return null;
+            return candidates[0] ?? candidates[1];
         }
 
 
@@ -674,7 +684,7 @@ namespace Swicli.Library
             if (paramz == null)
             {
                 Warn("using paramSpec {0}", ToString(memberSpec));
-                paramz = GetParamSpec(memberSpec, false);
+                paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             }
             if (paramz != null)
             {
@@ -682,23 +692,33 @@ namespace Swicli.Library
                 if (mi != null) return mi;
             }
             ConstructorInfo[] members = c.GetConstructors(BindingFlagsALL);
-            int arity = memberSpec.Arity;
+            if (members.Length==0 ) return null;
+            int arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
             ConstructorInfo candidate = null;
-            foreach (var infos in members)
+            foreach (var info in members)
             {
-                if (infos.GetParameters().Length == arity)
+                var infos = info;
+                ParameterInfo[] paramTypes = infos.GetParameters();
+                if (paramTypes.Length == arity)
                 {
+                    if (ParamsMatch(paramz, paramTypes)) return info;
                     if (infos.IsStatic)
                     {
                         if (candidate == null)
                         {
-                            candidate = infos;
+                            candidate = info;
                         }
                     }
-                    else return infos;
+                    else
+                    {
+                        if (candidate == null)
+                        {
+                            candidate = info;
+                        }
+                    }
                 }
             }
-            return candidate;
+            return candidate ?? members[0];
         }
 
         private static ParameterInfo[] GetParmeters(EventInfo ei)
@@ -740,12 +760,12 @@ namespace Swicli.Library
         /// <param name="valueOut"></param>
         /// <returns></returns>
         [PrologVisible(ModuleName = ExportModule)]
-        static public bool cliNew(PlTerm clazzSpec, PlTerm memberSpec, PlTerm paramIn, PlTerm valueOut)
+        static public bool cliNew(PlTerm clazzSpec, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
-                return cliNew(clazzSpec, memberSpec, paramIn, plvar) && SpecialUnify(valueOut, plvar);
+                return cliNew(clazzSpec, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
             }
             Type c = GetType(clazzSpec);
             if (c == null)
@@ -753,8 +773,14 @@ namespace Swicli.Library
                 Error("Cant resolve clazzSpec {0}", clazzSpec);
                 return false;
             }
-            Type[] paramz = GetParamSpec(memberSpec, false);
-            MethodBase mi = findConstructorInfo(memberSpec, c, ref paramz);
+            Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
+            PlTerm[] paramIn = ToTermArray(paramsIn);
+            if (paramz.Length==0 && paramIn.Length > paramz.Length)
+            {
+                paramz = GetParamSpec(paramIn, true);
+            }
+            MethodBase mi = null;
+            if (!c.IsAbstract) mi = findConstructorInfo(memberSpec, c, ref paramz);           
             object target = null;
             if (mi == null)
             {
@@ -773,7 +799,7 @@ namespace Swicli.Library
                         if (c.IsPrimitive)
                         {
                             //Warn("Trying to constuct a primitive type");
-                            return valueOut.FromObject(Convert.ChangeType(GetInstance(paramIn.Arg(0)), c));
+                            return valueOut.FromObject(Convert.ChangeType(GetInstance(paramIn[0]), c));
                         }
                     }
                 }
@@ -807,9 +833,18 @@ namespace Swicli.Library
             postCallHook();
             return ret;
         }
+        public class OpImplTest
+        {
+            private OpImplTest()
+            {
+
+            }
+            //static public operator String
+        }
+
         private static MethodBase BestMethod(Type[] paramz, MethodInfo[] members, Type returnType, bool mustStatic)
         {
-            MethodBase maybe = null;
+            var maybes = new MethodBase[2];
             foreach (var infos in members)
             {
                 if (mustStatic && !infos.IsStatic) continue;
@@ -822,11 +857,28 @@ namespace Swicli.Library
                         {
                             return infos;
                         }
-                        if (maybe == null) maybe = infos;
+                        if (maybes[0] == null) maybes[0] = infos;
+                    }
+                    else
+                    {
+                        if (infos.ReturnType.IsAssignableFrom(returnType))
+                        {
+                            if (ParamsMatch(paramz, testParams))
+                            {
+                                return infos;
+                            }
+                            if (maybes[1] == null) maybes[1] = infos;
+                        } else
+                        {
+                            if (ParamsMatch(paramz, testParams))
+                            {
+                                if (maybes[1] == null) maybes[1] = infos;
+                            }
+                        }
                     }
                 }
             }
-            return maybe;
+            return maybes[0] ?? maybes[1];
         }
 
         private static bool ParamsMatch(Type[] paramz, ParameterInfo[] paramInfos)
@@ -834,6 +886,7 @@ namespace Swicli.Library
             int i = 0;
             foreach (ParameterInfo info in paramInfos)
             {
+                if (paramz[i] == null) continue;
                 if (!info.ParameterType.IsAssignableFrom(paramz[i])) return false;
                 i++;
             }
@@ -910,19 +963,23 @@ namespace Swicli.Library
             }
             object getInstance = GetInstance(clazzOrInstance);
             Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            int arity = Arglen(paramsIn);
-            Type[] paramz = GetParamSpec(paramsIn, true);
-            var mi = findMethodInfo(memberSpec, arity, c, ref paramz);
+            Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
+            PlTerm[] paramIn = ToTermArray(paramsIn);
+            if (paramz.Length==0 && paramIn.Length > paramz.Length)
+            {
+                paramz = GetParamSpec(paramIn, true);
+            }
+            var mi = findMethodInfo(memberSpec, paramz.Length, c, ref paramz);
             if (mi == null)
             {
                 var ei = findEventInfo(memberSpec, c, ref paramz);
-                if (ei != null) return RaiseEvent(getInstance, memberSpec, paramsIn, valueOut, ei, c);
+                if (ei != null) return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, ei, c);
                 if (paramsIn.IsAtom && paramsIn.Name == "[]") return cliGetRaw(clazzOrInstance, memberSpec, valueOut);
                 Warn("Cant find method {0} on {1}", memberSpec, c);
                 return false;
             }
             Action postCallHook;
-            object[] value = PlListToCastedArray(paramsIn, mi.GetParameters(), out postCallHook);
+            object[] value = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook);
             object target = mi.IsStatic ? null : getInstance;
             object retval = InvokeCaught(mi, target, value, postCallHook);
             return valueOut.FromObject(retval ?? VoidOrNull(mi));
@@ -947,21 +1004,26 @@ namespace Swicli.Library
         }
 
         [PrologVisible(ModuleName = ExportModule)]
-        static public bool cliRaiseEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramIn, PlTerm valueOut)
+        static public bool cliRaiseEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
-                return cliRaiseEventHandler(clazzOrInstance, memberSpec, paramIn, plvar) && SpecialUnify(valueOut, plvar);
+                return cliRaiseEventHandler(clazzOrInstance, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
             }
             object getInstance = GetInstance(clazzOrInstance);
             Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            Type[] paramz = null;
+            Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
+            PlTerm[] paramIn = ToTermArray(paramsIn);
+            if (paramz.Length == 0 && paramIn.Length > paramz.Length)
+            {
+                paramz = GetParamSpec(paramIn, true);
+            }
             EventInfo evi = findEventInfo(memberSpec, c, ref paramz);
             return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, evi, c);
         }
 
-        public static bool RaiseEvent(object getInstance, PlTerm memberSpec, PlTerm paramIn, PlTerm valueOut, EventInfo evi, Type c)
+        public static bool RaiseEvent(object getInstance, PlTerm memberSpec, PlTerm[] paramIn, PlTerm valueOut, EventInfo evi, Type c)
         {
             if (evi == null)
             {
@@ -1063,7 +1125,7 @@ namespace Swicli.Library
                 found = true;
                 return (fiGetValue);
             }
-            paramz = GetParamSpec(memberSpec, false);
+            paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz);
             if (pi != null)
             {

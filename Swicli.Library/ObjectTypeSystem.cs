@@ -179,7 +179,7 @@ namespace Swicli.Library
 
                         if (arity == genr.Length)
                         {
-                            var vt = GetParamSpec(clazzSpec, false);
+                            var vt = GetParamSpec(ToTermArray(clazzSpec), false);
                             return type.MakeGenericType(vt);
                         }
                     }

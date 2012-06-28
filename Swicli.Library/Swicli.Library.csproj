@@ -3,7 +3,7 @@
     <ProjectType>Local</ProjectType>
     <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{98929F6B-5812-4317-B3ED-1FEA9B635A0D}</ProjectGuid>
+    <ProjectGuid>{44645676-D8D5-4A1F-9F8C-4105912CFE68}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ApplicationIcon></ApplicationIcon>
@@ -93,6 +93,8 @@
   <ItemGroup>
     <Compile Include="AssemblyLoader.cs">
     </Compile>
+    <Compile Include="ClassBuilder.cs">
+    </Compile>
     <Compile Include="CycTypeInfo.cs">
     </Compile>
     <Compile Include="DelegateObjectInProlog.cs">
@@ -107,9 +109,15 @@
     </Compile>
     <Compile Include="LibPl.cs">
     </Compile>
+    <Compile Include="LockInfo.cs">
+    </Compile>
     <Compile Include="NativeMethods.cs">
     </Compile>
     <Compile Include="NondetContextHandle.cs">
+    </Compile>
+    <Compile Include="NonDetExamples.cs">
+    </Compile>
+    <Compile Include="ObjectArrays.cs">
     </Compile>
     <Compile Include="ObjectCoercion.cs">
     </Compile>
@@ -134,6 +142,8 @@
     <Compile Include="SWI-cs-PlQuery.cs">
     </Compile>
     <Compile Include="SWI-cs.cs">
+    </Compile>
+    <Compile Include="WaitUntilEvent.cs">
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
     </Compile>
