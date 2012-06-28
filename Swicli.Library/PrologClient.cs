@@ -872,6 +872,7 @@ namespace Swicli.Library
             }
         }
 
+        public static bool VerboseStartup = false;
         public static void RegisterPLCSForeigns()
         {
             CreatorThread = Thread.CurrentThread;
@@ -883,7 +884,7 @@ namespace Swicli.Library
             //ShortNameType = new PrologBackedDictionary<string, Type>(null, "shortTypeName");
             //PlEngine.RegisterForeign(null, "cliFindClass", 2, new DelegateParameter2(PrologCli.cliFindClass), PlForeignSwitches.None);
             PlEngine.RegisterForeign(ExportModule, "cli_load_assembly", 1, new DelegateParameter1(PrologClient.cliLoadAssembly), PlForeignSwitches.None);
-            ConsoleWriteLine("RegisterPLCSForeigns");
+            if (VerboseStartup) ConsoleWriteLine("RegisterPLCSForeigns");
 
             InternMethod(ExportModule, "load_assembly", typeof(PrologClient).GetMethod("LoadAssembly"));
             InternMethod(null, "cwl", typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
@@ -893,7 +894,7 @@ namespace Swicli.Library
             //PLVOID = PlTerm.PlCompound("@", PlTerm.PlAtom("void"));
             //PLTRUE = PlTerm.PlCompound("@", PlTerm.PlAtom("true"));
             //PLFALSE = PlTerm.PlCompound("@", PlTerm.PlAtom("false"));
-            ConsoleWriteLine("done RegisterPLCSForeigns");
+            if (VerboseStartup) ConsoleWriteLine("done RegisterPLCSForeigns");
         }
 
 
