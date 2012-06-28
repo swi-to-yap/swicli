@@ -39,7 +39,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows.Forms;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
 using CycFort = SbsSW.SwiPlCs.PlTerm;
@@ -331,7 +330,7 @@ namespace Swicli.Library
             {
                 try
                 {
-                    SwiHomeDir = Application.StartupPath;
+                    SwiHomeDir = System.Windows.Forms.Application.StartupPath;
                     if (!IsUseableSwiProlog(SwiHomeDir))
                     {
                         SwiHomeDir = null;
@@ -858,7 +857,7 @@ namespace Swicli.Library
 
         }
 
-        private static bool SafelyRun(MethodInvoker invoker)
+        private static bool SafelyRun(Action invoker)
         {
             try
             {
