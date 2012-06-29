@@ -1,66 +1,145 @@
-= SWI-Prolog 2-Way interface to .NET =
+= SWI-Prolog 2-Way interface to Common Language Infrastructure (.NET) =
 
+== [http://code.google.com/p/opensim4opencog/downloads/list Download] ==
+
+== [https://github.com/logicmoo/swicli Sourcecode] ==
 
 == Introduction ==
 
-# Provides SWI-Prolog full control of the Common Language Infrastructure.
-
-# SwiCLI is a module that works on both Unix/Mac and Windows.
-
-# cli_* preds loosely based on jpl_* interface of JPL
-
-~ Copy/pasted much code from SwiPlCS by Uwe Lesta ~
-
-# See library/swicli.pl for predicate list
+  * Provides SWI-Prolog full control of the Common Language Infrastructure.
+  * SwiCLI is a module that works on Linux, OS/X and MS Windows.
+  * cli_ preds loosely based on jpl_ interface of JPL
+  * _Pasted much code from SwiPlCS by Uwe Lesta_
+  * See library/swicli.pl for predicate list/documentaton
 
 == Installation ==
 
-=== MS windows ===
+=== MS windows _requires .NET 2.0 or above_ ===
 Copy these two directories onto your Prolog Install Dir.
+{{{
+pl//bin/   
+pl/library/
+}}}
 
-./bin/   
-./library/
-
-
-=== Linux OS/X ===
+=== Linux OS/X _requires Mono (2.10.8+)_ ===
 Copy these two directories onto your Prolog Install Dir
+{{{
+pl/lib/  
+pl/library/
+}}}
 
-./lib/  
-./library/
+== Running / Examples ==
 
+{{{
+[root@titan bin]# . mono_sysvars.sh
+[root@titan bin]# swipl
+Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 6.0.2)
+Copyright (c) 1990-2011 University of Amsterdam, VU Amsterdam
+SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under certain conditions.
+Please visit http://www.swi-prolog.org for details.
 
-== Usage Examples ==
+For help, use ?- help(Topic). or ?- apropos(Word).
 
-?- cli_new('System.Collections.Generic.List'('System.String'),[int],[10],Out).
-Out = @'C#516939544'.
+?- use_module(library(swicli)).
+SetupProlog
 
-?- cli_get($Out,'Count',Out).
+RegisterPLCSForeigns
+done RegisterPLCSForeigns
+Swicli.Library.Embedded.install suceeded
+% library(swicli) compiled into swicli 2.00 sec, 1,411 clauses
+true.
+
+?- cli_call('System.Threading.ThreadPool','GetAvailableThreads'(X,Y),_).
+X = 200,
+Y = 8.
+}}}
+
+{{{
+?- cli_new('System.Collections.Generic.List'('System.String'),[int],[10],Obj).
+Obj = @'C#516939544'.
+}}}
+{{{
+?- cli_get($Obj,'Count',Out).
 Out = 0.
+}}}
+{{{
 ?- cli_call($Obj,'Add'("foo"),Out).
 Out = @void.
+}}}
+{{{
 ?- cli_call($Obj,'Add'("bar"),Out).
 Out = @void.
+}}}
+{{{
 ?- cli_get($Out,'Count',Out).
 Out = 2.
+}}}
+{{{
 ?- cli_col($Obj,E).
 E = "foo" ;
 E = "bar" ;
 false.
-
-32 ?- cli_get_type($Obj,Type),cli_get_typename(Type,Name).
+}}}
+{{{
+?- cli_get_type($Obj,Type),cli_get_typename(Type,Name).
 Type = @'C#516939520',
 Name = 'System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]'.
-
+}}}
+{{{
 ?- cli_get_type($Obj,Type), cli_typespec(Type,Name).
 Type = @'C#516939520',
 Name = 'System.Collections.Generic.List'('String').
-
+}}}
+{{{
 ?- cli_shorttype(stringl,'System.Collections.Generic.List'('String')).
 true.
-
- ?- cli_new(stringl,[],O).
+}}}
+{{{
+?- cli_new(stringl,[],O).
 O = @'C#516939472'.
-
+}}}
+{{{
 ?- cli_get_type($O,Type),cli_typespec(Type,Name).
 Type = @'C#516939520',
 Name = 'System.Collections.Generic.List'('String').
+}}}
+
+cli_add_event_handler( +Class_or_Object, +EventName, +PredicateIndicator) :- 
+
+==ADDING A NEW EVENT HOOK==
+
+We already at least know that the object we want to hook is found via our call to
+{{{
+?- botget(['Self'],AM).
+}}}
+So we ask for the e/7 (event handlers of the members)
+{{{
+?- botget(['Self'],AM),cli_memb(AM,e(A,B,C,D,E,F,G)). 
+}}}
+ Press ;;;; a few times until you find the event Name you need (in the B var)
+{{{
+A = 6,                                          % index number
+B = 'IM',                                       % event name
+C = 'System.EventHandler'('InstantMessageEventArgs'),   % the delegation type
+D = ['Object', 'InstantMessageEventArgs'],      % the parameter types (2)
+E = [],                                         % the generic paramters
+F = decl(static(false), 'AgentManager'),        % the static/non static-ness.. the declaring class
+G = access_pafv(true, false, false, false)      % the PAFV bits
+}}}
+
+So reading the parameter types  "['Object', 'InstantMessageEventArgs']" lets you know the predicate needs at least two arguments
+
+And "F = decl(static(false), 'AgentManager')" says add on extra argument at start for Origin
+
+  handle_im(Origin,Obj,IM)*
+
+So registering the event is done:
+{{{
+?- botget(['Self'],AM), cli_add_event_handler(AM,'IM',handle_im(_Origin,_Object,_InstantMessageEventArgs))
+}}}
+To target a predicate such as:
+{{{
+handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
+}}}
+
