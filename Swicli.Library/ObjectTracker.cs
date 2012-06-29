@@ -183,7 +183,7 @@ namespace Swicli.Library
             return info.IsCompound && info.Name == "@";
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliToTagged(PlTerm obj, PlTerm str)
         {
             if (!str.IsVar)
@@ -197,7 +197,7 @@ namespace Swicli.Library
             return UnifyTagged(o, str);
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliImmediateObject(PlTerm valueIn, PlTerm valueOut)
         {
             if (valueIn.IsVar)
@@ -282,14 +282,14 @@ namespace Swicli.Library
             }
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliTrackerBegin(PlTerm trackerOut)
         {
             var newTracking = LocallyTrackedObjects.CreateFrame();
             return UnifyTagged(newTracking, trackerOut);
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliTrackerFree(PlTerm trackerIn)
         {
             TrackedFrame tc0 = (TrackedFrame)GetInstance(trackerIn);
@@ -301,7 +301,7 @@ namespace Swicli.Library
             return false;
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliFree(PlTerm taggedObject)
         {
             if (taggedObject.IsVar)
@@ -342,7 +342,7 @@ namespace Swicli.Library
             }
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliHeap(PlTerm taggedObject)
         {
             if (taggedObject.IsVar)

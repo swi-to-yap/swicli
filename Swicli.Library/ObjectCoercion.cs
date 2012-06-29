@@ -44,7 +44,7 @@ namespace Swicli.Library
 {
     public partial class PrologClient
     {
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliGetterm(CycFort valueCol, CycFort valueIn, CycFort valueOut)
         {
             List<object> objs;
@@ -82,7 +82,7 @@ namespace Swicli.Library
         }
 
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliCast(CycFort valueIn, CycFort clazzSpec, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -103,7 +103,7 @@ namespace Swicli.Library
             return UnifyTagged(retval, valueOut);
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliCastImmediate(CycFort valueIn, CycFort clazzSpec, CycFort valueOut)
         {
             if (valueIn.IsVar)
@@ -120,12 +120,10 @@ namespace Swicli.Library
             return valueOut.FromObject(retval);
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
         private static object[] PlListToCastedArray(IEnumerable<CycFort> term, ParameterInfo[] paramInfos, out Action todo)
         {
             return PlListToCastedArray(0, term, paramInfos, out todo);
         }
-        [PrologVisible(ModuleName = ExportModule)]
         private static object[] PlListToCastedArray(int skip, IEnumerable<CycFort> term, ParameterInfo[] paramInfos, out Action todo)
         {
             todo = Do_NOTHING;
@@ -1251,13 +1249,13 @@ namespace Swicli.Library
             }
             return elements;
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliTypespec(CycFort clazzSpec, CycFort valueOut)
         {
             return valueOut.Unify(typeToSpec(GetType(clazzSpec)));
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliToFromLayout(CycFort clazzSpec, CycFort memberSpec, CycFort toSpec)
         {
             Type type = GetType(clazzSpec);
@@ -1274,7 +1272,7 @@ namespace Swicli.Library
             return true;
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliAddLayout(CycFort clazzSpec, CycFort memberSpec)
         {
             Type type = GetType(clazzSpec);
@@ -1313,7 +1311,7 @@ namespace Swicli.Library
             }
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliToFromRecomposer(CycFort clazzSpec, CycFort memberSpec, CycFort obj2r, CycFort r2obj)
         {
             Type type = GetType(clazzSpec);

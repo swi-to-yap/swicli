@@ -50,7 +50,7 @@ namespace Swicli.Library
         public static TaskQueueHandler PrologEventQueue = new TaskQueueHandler("PrologEventHandler");
 #endif
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliAddEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm prologPred)
         {
             object getInstance = GetInstance(clazzOrInstance);
@@ -85,7 +85,7 @@ namespace Swicli.Library
             }
             return true;
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliRemoveEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm prologPred)
         {
             object getInstance = GetInstance(clazzOrInstance);

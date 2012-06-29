@@ -52,7 +52,7 @@ namespace Swicli.Library
         /// <param name="rank"></param>
         /// <param name="valueOut"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliArrayToTerm(CycFort arrayValue, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -118,7 +118,7 @@ namespace Swicli.Library
         {
             return cliArrayToTerm(ToProlog(new[, ,] { { { 1, 2 }, { 3, 4 } }, { { 5, 6 }, { 7, 8 } } }), valueOut);
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliArrayToTermlist(CycFort arrayValue, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -149,7 +149,7 @@ namespace Swicli.Library
             //Type et = value.GetType().GetElementType();
             return valueOut.Unify(termv);
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliTermToArray(CycFort arrayValue, CycFort valueOut)
         {
             if (!valueOut.IsVar)

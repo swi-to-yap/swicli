@@ -54,7 +54,7 @@ namespace Swicli.Library
         /// <param name="prologPred"></param>
         /// <param name="valueOut"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliNewDelegate(PlTerm delegateClass, PlTerm prologPred, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
@@ -65,7 +65,7 @@ namespace Swicli.Library
             object retval = cliDelegateTerm(GetTypeThrowIfMissing(delegateClass), prologPred, true);
             return valueOut.FromObject(retval);
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public Delegate cliDelegateTerm(Type fi, PlTerm prologPred, bool saveKey)
         {
             if (prologPred.IsCompound)

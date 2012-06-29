@@ -85,9 +85,21 @@ typedef struct // define a context structure  { ... } context;
     public partial class PrologClient
     {
 
-        private static void AddForeignMethods(Type t)
+        private static void CheckRequiredPrefix(MethodInfo m, PrologVisible f1, string requiredPrefix)
         {
-            foreach (var m in t.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static))
+            if (f1.Name != null || requiredPrefix == null) return;
+            string proposal = ComputeName(f1, m);
+            if (!proposal.StartsWith(requiredPrefix))
+            {
+                proposal = requiredPrefix + proposal;
+            }
+            f1.Name = proposal;
+        }
+        public static List<MethodInfo> ExportedMethodInfos = new List<MethodInfo>();
+        private static void AddForeignMethods(Type t, bool onlyAttributed, string requiredPrefix)
+        {
+            MethodInfo[] methods = t.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            foreach (var m in methods)
             {
                 object[] f = m.GetCustomAttributes(typeof(PrologVisible), false);
                 if (f != null && f.Length > 0)
@@ -96,7 +108,69 @@ typedef struct // define a context structure  { ... } context;
                     f1.Method = m;
                     try
                     {
+                        CheckRequiredPrefix(m, f1, requiredPrefix);
                         LoadMethod(m, f1);
+                        ExportedMethodInfos.Add(m);
+                    }
+                    catch (Exception e)
+                    {
+                        Error(m + " caused " + e);
+                    }
+                }
+            }
+            if (onlyAttributed) return;
+            foreach (var m in methods)
+            {
+                if (ExportedMethodInfos.Contains(m)) continue;
+                if (m.IsAbstract) continue;
+                var pm = m.GetParameters();
+                if (pm.Length == 0) continue;
+                bool skip = false;
+                int argNum = 0;
+                if (pm[0].ParameterType != typeof(PlTerm)) continue;
+                var ForeignSwitches = PlForeignSwitches.None;
+                if (pm.Length == 3)
+                {
+                    if (pm[1].ParameterType == typeof(int) && pm[2].ParameterType == typeof(IntPtr) && m.ReturnType == typeof(int))
+                    {
+                        ForeignSwitches |= PlForeignSwitches.VarArgs | PlForeignSwitches.Nondeterministic;
+                        PrologVisible f1 = new NonDet();
+                        f1.Method = m;
+                        try
+                        {
+                            CheckRequiredPrefix(m, f1, requiredPrefix);
+                            LoadMethod(m, f1);
+                            ExportedMethodInfos.Add(m);
+                        }
+                        catch (Exception e)
+                        {
+                            Error(m + " caused " + e);
+                        }
+                        continue;
+                    }
+                }
+                if (m.ReturnType != typeof(bool)) continue;
+                for (int i = 1; i < pm.Length; i++)
+                {
+                    ParameterInfo info = pm[i];
+                    if (info.ParameterType != typeof(PlTerm))
+                    {
+                        skip = true;
+                        break;
+                    }
+                }
+                if (!skip)
+                {
+                    PrologVisible f1 = (PrologVisible)new PrologVisible();
+                    f1.ForeignSwitches = ForeignSwitches;
+                    f1.Method = m;
+                    string mname = m.Name;
+                    if (mname.StartsWith("op_")) continue;
+                    try
+                    {
+                        CheckRequiredPrefix(m, f1, requiredPrefix);
+                        LoadMethod(m, f1);
+                        ExportedMethodInfos.Add(m);
                     }
                     catch (Exception e)
                     {
@@ -105,7 +179,8 @@ typedef struct // define a context structure  { ... } context;
                 }
             }
         }
-        public static void LoadMethod(MethodInfo m, PrologVisible pm)
+
+        private static string ComputeName(PrologVisible pm, MethodInfo m)
         {
             if (pm.Name == null)
             {
@@ -114,23 +189,28 @@ typedef struct // define a context structure  { ... } context;
                     string mName = m.Name;
                     if (ForceJanCase)
                     {
-                        pm.Name = ToPrologCase(mName);
+                        return ToPrologCase(mName);
                     }
                     else
                     {
-                        pm.Name = mName;
+                        return mName;
                     }
                 }
                 else
                 {
                     string mName = m.Name;
-                    pm.Name = ToPrologCase(mName);
+                    return ToPrologCase(mName);
                 }
             }
             else
             {
-                if (ForceJanCase) pm.Name = ToPrologCase(pm.Name);
+                if (ForceJanCase) return ToPrologCase(pm.Name);
             }
+            return pm.Name;
+        }
+        public static void LoadMethod(MethodInfo m, PrologVisible pm)
+        {
+            pm.Name = ComputeName(pm, m);
             if (pm.DelegateType != null)
             {
                 PlEngine.RegisterForeign(pm.ModuleName, pm.Name, pm.Arity, pm.Delegate, pm.ForeignSwitches);
@@ -501,26 +581,26 @@ typedef struct // define a context structure  { ... } context;
             }
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         private static bool testOut(int incoming, out int outbound)
         {
             outbound = incoming;
             return true;
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         private static bool testOpt(int incoming, string optionalstr, out int outbound)
         {
             outbound = incoming;
             return true;
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         private static bool testRef(int incoming, ref string optionalstr, out int outbound)
         {
             outbound = incoming;
             optionalstr = "" + incoming;
             return true;
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         private static bool testVarArg(out int outbound, params int[] incoming)
         {
             outbound = 0;

@@ -57,7 +57,7 @@ namespace Swicli.Library
             {
                 if (TypesLoaded.Contains(t) || TypesLoading.Contains(t)) return;
                 TypesLoading.Add(t);
-                AddForeignMethods(t);
+                AddForeignMethods(t, false, t == typeof (PrologClient) ? "cli_" : null);
                 TypesLoading.Remove(t);
                 TypesLoaded.Add(t);
             }
@@ -215,7 +215,7 @@ namespace Swicli.Library
             //return null;
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         public static bool cliFindType(CycFort clazzSpec, CycFort classRef)
         {
             //            if (term1.IsAtom)
@@ -251,7 +251,7 @@ namespace Swicli.Library
             }  
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         public static bool cliFindClass(CycFort clazzName, CycFort clazzObjectOut)
         {
             if (clazzName.IsAtom)
@@ -357,7 +357,7 @@ namespace Swicli.Library
             return PlTerm.PlAtom(typeToName(type));
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliGetType(CycFort valueIn, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -374,7 +374,7 @@ namespace Swicli.Library
             return valueOut.FromObject((val.GetType()));
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliGetClass(CycFort valueIn, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -390,7 +390,7 @@ namespace Swicli.Library
             return valueOut.FromObject((val.GetType()));
 #endif
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliClassFromType(CycFort valueIn, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -407,7 +407,7 @@ namespace Swicli.Library
             return valueOut.FromObject((val));
 #endif
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliTypeFromClass(CycFort valueIn, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -424,7 +424,7 @@ namespace Swicli.Library
             return valueOut.FromObject(val);
 #endif
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliShorttype(CycFort valueName, CycFort valueIn)
         {
             if (!valueName.IsString && !valueName.IsAtom) return Warn("valueName must be string or atom {0}", valueName);
@@ -466,7 +466,7 @@ namespace Swicli.Library
                 }
             }
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliGetClassname(CycFort valueIn, CycFort valueOut)
         {
             if (!valueOut.IsVar)
@@ -483,7 +483,7 @@ namespace Swicli.Library
             return valueOut.Unify(val.GetType().Name);
 #endif
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliGetTypeFullname(CycFort valueIn, CycFort valueOut)
         {
             if (!valueOut.IsVar)

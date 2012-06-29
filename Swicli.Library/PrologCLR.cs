@@ -739,7 +739,7 @@ namespace Swicli.Library
 
 
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliFindConstructor(PlTerm clazzSpec, PlTerm memberSpec, PlTerm methodOut)
         {
             Type c = GetType(clazzSpec);
@@ -759,7 +759,7 @@ namespace Swicli.Library
         /// <param name="paramIn"></param>
         /// <param name="valueOut"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliNew(PlTerm clazzSpec, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
@@ -900,7 +900,7 @@ namespace Swicli.Library
         /// <param name="rank"></param>
         /// <param name="valueOut"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliNewArray(PlTerm clazzSpec, PlTerm rank, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
@@ -918,21 +918,21 @@ namespace Swicli.Library
             return valueOut.FromObject((value));
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliLockEnter(PlTerm lockObj)
         {
             object getInstance = GetInstance(lockObj);
             Monitor.Enter(getInstance);
             return true;
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliLockExit(PlTerm lockObj)
         {
             object getInstance = GetInstance(lockObj);
             Monitor.Exit(getInstance);
             return true;
         }
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliFindMethod(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm methodOut)
         {
             if (!methodOut.IsVar)
@@ -953,7 +953,7 @@ namespace Swicli.Library
 
 
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliCallRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
@@ -985,25 +985,7 @@ namespace Swicli.Library
             return valueOut.FromObject(retval ?? VoidOrNull(mi));
         }
 
-        private static int Arglen(PlTerm paramIn)
-        {
-            if (paramIn.IsList)
-            {
-                int len = 0;
-                PlTerm each = paramIn;
-                while (each.IsList && !each.IsAtom)
-                {
-                    each = each.Arg(1);
-                    len++;
-                }
-                return len;
-            }
-            if (paramIn.IsCompound) return paramIn.Arity;
-            if (paramIn.IsAtom) return 0;
-            return -1;
-        }
-
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliRaiseEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
@@ -1091,7 +1073,7 @@ namespace Swicli.Library
             return info.ReturnType == typeof(void) ? (object)PLVOID : PLNULL;
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliGetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueOut)
         {
             if (clazzOrInstance.IsVar)
@@ -1177,7 +1159,7 @@ namespace Swicli.Library
         /// <param name="indexValues"></param>
         /// <param name="valueOut"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliGetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueOut)
         {
             if (clazzOrInstance.IsVar)
@@ -1230,7 +1212,7 @@ namespace Swicli.Library
             }
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliSetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramIn)
         {
             object getInstance = GetInstance(clazzOrInstance);
@@ -1293,7 +1275,7 @@ namespace Swicli.Library
         /// <param name="obj"></param>
         /// <param name="str"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         public static bool cliToStrRaw(PlTerm obj, PlTerm str)
         {
             try
@@ -1318,7 +1300,7 @@ namespace Swicli.Library
             }
         }
 
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliJavaToString(PlTerm paramIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)

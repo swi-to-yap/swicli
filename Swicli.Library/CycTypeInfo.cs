@@ -43,7 +43,7 @@ namespace Swicli.Library
         /// <param name="clazzSpec"></param>
         /// <param name="memberSpecs"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliPropsForType(CycFort clazzSpec, CycFort memberSpecList)
         {
             Type type = GetType(clazzSpec);
@@ -134,7 +134,7 @@ namespace Swicli.Library
         /// <param name="clazzOrInstance"></param>
         /// <param name="membersSpecListOut"></param>
         /// <returns></returns>
-        [PrologVisible(ModuleName = ExportModule)]
+        [PrologVisible]
         static public bool cliMembers(CycFort clazzOrInstance, CycFort membersSpecListOut)
         {
             Type c = GetTypeFromInstance(null, clazzOrInstance);
