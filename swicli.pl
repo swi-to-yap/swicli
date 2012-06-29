@@ -30,23 +30,16 @@
           ]).
 
 
-
-
 :- push_operators([op(600, fx, ('*'))]).
-
-:-dynamic(shortTypeName/2).
-:-dynamic(cli_subproperty/2).
-:-module_transparent(cli_subproperty/2).
-
-:-set_prolog_flag(double_quotes,string).
-
-:-module_transparent(shortTypeName/2).
-%%:-module_transparent(cli_get/3).
+:- set_prolog_flag(double_quotes,string).
 
 
+%=========================================
 % Load C++ DLL
-
+%=========================================
 :-dynamic(loadedcli_Assembly/0).
+
+onWindows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
 
 foName1(X):- current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli.
 foName(Y):-foName1(X), (current_prolog_flag(unix,true) -> Y= foreign(X); Y =X).
@@ -57,11 +50,9 @@ loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_librar
 :-loadcli_Assembly.
 
 
-onWindows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
-
-
 %=========================================
-
+% Library Loading
+%=========================================
 %% cli_load_lib(+AppDomainName, +AssemblyPartialName, +FullClassName, +StaticMethodName).
 %  Loads an assembly into AppDomainName
 %
@@ -74,8 +65,15 @@ onWindows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
 % ==
 % :- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
 % ==
+
 :- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
 
+
+%% link_swiplcs(+PathName) is det.
+% @TODO
+
+%=========================================
+% Assembly Loading
 %=========================================
 
 %% cli_load_assembly(+AssemblyPartialNameOrPath) is det.
@@ -88,6 +86,8 @@ onWindows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
 :- cli_load_assembly('Swicli.Library').
 
 
+%=========================================
+% Assembly Searchpath
 %=========================================
 
 %% cli_add_assembly_search_path(+Path) is det.
@@ -108,324 +108,8 @@ onWindows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
 
 
 %=========================================
-
-%%  cli_is_type(+Impl,?Type) is det.
-%
-% tests to see if the Impl Object is assignable to Type
-%
-cli_is_type(Impl,Type):-not(ground(Impl)),nonvar(Type),!,attach_console,trace,cli_find_type(Type,RealType),cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
-cli_is_type(Impl,Type):-nonvar(Type),cli_find_type(Type,RealType),!,cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
-cli_is_type(Impl,Type):-cli_get_type(Impl,Type).
-
+% Term Inspection
 %=========================================
-
-%% cli_subclass(+Subclass,+Superclass) 
-% tests to see if the Subclass is assignable to Superclass
-
-cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli_call(RealSup,'IsAssignableFrom'('System.Type'),[RealSub],'@'(true)).
-
-
-%% cli_halt(+Obj) is det.
-%
-
-%% cli_halt is det.
-%
-cli_halt:-cli_halt(0).
-cli_halt(_Status):-cli_call('Swicli.Library.PrologClient','ManagedHalt',_).
-
-
-%% cli_typespec(+ClazzSpec,-Value) is det.
-% coerces a ClazzSpec to a Value representing a TypeSpec term
-
-%% cwl(+StringValue) is det.
-% allas for System.Console.WriteLine(+String)   (not user_output but what .NET thinks its System.Console.Out)
-
-%% cli_add_tag(+TaggedObj,+TagString) is det.
-%  lowlevel access to create a tag name 
-
-%% cli_remove_tag(+TagString) is det.
-%  lowlevel access to remove a tag name
-
-%% cli_to_tagged(+Obj,+Str) is det.
-%  return a @(Str) version of the object 
-%     ==
-%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
-%     "127"is"System.SByte"
-%     O = @'C#283319280',
-%     T = @'C#283324332'.
-%
-%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
-%     "127"is"System.Int64"
-%     O = @'C#283345876',
-%     T = @'C#283345868'.
-%
-%     17 ?- cli_to_tagged(ulong(127),O),cli_get_type(O,T),cli_writeln(O is T).
-%     "127"is"System.UInt64"
-%     O = @'C#283346772',
-%     T = @'C#283346760'.
-%
-%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
-%     "127"is"System.SByte"
-%     O = @'C#283319280',
-%     T = @'C#283324332'.
-%
-%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
-%     "127"is"System.Int64"
-%     O = @'C#283345876',
-%     T = @'C#283345868'.
-%
-%     18 ?- cli_to_tagged(343434127,O),cli_get_type(O,T),cli_writeln(O is T).
-%     "343434127"is"System.Int32"
-%     O = @'C#281925284',
-%     T = @'C#281925280'.
-%
-%     19 ?- cli_to_tagged(3434341271,O),cli_get_type(O,T),cli_writeln(O is T).
-%     "3434341271"is"System.UInt64"
-%     O = @'C#281926616',
-%     T = @'C#283346760'.
-%
-%     21 ?- cli_to_tagged(343434127111,O),cli_get_type(O,T),cli_writeln(O is T).
-%     "343434127111"is"System.UInt64"
-%     O = @'C#281930092',
-%     T = @'C#283346760'.
-%
-%     28 ?- cli_to_tagged(34343412711111111111111111111111111111,O),cli_get_type(O,T),cli_writeln(O is T).
-%     "34343412711111111111111111111111111111"is"java.math.BigInteger"
-%     O = @'C#281813796',
-%     T = @'C#281810860'.
-%     ==
-
-
-%% cli_immediate_object(+Immediate,-Value) is det.
-%  return a @(Value) version of the Immediate value 
-
-%% cli_tracker_begin(-Tracker) is det.
-%  Return a Tracker ref and all objects created from this point can be released via cli_tracker_free/1
-
-%% cli_tracker_free(+Tracker) is det.
-%  @see cli_tracker_begin/1
-
-%% cli_free(+TaggedObject) is det.
-%  remove a TaggedObject from the heap
-
-%% cli_heap(+TaggedObject) is det.
-%  Pin a TaggedObject onto the heap
-
-%% cli_throw(+Ex) is det.
-% throw an exception to .NET
-
-%% cli_break(+Ex) is det.
-%
-
-%=========================================
-
-%% cli_col(+Col,-Elem) 
-% iterates out Elems for Col
-
-% old version:s cli_collection(Obj,Ele):-cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
-cli_collection(Error,_Ele):-cli_is_null(Error),!,fail.
-cli_collection([S|Obj],Ele):-!,member(Ele,[S|Obj]).
-cli_collection(Obj,Ele):-
-      cli_memb(Obj,m(_, 'GetEnumerator', _, [], [], _, _)),!,
-      cli_call(Obj,'GetEnumerator',[],Enum),!,
-      call_cleanup(cli_enumerator_element(Enum,Ele),cli_free(Enum)).
-cli_collection(Obj,Ele):-cli_array_to_term_args(Obj,Vect),!,arg(_,Vect,Ele).
-cli_collection(Obj,Ele):-cli_memb(Obj,m(_, 'ToArray', _, [], [], _, _)),cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
-cli_collection(Obj,Ele):-cli_array_to_termlist(Obj,Vect),!,member(Ele,Vect).
-
-cli_col(X,Y):-cli_collection(X,Y).
-
-%=========================================
-
-cli_array_to_term_args(Array,Term):-cli_array_to_term(Array,array(_,Term)).
-
-%=========================================
-
-%% cli_col_add(+Col,+Item)
-% add an Item to Col
-cli_col_add(Col,Value):-cli_call(Col,'Add'(Value),_).
-
-%% cli_col_contains(+Col,+Item)
-% Test an Item in Col
-cli_col_contains(Col,Value):-cli_call(Col,'Contains'(Value),_).
-
-%% cli_col_remove(+Col,+Item)
-% Remove an Item in Col
-cli_col_remove(Col,Value):-cli_call(Col,'Remove'(Value),_).
-
-%% cli_col_removeall(+Col)
-% Clears a Col
-cli_col_removeall(Col):-cli_call(Col,'Clear',_).
-
-%% cli_col_size(+Col,?Count)
-% Returns the Count
-cli_col_size(Col,Count):-cli_call(Col,'Count',Count).
-
-%% cli_write(+Obj)
-%  writes an object out
-cli_write(S):-cli_to_str(S,W),writeq(W).
-
-%% cli_writeln(+Obj)
-%  writes an object out with a new line
-cli_writeln(S):-cli_write(S),nl.
-
-
-cli_fmt(WID,String,Args):-cli_fmt(String,Args),cli_free(WID). % WID will be made again each call
-cli_fmt(String,Args):-cli_call('System.String','Format'('string','object[]'),[String,Args],Result),cli_writeln(Result).
-
-
-%% cli_to_str(+Obj,-String) 
-% Resolves inner @(Obj)s to strings
-
-cli_to_str(Term,String):-catch(ignore(hcli_to_str_0(Term,String0)),_,true),copy_term(String0,String),numbervars(String,666,_).
-hcli_to_str_0(Term,Term):- not(compound(Term)),!.
-hcli_to_str_0(Term,String):-Term='@'(_),cli_is_object(Term),catch(cli_to_str_raw(Term,String),_,Term==String),!.
-hcli_to_str_0([A|B],[AS|BS]):-!,hcli_to_str_0(A,AS),hcli_to_str_0(B,BS).
-hcli_to_str_0(eval(Call),String):-nonvar(Call),!,call(Call,Result),hcli_to_str_0(Result,String).
-hcli_to_str_0(Term,String):-Term=..[F|A],hcli_to_str_0(A,AS),String=..[F|AS],!.
-hcli_to_str_0(Term,Term).
-
-
-%% cli_new_prolog_collection(+PredImpl,+ElementType,-PBD)
-
-cli_new_prolog_collection(PredImpl,TypeSpec,PBC):-
-   module_functor(PredImpl,Module,Pred,_),
-   atom_concat(Pred,'_get',GET),atom_concat(Pred,'_add',ADD),atom_concat(Pred,'_remove',REM),atom_concat(Pred,'_clear',CLR),
-   PANON =..[Pred,_],PGET =..[GET,Val],PADD =..[ADD,Val],PREM =..[REM,Val],PDYN =..[Pred,Val],
-   asserta(( PGET :- PDYN )),
-   asserta(( PADD :- assert(PDYN) )),
-   asserta(( PREM :- retract(PDYN) )),
-   asserta(( CLR :- retractall(PANON) )),
-   cli_new('Swicli.Library.PrologBackedCollection'(TypeSpec),0,
-      [Module,GET,ADD,REM,CLR],PBC).
-
-module_functor(PredImpl,Module,Pred,Arity):-strip_module(PredImpl,Module,NewPredImpl),strip_arity(NewPredImpl,Pred,Arity).
-strip_arity(Pred/Arity,Pred,Arity).
-strip_arity(PredImpl,Pred,Arity):-functor(PredImpl,Pred,Arity).
-
-
-%% cli_new_prolog_dictionary(+PredImpl,+KeyType,+ValueType,-PBD)
-
-cli_new_prolog_dictionary(PredImpl,KeyType,ValueType,PBD):-
-   cli_new_prolog_collection(PredImpl,KeyType,PBC),
-   module_functor(PredImpl,Module,Pred,_),
-   atom_concat(Pred,'_get',GET),atom_concat(Pred,'_set',SET),atom_concat(Pred,'_remove',REM),atom_concat(Pred,'_clear',CLR),
-   PANON =..[Pred,_,_],PGET =..[GET,Key,Val], PSET =..[SET,Key,Val],PREM =..[REM,Val],PDYN =..[Pred,Key,Val],
-   asserta(( PGET :- PDYN )),
-   asserta(( PSET :- assert(PDYN) )),
-   asserta(( PREM :- retract(PDYN) )),
-   asserta(( CLR :- retractall(PANON) )),
-   cli_new('Swicli.Library.PrologBackedDictionary'(KeyType,ValueType),0,
-      [Module,GET,PBC,SET,REM,CLR],PBD).
-
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-/* EXAMPLE: How to turn current_prolog_flag/2 into a PrologBacked dictionary
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-
-Here is the webdocs:
-
-create_prolog_flag(+Key, +Value, +Options)                         [YAP]
-    Create  a  new Prolog  flag.    The ISO  standard does  not  foresee
-    creation  of  new flags,  but many  libraries  introduce new  flags.
-
-current_prolog_flag(?Key, -Value)    
-    Get system configuration parameters
-
-set_prolog_flag(:Key, +Value)                                      [ISO]
-    Define  a new  Prolog flag or  change its value.   
-
-
-It has most of the makings of a "PrologBackedDictionary"  but first we need a 
-PrologBackedCollection to produce keys
-
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-% First we'll need a conveinence predicate add_new_flag/1  for adding new flags for the collection
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-
-?- asserta(( add_new_flag(Flag):- create_prolog_flag(Flag,_,[access(read_write),type(term)])   )).
-
-?- asserta(( current_pl_flag(Flag):- current_prolog_flag(Flag,_)   )).
-
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-% Next we'll use the add_new_flag/1 in our PrologBackedCollection
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-?- context_module(Module),cli_new('Swicli.Library.PrologBackedCollection'(string),0,[Module,current_pl_flag,add_new_flag,@(null),@(null)],PBC).
-
-% meaning:
-       %% 'Swicli.Library.PrologBackedCollection'(string) ==> Type of object it returs to .NET is System.String
-       %% 0 ==> First (only) constructor
-       %% Module ==> user
-       %% current_pl_flag ==> use current_pl_flag/1 for our GETTER of Items
-       %% add_new_flag ==> Our Adder(Item) (defined in previous section)
-       %% @(null) ==> No Remover(Item) 
-       %% @(null) ==> No clearer
-       %% PBC ==> Our newly created .NET ICollection<string>
-
-% by nulls in the last two we've created a partially ReadOnly ICollection wexcept we can add keys
-
-
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-% Now we have a Keys collection let us declare the Dictionary (our intial objective)
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-?- context_module(Module), cli_new('Swicli.Library.PrologBackedDictionary'(string,string),0,
-           [Module,current_prolog_flag,$PBC,set_prolog_flag,@(null),@(null)],PBD).
-
-       %% 'Swicli.Library.PrologBackedDictionary'(string) ==> Type of Key,Value it returns to .NET are System.Strings
-       %% 0 ==> First (only) constructor
-       %% Module ==> user
-       %% current_prolog_flag ==> use current_prolog_flag/2 is a GETTER.
-       %% $PBC ==> Our Key Maker from above
-       %% set_prolog_flag/2 ==> our SETTER(Key,ITem)
-       %% @(null) ==> No Remover(Key,Value) 
-       %% @(null) ==> No clearer
-       %% PBD ==> Our newly created .NET IDictionary<string,string>
-
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-% Now we have a have a PrologBackedDictionary in $PBD
-% so let us play with it
-% %%%%%%%%%%%%%%%%5555555555555555555555555555555555555555555555555555555555
-
-%% is there a key named foo?
-
-?- current_pl_flag(foo).
-No.
-
-%% Add a value to the Dictionanry
-?- cli_map_add($PBD,foo,bar).
-Yes.
-
-%% set if there is a proper side effect
-?- current_pl_flag(foo).
-Yes.
-
-?- current_prolog_flag(foo,X).
-X = bar.
-Yes.
-
-?- cli_map($PBD,foo,X).
-X = bar.
-Yes.
-
-?- cli_call($PBD,'ContainsKey'(foo),X).
-X = @true.
-
-
-
-%% iterate the Dictionary
-?- cli_map($PBD,K,V).
-
-
-
-*/
-
-cli_demo(PBC,PBD):- asserta(( add_new_flag(Flag) :- create_prolog_flag(Flag,_,[access(read_write),type(term)])   )),
-   asserta(( current_pl_flag(Flag):- current_prolog_flag(Flag,_)   )),
-   context_module(Module),cli_new('Swicli.Library.PrologBackedCollection'(string),0,[Module,current_pl_flag,add_new_flag,@(null),@(null)],PBC),
-   cli_new('Swicli.Library.PrologBackedDictionary'(string,string),0,[Module,current_prolog_flag,PBC,set_prolog_flag,@(null),@(null)],PBD).
-
-
-
-
 
 %% cli_non_obj(+Obj) 
 % is null or void or var
@@ -488,6 +172,9 @@ cli_is_tagged([_|_]):-!,fail.
 cli_is_tagged('@'(O)):- O\=void,O\=null.
 
 
+%=========================================
+% Type Inspection
+%=========================================
 
 %% cli_memb(O,F,X) 
 % Object to the member infos of it
@@ -496,9 +183,575 @@ cli_memb(O,X):-cli_members(O,Y),member(X,Y).
 cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
 
 
+:-dynamic(shortTypeName/2).
+:-dynamic(cli_subproperty/2).
+:-module_transparent(cli_subproperty/2).
+:-module_transparent(shortTypeName/2).
+
+
+/*
+
+?- cli_new(array(string),[int],[32],O),cli_add_tag(O,'string32').
+
+?- cli_get_type(@(string32),T),cli_writeln(T).
+
+*/
+
+%%  cli_is_type(+Impl,?Type) is det.
+%
+% tests to see if the Impl Object is assignable to Type
+%
+cli_is_type(Impl,Type):-not(ground(Impl)),nonvar(Type),!,attach_console,trace,cli_find_type(Type,RealType),cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
+cli_is_type(Impl,Type):-nonvar(Type),cli_find_type(Type,RealType),!,cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
+cli_is_type(Impl,Type):-cli_get_type(Impl,Type).
+
+%=========================================
+% Type Inspection
+%=========================================
+
+%% cli_subclass(+Subclass,+Superclass) 
+% tests to see if the Subclass is assignable to Superclass
+
+cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli_call(RealSup,'IsAssignableFrom'('System.Type'),[RealSub],'@'(true)).
+
+
+%% cli_typespec(+ClazzSpec,-Value) is det.
+% coerces a ClazzSpec to a Value representing a TypeSpec term
+
+%% cli_add_tag(+TaggedObj,+TagString) is det.
+%  lowlevel access to create a tag name 
+
+%% cli_remove_tag(+TagString) is det.
+%  lowlevel access to remove a tag name
+
+%% cli_to_tagged(+Obj,+Str) is det.
+%  return a @(Str) version of the object 
+%     ==
+%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.SByte"
+%     O = @'C#283319280',
+%     T = @'C#283324332'.
+%
+%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.Int64"
+%     O = @'C#283345876',
+%     T = @'C#283345868'.
+%
+%     17 ?- cli_to_tagged(ulong(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.UInt64"
+%     O = @'C#283346772',
+%     T = @'C#283346760'.
+%
+%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.SByte"
+%     O = @'C#283319280',
+%     T = @'C#283324332'.
+%
+%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.Int64"
+%     O = @'C#283345876',
+%     T = @'C#283345868'.
+%
+%     18 ?- cli_to_tagged(343434127,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "343434127"is"System.Int32"
+%     O = @'C#281925284',
+%     T = @'C#281925280'.
+%
+%     19 ?- cli_to_tagged(3434341271,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "3434341271"is"System.UInt64"
+%     O = @'C#281926616',
+%     T = @'C#283346760'.
+%
+%     21 ?- cli_to_tagged(343434127111,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "343434127111"is"System.UInt64"
+%     O = @'C#281930092',
+%     T = @'C#283346760'.
+%
+%     28 ?- cli_to_tagged(34343412711111111111111111111111111111,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "34343412711111111111111111111111111111"is"java.math.BigInteger"
+%     O = @'C#281813796',
+%     T = @'C#281810860'.
+%     ==
+
+
+%% cli_immediate_object(+Immediate,-Value) is det.
+%  return a @(Value) version of the Immediate value 
+
+%=========================================
+% Object Tracker
+%=========================================
+
+%% cli_tracker_begin(-Tracker) is det.
+%  Return a Tracker ref and all objects created from this point can be released via cli_tracker_free/1
+
+%% cli_tracker_free(+Tracker) is det.
+%  @see cli_tracker_begin/1
+
+%% cli_free(+TaggedObject) is det.
+%  remove a TaggedObject from the heap
+
+%% cli_heap(+TaggedObject) is det.
+%  Pin a TaggedObject onto the heap
+
+%% cli_with_gc(+Call)
+% as tagged objects are created they are tracked .. when the call is complete any new object tags are released
+% uses Forienly defined cli_tracker_begin/1 and cli_tracker_free/1
+cli_with_gc(Call):-setup_call_cleanup(cli_tracker_begin(Mark),Call,cli_tracker_free(Mark)).
+
+
+%=========================================
+% Object Locking
+%=========================================
+
+%% cli_with_lock(+Lock,+Call)
+% 
+%  Lock the first arg while calling Call
+cli_with_lock(Lock,Call):-setup_call_cleanup(cli_lock_enter(Lock),Call,cli_lock_exit(Lock)).
+
+%% cli_lock_enter(+LockObj) is det.
+% Does a Monitor.Enter on LockObj
+
+%% cli_lock_exit(+LockObj) is det.
+% Does a Monitor.Exit on LockObj
 
 
 
+%=========================================
+% Formating and writing
+%=========================================
+
+%% cli_write(+Obj)
+%  writes an object out
+cli_write(S):-cli_to_str(S,W),writeq(W).
+
+%% cli_writeln(+Obj)
+%  writes an object out with a new line
+cli_writeln(S):-cli_write(S),nl.
+
+
+cli_fmt(WID,String,Args):-cli_fmt(String,Args),cli_free(WID). % WID will be made again each call
+cli_fmt(String,Args):-cli_call('System.String','Format'('string','object[]'),[String,Args],Result),cli_writeln(Result).
+
+%% cwl(+StringValue) is det.
+% allas for System.Console.WriteLine(+String)   (not user_output but what .NET thinks its System.Console.Out)
+
+%=========================================
+% Object string
+%=========================================
+%% cli_to_str(+Obj,-String) 
+% Resolves inner @(Obj)s to strings
+
+cli_to_str(Term,String):-catch(ignore(hcli_to_str_0(Term,String0)),_,true),copy_term(String0,String),numbervars(String,666,_).
+hcli_to_str_0(Term,Term):- not(compound(Term)),!.
+hcli_to_str_0(Term,String):-Term='@'(_),cli_is_object(Term),catch(cli_to_str_raw(Term,String),_,Term==String),!.
+hcli_to_str_0([A|B],[AS|BS]):-!,hcli_to_str_0(A,AS),hcli_to_str_0(B,BS).
+hcli_to_str_0(eval(Call),String):-nonvar(Call),!,call(Call,Result),hcli_to_str_0(Result,String).
+hcli_to_str_0(Term,String):-Term=..[F|A],hcli_to_str_0(A,AS),String=..[F|AS],!.
+hcli_to_str_0(Term,Term).
+
+%%to_string(Object,String):-jpl_is_ref(Object),!,jpl_call(Object,toString,[],String).
+to_string(Object,String):-cli_to_str(Object,String).
+
+
+%=========================================
+% Exceptions and exiting
+%=========================================
+
+%% cli_halt is det.
+%% cli_halt(+Obj) is det.
+% 
+cli_halt:-cli_halt(0).
+cli_halt(_Status):-cli_call('Swicli.Library.PrologClient','ManagedHalt',_).
+
+
+%% cli_throw(+Ex) is det.
+% throw an exception to .NET
+
+%% cli_break(+Ex) is det.
+%
+
+cli_debug(format(Format,Args)):-atom(Format),sformat(S,Format,Args),!,cli_debug(S).
+cli_debug(Data):-format(user_error,'~n %% cli_-DEBUG: ~q~n',[Data]),flush_output(user_error).
+
+%%cli_debug(Engine,Data):- format(user_error,'~n %% ENGINE-DEBUG: ~q',[Engine]),cli_debug(Data).
+
+
+%=========================================
+% Collections
+%=========================================
+
+cli_iterator_element(I, E) :- cli_is_type(I,'java.util.Iterator'),!,
+	(   cli_call(I, hasNext, [], @(true))
+	->  (   cli_call(I, next, [], E)        % surely it's steadfast...
+	;   cli_iterator_element(I, E)
+	)
+	).
+
+cli_enumerator_element(I, _E) :- cli_call_raw(I, 'MoveNext', [], @(false)),!,fail.
+cli_enumerator_element(I, E) :- cli_get(I, 'Current', E).
+cli_enumerator_element(I, E) :- cli_enumerator_element(I, E).
+
+old_cli_enumerator_element(I, E) :- %%cli_is_type('System.Collections.IEnumerator',I),!,
+	(   cli_call_raw(I, 'MoveNext', [], @(true))
+	->  (   cli_get(I, 'Current', E)        % surely it's steadfast...
+	;   cli_enumerator_element(I, E)
+	)
+	).
+
+
+%% cli_col(+Col,-Elem) 
+% iterates out Elems for Col
+
+% old version:s cli_collection(Obj,Ele):-cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
+cli_collection(Error,_Ele):-cli_is_null(Error),!,fail.
+cli_collection([S|Obj],Ele):-!,member(Ele,[S|Obj]).
+cli_collection(Obj,Ele):-
+      cli_memb(Obj,m(_, 'GetEnumerator', _, [], [], _, _)),!,
+      cli_call(Obj,'GetEnumerator',[],Enum),!,
+      call_cleanup(cli_enumerator_element(Enum,Ele),cli_free(Enum)).
+cli_collection(Obj,Ele):-cli_array_to_term_args(Obj,Vect),!,arg(_,Vect,Ele).
+cli_collection(Obj,Ele):-cli_memb(Obj,m(_, 'ToArray', _, [], [], _, _)),cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
+cli_collection(Obj,Ele):-cli_array_to_termlist(Obj,Vect),!,member(Ele,Vect).
+
+cli_col(X,Y):-cli_collection(X,Y).
+
+%% cli_col_add(+Col,+Item)
+% add an Item to Col
+cli_col_add(Col,Value):-cli_call(Col,'Add'(Value),_).
+
+%% cli_col_contains(+Col,+Item)
+% Test an Item in Col
+cli_col_contains(Col,Value):-cli_call(Col,'Contains'(Value),_).
+
+%% cli_col_remove(+Col,+Item)
+% Remove an Item in Col
+cli_col_remove(Col,Value):-cli_call(Col,'Remove'(Value),_).
+
+%% cli_col_removeall(+Col)
+% Clears a Col
+cli_col_removeall(Col):-cli_call(Col,'Clear',_).
+
+%% cli_col_size(+Col,?Count)
+% Returns the Count
+cli_col_size(Col,Count):-cli_call(Col,'Count',Count).
+
+%% cli_new_prolog_collection(+PredImpl,+ElementType,-PBD)
+
+%% cli_make_list(+Obj,+Arg2,+Arg3) is det.
+% @see  cli_new_list_1/2
+
+%% cli_new_list_1(+Obj,+Arg2,+Arg3) is det.
+% @see cli_make_list/2
+
+cli_new_list_1(Item,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),cli_call(List,add(Item),_).
+cli_make_list(Items,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),forall(member(Item,Items),cli_call(List,add(Item),_)).
+
+
+%% cli_sublist(+Mask,+List)
+%  Test to see if Mask appears in List
+
+cli_sublist(What,What):-!.
+cli_sublist(Mask,What):-append(Pre,_,What),append(_,Mask,Pre).
+
+
+%=========================================
+% Arrays
+%=========================================
+
+%% cli_array_to_list(+Obj,+Arg2) is det.
+%% cli_array_to_term(+ArrayValue,-Value) is det.
+%% cli_array_to_termlist(+ArrayValue,-Value) is det.
+%% cli_term_to_array(+ArrayValue,-Value) is det.
+% @todo
+cli_array_to_list(Array,List):-cli_array_to_term(Array,array(_,Term)),Term=..[_|List].
+cli_array_to_term_args(Array,Term):-cli_array_to_term(Array,array(_,Term)).
+cli_array_to_length(Array,Length):-cli_get(Array,'Length',Length).
+
+/*
+
+?- cli_new(array(string),[int],[32],O),cli_array_to_length(O,L),cli_array_to_term(O,T).
+O = @'C#861856064',
+L = 32,
+T = array('String', values(@null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null)).
+*/
+
+%=========================================
+% .NET Backed Dictionaries/Maps
+%=========================================
+
+%% cli_map(Map,?Key,?Value).
+
+cli_map(Map,Key,Value):-nonvar(Key),!,cli_call(Map,'TryGetValue',[Key,Value],@(true)).
+cli_map(Map,Key,Value):-cli_col(Map,Ele),cli_get(Ele,'Key',Key),cli_get(Ele,'Value',Value).
+cli_map_set(Map,Key,Value):-cli_call(Map,'[]'(type(Key)),[Key,Value],_).
+cli_map_add(Map,Key,Value):-cli_call(Map,'Add'(Key,Value),_).
+cli_map_remove(Map,Key,Value):-cli_map(Map,Key,Value),!,cli_call(Map,'Remove'(Key),_).
+%% cli_map_removeall(+Obj) is det.
+%
+cli_map_removeall(Map):-cli_call(Map,'Clear',_).
+cli_map_size(Map,Count):-cli_call(Map,'Count',Count).
+
+
+%=========================================
+% Object Expansion
+%=========================================
+%% cli_preserve(TF,Calls)
+
+cli_preserve(TF,Calls):-
+   cli_get('Swicli.Library.PrologClient','PreserveObjectType',O),
+   call_cleanup((cli_set('Swicli.Library.PrologClient','PreserveObjectType',TF),Calls),
+   cli_set('Swicli.Library.PrologClient','PreserveObjectType',O)).
+
+
+member_elipse(NV,{NVs}):-!,member_elipse(NV,NVs).
+member_elipse(NV,(A,B)):-!,(member_elipse(NV,A);member_elipse(NV,B)).
+member_elipse(NV,NV).
+
+cli_expand(eval(Call),Result):-nonvar(Call),!,call(Call,Result).
+cli_expand(Value,Value).
+
+
+cli_to_data(Term,String):- cli_new('System.Collections.Generic.List'(object),[],[],Objs),cli_to_data(Objs,Term,String).
+cli_to_data(_,Term,Term):- not(compound(Term)),!.
+%%cli_to_data(_Objs,[A|B],[A|B]):-!.
+cli_to_data(_Objs,[A|B],[A|B]):-'\+' '\+' A=[_=_],!.
+cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
+cli_to_data(Objs,Term,String):-cli_is_tagged(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
+cli_to_data(Objs,Term,FAS):-Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
+
+hcli_to_data_1(_Objs,struct,_A,Term,Term):-!.
+hcli_to_data_1(_Objs,object,_A,Term,Term):-!.
+hcli_to_data_1(_Objs,enum,_A,Term,Term):-!.
+
+hcli_to_data_1(Objs,F,A,_Term,String):-cli_to_data(Objs,A,AS),!,String=..[F|AS].
+
+%% hcli_get_termdata(+Obj,+Arg2,+Arg3) is det.
+%
+hcli_get_termdata(Objs,Term,String):-cli_get_type(Term,Type),cli_props_for_type(Type,Props),hcli_getmap(Objs,Term,Props,Name,Value,Name=Value,Mid),!,cli_to_data(Objs,Mid,String).
+hcli_get_termdata(Objs,Term,Mid):-cli_getterm(Objs,Term,Mid),!.
+
+
+hcli_getmap(Objs,Term,_,_,_,_,List):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Objs,E,ED)),List),!.
+hcli_getmap(Objs,Term,Props,Name,Value,NameValue,List):-hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List).
+
+hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):-findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
+
+
+%=========================================
+% Object Comparison and Unification
+%=========================================
+%% cli_unify(OE,PE)
+
+cli_unify(OE,PE):-OE=PE,!.
+cli_unify(enum(_,O1),O2):-!,cli_unify(O1,O2).
+cli_unify(O2,enum(_,O1)):-!,cli_unify(O1,O2).
+cli_unify(eval(O1),O2):-cli_expand(O1,O11),!,cli_unify(O11,O2).
+cli_unify(O2,eval(O1)):-cli_expand(O1,O11),!,cli_unify(O11,O2).
+cli_unify(O1,O2):-atomic(O1),atomic(O2),string_to_atom(S1,O1),string_to_atom(S2,O2),!,S1==S2.
+cli_unify([O1|ARGS1],[O2|ARGS2]):-!,cli_unify(O1,O2),cli_unify(ARGS1,ARGS2).
+cli_unify(O1,O2):-cli_is_tagged(O1),cli_to_str(O1,S1),!,cli_unify(O2,S1).
+cli_unify(O1,O2):-O1=..[F|[A1|RGS1]],!,O2=..[F|[A2|RGS2]],cli_unify([A1|RGS1],[A2|RGS2]).
+
+
+%=========================================
+% MUSHDLR223 Dictionary
+%=========================================
+
+% cli_intern/3
+:-dynamic(cli_interned/3).
+:-multifile(cli_interned/3).
+:-module_transparent(cli_interned/3).
+cli_intern(Engine,Name,Value):-retractall(cli_interned(Engine,Name,_)),assert(cli_interned(Engine,Name,Value)),cli_debug(cli_interned(Name,Value)),!.
+
+
+% cli_eval/3
+:-dynamic(cli_eval_hook/3).
+:-multifile(cli_eval_hook/3).
+:-module_transparent(cli_eval_hook/3).
+
+cli_eval(Engine,Name,Value):- cli_eval_hook(Engine,Name,Value),!,cli_debug(cli_eval(Engine,Name,Value)),!.
+cli_eval(Engine,Name,Value):- Value=cli_eval(Engine,Name),cli_debug(cli_eval(Name,Value)),!.
+cli_eval_hook(Engine,In,Out):- catch(call((In,Out=In)),E,Out= foobar(Engine,In,E)).
+cli_is_defined(_Engine,Name):-cli_debug(cli_not_is_defined(Name)),!,fail.
+cli_get_symbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_UnDefined(Name)),!,cli_debug(cli_get_symbol(Name,Value)),!.
+
+
+
+%=========================================
+% Object NEW
+%=========================================
+
+
+%% cli_new(+X, +Params, -V).
+% ==
+% ?- cli_load_assembly('IKVM.OpenJDK.Core')
+% ?- cli_new('java.lang.Long'(long),[44],Out),cli_to_str(Out,Str).
+% ==
+% same as..
+% ==
+% ?- cli_new('java.lang.Long',[long],[44],Out),cli_to_str(Out,Str).
+% ==
+% arity 4 exists to specify generic types
+% ==
+% ?- cli_new('System.Int64',[int],[44],Out),cli_to_str(Out,Str).
+% ?- cli_new('System.Text.StringBuilder',[string],["hi there"],Out),cli_to_str(Out,Str).
+% ?- cli_new('System.Int32'(int),[44],Out),cli_to_str(Out,Str).
+% ==
+%
+%   X can be:
+%    * an atomic classname
+%       e.g. 'java.lang.String'
+%    * an atomic descriptor
+%       e.g. '[I' or 'Ljava.lang.String;'
+%    * a suitable type
+%       i.e. any class(_,_) or array(_)
+%
+%   if X is an object (non-array)  type   or  descriptor and Params is a
+%   list of values or references, then V  is the result of an invocation
+%   of  that  type's  most  specifically-typed    constructor  to  whose
+%   respective formal parameters the actual   Params are assignable (and
+%   assigned)
+%
+%   if X is an array type or descriptor   and Params is a list of values
+%   or references, each of which is   (independently)  assignable to the
+%   array element type, then V is a  new   array  of as many elements as
+%   Params has members,  initialised  with   the  respective  members of
+%   Params;
+%
+%   if X is an array type  or   descriptor  and Params is a non-negative
+%   integer N, then V is a new array of that type, with N elements, each
+%   initialised to Java's appropriate default value for the type;
+%
+%   If V is {Term} then we attempt to convert a new jpl.Term instance to
+%   a corresponding term; this is of  little   obvious  use here, but is
+%   consistent with jpl_call/4 and jpl_get/3
+%
+% Make a "new string[32]" and get it's length.
+% ==
+%  ?- cli_new(array(string),[int],[32],O),cli_get(O,'Length',L).
+% ==
+
+cli_new(Clazz,ConstArgs,Out):-Clazz=..[BasicType|ParmSpc],cli_new(BasicType,ParmSpc,ConstArgs,Out).
+%%cli_new(ClazzConstArgs,Out):-ClazzConstArgs=..[BasicType|ConstArgs],cli_new(BasicType,ConstArgs,ConstArgs,Out).
+
+%=========================================
+% Object CALL
+%=========================================
+
+%% cli_call(+Obj, +CallTerm, -Result).
+%% cli_call(+X, +MethodSpec, +Params, -Result).
+%
+%   X should be:
+%     an object reference
+%       (for static or instance methods)
+%     a classname, descriptor or type
+%       (for static methods of the denoted class)
+%
+%   MethodSpec should be:
+%     a method name (as an atom)
+%       (may involve dynamic overload resolution based on inferred types of params)
+%
+%   Params should be:
+%     a proper list (perhaps empty) of suitable actual parameters for the named method
+%
+%   finally, an attempt will be made to unify Result with the returned result
+
+
+cli_call(Obj,[Prop|CallTerm],Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Out).
+cli_call(Obj,CallTerm,Out):-CallTerm=..[MethodName|Args],cli_call(Obj,MethodName,Args,Out).
+
+% arity 4
+cli_call(Obj,[Prop|CallTerm],Params,Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Params,Out).
+cli_call(Obj,MethodSpec,Params,Out):-cli_call_raw(Obj,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
+
+
+%=========================================
+% Library Call
+%=========================================
+
+%% cli_lib_call(+CallTerm, -Out).
+
+cli_lib_call(CallTerm,Out):-cli_call('Swicli.Library.PrologClient',CallTerm,Out).
+
+%=========================================
+% Object GET
+%=========================================
+:-dynamic(cli_get_hook/3).
+:-multifile(cli_get_hook/3).
+
+%% cli_get(+X, +Fspec, -V)
+%
+%   X can be:
+%     * a classname, a descriptor, or an (object or array) type
+%       (for static fields);
+%     * a non-array object
+%       (for static and non-static fields)
+%     * an array
+%       (for 'length' pseudo field, or indexed element retrieval),
+%   but not:
+%     * a String
+%       (clashes with class name; anyway, String has no fields to retrieve)
+%
+%   Fspec can be:
+%       * an atomic field name,
+%       * or an integral array index (to get an element from an array,
+%	* or a pair I-J of integers (to get a subrange (slice?) of an
+%	  array)
+%       * A list of  [a,b(1),c] to denoate cli_getting X.a.b(1).c
+%
+%   finally, an attempt will be made to unify V with the retrieved value
+
+%% cli_get(+Obj,+NameValueParis:list).
+%  returns multiple values
+cli_get(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_get(Obj,N,V)).
+
+
+cli_get(Obj,_,_):-cli_non_obj(Obj),!,fail.
+cli_get(Obj,[P],Value):-!,cli_get(Obj,P,Value).
+cli_get(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_get(M,N,Value),!.
+cli_get(Obj,P,ValueOut):-hcli_get_overloaded(Obj,P,Value),!,cli_unify(Value,ValueOut).
+
+hcli_get_overloaded(Obj,_,_):-cli_non_obj(Obj),!,fail,throw(cli_non_obj(Obj)).
+hcli_get_overloaded(Obj,P,Value):-cli_get_hook(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):-compound(P),!,cli_call(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):-not(atom(Obj)),cli_get_type(Obj,CType),!,hcli_get_type_subprops(CType,Sub),hcli_get_raw_0(Obj,Sub,SubValue),hcli_get_overloaded(SubValue,P,Value),!.
+
+hcli_get_raw_0(Obj,[P],Value):-!,hcli_get_raw_0(Obj,P,Value).
+hcli_get_raw_0(Obj,[P|N],Value):-!,hcli_get_raw_0(Obj,P,M),hcli_get_raw_0(M,N,Value),!.
+hcli_get_raw_0(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
+
+%%hcli_get_type_subprops(CType,Sub):-cli_ProppedType(
+hcli_get_type_subprops(CType,Sub):-cli_subproperty(Type,Sub),cli_subclass(CType,Type).
+
+
+%=========================================
+% Object SET
+%=========================================
+:-dynamic(cli_set_hook/3).
+:-multifile(cli_set_hook/3).
+
+%% cli_set(+Obj,+NameValueParis:list).
+% like cli_get/2 but sets instead
+cli_set(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_set(Obj,N,V)).
+
+%% cli_set(+Obj, +PropTerm, +NewValue).
+% like cli_get/3 but sets instead
+cli_set(Obj,_,_):-cli_non_obj(Obj),!,fail.
+cli_set(Obj,[P],Value):-!,cli_set(Obj,P,Value).
+cli_set(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_set(M,N,Value),!.
+cli_set(Obj,P,Value):-hcli_set_overloaded(Obj,P,Value).
+
+hcli_set_overloaded(Obj,_,_):- cli_non_obj(Obj),!,fail.
+hcli_set_overloaded(Obj,P,ValueI):-cli_expand(ValueI,Value),ValueI \== Value,!,hcli_set_overloaded(Obj,P,Value).
+hcli_set_overloaded(Obj,P,Value):-cli_set_hook(Obj,P,Value),!.
+hcli_set_overloaded(Obj,P,Value):-cli_subproperty(Type,Sub),cli_is_type(Obj,Type),hcli_get_raw_0(Obj,Sub,SubValue),hcli_set_overloaded(SubValue,P,Value),!.
+hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
+
+
+%=========================================
+% Object EVENT
+%=========================================
 %% cli_new_event_waiter(+ClazzOrInstance,+MemberSpec,-BlockOn) is det.
 %
 
@@ -564,355 +817,148 @@ handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
 */
 
 
-/*
+%=========================================
+% Prolog Backed Collection
+%=========================================
 
-?- cli_new(array(string),[int],[32],O),cli_add_tag(O,'string32').
+cli_new_prolog_collection(PredImpl,TypeSpec,PBC):-
+   module_functor(PredImpl,Module,Pred,_),
+   atom_concat(Pred,'_get',GET),atom_concat(Pred,'_add',ADD),atom_concat(Pred,'_remove',REM),atom_concat(Pred,'_clear',CLR),
+   PANON =..[Pred,_],PGET =..[GET,Val],PADD =..[ADD,Val],PREM =..[REM,Val],PDYN =..[Pred,Val],
+   asserta(( PGET :- PDYN )),
+   asserta(( PADD :- assert(PDYN) )),
+   asserta(( PREM :- retract(PDYN) )),
+   asserta(( CLR :- retractall(PANON) )),
+   cli_new('Swicli.Library.PrologBackedCollection'(TypeSpec),0,
+      [Module,GET,ADD,REM,CLR],PBC).
 
-?- cli_get_type(@(string32),T),cli_writeln(T).
+%=========================================
+% Prolog Backed Dictionaries
+%=========================================
+%% cli_new_prolog_dictionary(+PredImpl,+KeyType,+ValueType,-PBD)
+
+cli_new_prolog_dictionary(PredImpl,KeyType,ValueType,PBD):-
+   cli_new_prolog_collection(PredImpl,KeyType,PBC),
+   module_functor(PredImpl,Module,Pred,_),
+   atom_concat(Pred,'_get',GET),atom_concat(Pred,'_set',SET),atom_concat(Pred,'_remove',REM),atom_concat(Pred,'_clear',CLR),
+   PANON =..[Pred,_,_],PGET =..[GET,Key,Val], PSET =..[SET,Key,Val],PREM =..[REM,Val],PDYN =..[Pred,Key,Val],
+   asserta(( PGET :- PDYN )),
+   asserta(( PSET :- assert(PDYN) )),
+   asserta(( PREM :- retract(PDYN) )),
+   asserta(( CLR :- retractall(PANON) )),
+   cli_new('Swicli.Library.PrologBackedDictionary'(KeyType,ValueType),0,
+      [Module,GET,PBC,SET,REM,CLR],PBD).
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/* EXAMPLE: How to turn current_prolog_flag/2 into a PrologBacked dictionary
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Here is the webdocs:
+
+create_prolog_flag(+Key, +Value, +Options)                         [YAP]
+    Create  a  new Prolog  flag.    The ISO  standard does  not  foresee
+    creation  of  new flags,  but many  libraries  introduce new  flags.
+
+current_prolog_flag(?Key, -Value)    
+    Get system configuration parameters
+
+set_prolog_flag(:Key, +Value)                                      [ISO]
+    Define  a new  Prolog flag or  change its value.   
+
+
+It has most of the makings of a "PrologBackedDictionary"  but first we need a 
+PrologBackedCollection to produce keys
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% First we'll need a conveinence predicate add_new_flag/1  for adding new flags for the collection
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+?- asserta(( add_new_flag(Flag):- create_prolog_flag(Flag,_,[access(read_write),type(term)])   )).
+
+?- asserta(( current_pl_flag(Flag):- current_prolog_flag(Flag,_)   )).
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Next we'll use the add_new_flag/1 in our PrologBackedCollection
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+?- context_module(Module),cli_new('Swicli.Library.PrologBackedCollection'(string),0,[Module,current_pl_flag,add_new_flag,@(null),@(null)],PBC).
+
+% meaning:
+       %% 'Swicli.Library.PrologBackedCollection'(string) ==> Type of object it returs to .NET is System.String
+       %% 0 ==> First (only) constructor
+       %% Module ==> user
+       %% current_pl_flag ==> use current_pl_flag/1 for our GETTER of Items
+       %% add_new_flag ==> Our Adder(Item) (defined in previous section)
+       %% @(null) ==> No Remover(Item) 
+       %% @(null) ==> No clearer
+       %% PBC ==> Our newly created .NET ICollection<string>
+
+% by nulls in the last two we've created a partially ReadOnly ICollection wexcept we can add keys
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Now we have a Keys collection let us declare the Dictionary (our intial objective)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+?- context_module(Module), cli_new('Swicli.Library.PrologBackedDictionary'(string,string),0,
+           [Module,current_prolog_flag,$PBC,set_prolog_flag,@(null),@(null)],PBD).
+
+       %% 'Swicli.Library.PrologBackedDictionary'(string) ==> Type of Key,Value it returns to .NET are System.Strings
+       %% 0 ==> First (only) constructor
+       %% Module ==> user
+       %% current_prolog_flag ==> use current_prolog_flag/2 is a GETTER.
+       %% $PBC ==> Our Key Maker from above
+       %% set_prolog_flag/2 ==> our SETTER(Key,ITem)
+       %% @(null) ==> No Remover(Key,Value) 
+       %% @(null) ==> No clearer
+       %% PBD ==> Our newly created .NET IDictionary<string,string>
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Now we have a have a PrologBackedDictionary in $PBD
+% so let us play with it
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% is there a key named foo?
+
+?- current_pl_flag(foo).
+No.
+
+%% Add a value to the Dictionanry
+?- cli_map_add($PBD,foo,bar).
+Yes.
+
+%% set if there is a proper side effect
+?- current_pl_flag(foo).
+Yes.
+
+?- current_prolog_flag(foo,X).
+X = bar.
+Yes.
+
+?- cli_map($PBD,foo,X).
+X = bar.
+Yes.
+
+?- cli_call($PBD,'ContainsKey'(foo),X).
+X = @true.
+
+%% iterate the Dictionary
+?- cli_map($PBD,K,V).
 
 */
 
+cli_demo(PBC,PBD):- asserta(( add_new_flag(Flag) :- create_prolog_flag(Flag,_,[access(read_write),type(term)])   )),
+   asserta(( current_pl_flag(Flag):- current_prolog_flag(Flag,_)   )),
+   context_module(Module),cli_new('Swicli.Library.PrologBackedCollection'(string),0,[Module,current_pl_flag,add_new_flag,@(null),@(null)],PBC),
+   cli_new('Swicli.Library.PrologBackedDictionary'(string,string),0,[Module,current_prolog_flag,PBC,set_prolog_flag,@(null),@(null)],PBD).
 
 
-%% cli_map(Map,?Key,?Value).
+%=========================================
+% Module Utils
+%=========================================
 
-cli_map(Map,Key,Value):-nonvar(Key),!,cli_call(Map,'TryGetValue',[Key,Value],@(true)).
-cli_map(Map,Key,Value):-cli_col(Map,Ele),cli_get(Ele,'Key',Key),cli_get(Ele,'Value',Value).
-cli_map_set(Map,Key,Value):-cli_call(Map,'[]'(type(Key)),[Key,Value],_).
-cli_map_add(Map,Key,Value):-cli_call(Map,'Add'(Key,Value),_).
-cli_map_remove(Map,Key,Value):-cli_map(Map,Key,Value),!,cli_call(Map,'Remove'(Key),_).
-%% cli_map_removeall(+Obj) is det.
-%
-cli_map_removeall(Map):-cli_call(Map,'Clear',_).
-cli_map_size(Map,Count):-cli_call(Map,'Count',Count).
+module_functor(PredImpl,Module,Pred,Arity):-strip_module(PredImpl,Module,NewPredImpl),strip_arity(NewPredImpl,Pred,Arity).
+strip_arity(Pred/Arity,Pred,Arity).
+strip_arity(PredImpl,Pred,Arity):-functor(PredImpl,Pred,Arity).
 
-
-%% cli_Preserve(TF,Calls)
-
-cli_preserve(TF,Calls):-
-   cli_get('Swicli.Library.PrologClient','PreserveObjectType',O),
-   call_cleanup((cli_set('Swicli.Library.PrologClient','PreserveObjectType',TF),Calls),
-   cli_set('Swicli.Library.PrologClient','PreserveObjectType',O)).
-
-
-%% cli_with_collection(Calls).  
-%%%%%% as tagged objects are created they are tracked .. when the call is complete any new object tags are released
-
-cli_with_collection(Calls):-cli_tracker_begin(O),call_cleanup(Calls,cli_tracker_free(O)).
-
-cli_array_to_length(Array,Length):-cli_get(Array,'Length',Length).
-
-/*
-
-?- cli_new(array(string),[int],[32],O),cli_array_to_length(O,L),cli_array_to_term(O,T).
-O = @'C#861856064',
-L = 32,
-T = array('String', values(@null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null)).
-*/
-
-%% cli_array_to_list(+Obj,+Arg2) is det.
-%
-cli_array_to_list(Array,List):-cli_array_to_term(Array,array(_,Term)),Term=..[_|List].
-
-%% cli_new(+X, +Params, -V).
-
-% ?- cli_load_assembly('IKVM.OpenJDK.Core')
-% ?- cli_new('java.lang.Long'(long),[44],Out),cli_to_str(Out,Str).
-% same as..
-% ?- cli_new('java.lang.Long',[long],[44],Out),cli_to_str(Out,Str).
-% arity 4 exists to specify generic types
-% ?- cli_new('System.Int64',[int],[44],Out),cli_to_str(Out,Str).
-% ?- cli_new('System.Text.StringBuilder',[string],["hi there"],Out),cli_to_str(Out,Str).
-%
-%   X can be:
-%    * an atomic classname
-%       e.g. 'java.lang.String'
-%    * an atomic descriptor
-%       e.g. '[I' or 'Ljava.lang.String;'
-%    * a suitable type
-%       i.e. any class(_,_) or array(_)
-%
-%   if X is an object (non-array)  type   or  descriptor and Params is a
-%   list of values or references, then V  is the result of an invocation
-%   of  that  type's  most  specifically-typed    constructor  to  whose
-%   respective formal parameters the actual   Params are assignable (and
-%   assigned)
-%
-%   if X is an array type or descriptor   and Params is a list of values
-%   or references, each of which is   (independently)  assignable to the
-%   array element type, then V is a  new   array  of as many elements as
-%   Params has members,  initialised  with   the  respective  members of
-%   Params;
-%
-%   if X is an array type  or   descriptor  and Params is a non-negative
-%   integer N, then V is a new array of that type, with N elements, each
-%   initialised to Java's appropriate default value for the type;
-%
-%   If V is {Term} then we attempt to convert a new jpl.Term instance to
-%   a corresponding term; this is of  little   obvious  use here, but is
-%   consistent with jpl_call/4 and jpl_get/3
-
-
-cli_new(Clazz,ConstArgs,Out):-Clazz=..[BasicType|ParmSpc],cli_new(BasicType,ParmSpc,ConstArgs,Out).
-%%cli_new(ClazzConstArgs,Out):-ClazzConstArgs=..[BasicType|ConstArgs],cli_new(BasicType,ConstArgs,ConstArgs,Out).
-/*
-
- Make a "new string[32]" and get it's length.
-
- ?- cli_new(array(string),[int],[32],O),cli_get(O,'Length',L).
-
-*/
-/*
- NOTES
-
- ?- cli_new('System.Int32'(int),[44],Out),cli_to_str(Out,Str).
-ERROR: Trying to constuct a primitive type
-ERROR: Cant find constructor [int] on System.Int32
-   Fail: (8) swicli:cli_new('System.Int32', [int], [44], _G731) ? abort
-% Execution Aborted
-*/
-
-
-%% cli_call(+Obj, +CallTerm, -Result).
-%% cli_call(+X, +MethodSpec, +Params, -Result).
-%
-%   X should be:
-%     an object reference
-%       (for static or instance methods)
-%     a classname, descriptor or type
-%       (for static methods of the denoted class)
-%
-%   MethodSpec should be:
-%     a method name (as an atom)
-%       (may involve dynamic overload resolution based on inferred types of params)
-%
-%   Params should be:
-%     a proper list (perhaps empty) of suitable actual parameters for the named method
-%
-%   finally, an attempt will be made to unify Result with the returned result
-
-
-cli_call(Obj,[Prop|CallTerm],Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Out).
-cli_call(Obj,CallTerm,Out):-CallTerm=..[MethodName|Args],cli_call(Obj,MethodName,Args,Out).
-
-% arity 4
-cli_call(Obj,[Prop|CallTerm],Params,Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Params,Out).
-cli_call(Obj,MethodSpec,Params,Out):-cli_call_raw(Obj,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
-
-
-
-%% cli_libCall(+CallTerm, -Out).
-
-cli_lib_call(CallTerm,Out):-cli_call('Swicli.Library.PrologClient',CallTerm,Out).
-
-
-member_elipse(NV,{NVs}):-!,member_elipse(NV,NVs).
-member_elipse(NV,(A,B)):-!,(member_elipse(NV,A);member_elipse(NV,B)).
-member_elipse(NV,NV).
-
-cli_expand(eval(Call),Result):-nonvar(Call),!,call(Call,Result).
-cli_expand(Value,Value).
-
-
-%% cli_get(+X, +Fspec, -V)
-
-%
-%   X can be:
-%     * a classname, a descriptor, or an (object or array) type
-%       (for static fields);
-%     * a non-array object
-%       (for static and non-static fields)
-%     * an array
-%       (for 'length' pseudo field, or indexed element retrieval),
-%   but not:
-%     * a String
-%       (clashes with class name; anyway, String has no fields to retrieve)
-%
-%   Fspec can be:
-%       * an atomic field name,
-%       * or an integral array index (to get an element from an array,
-%	* or a pair I-J of integers (to get a subrange (slice?) of an
-%	  array)
-%       * A list of  [a,b(1),c] to denoate cli_getting X.a.b(1).c
-%
-%   finally, an attempt will be made to unify V with the retrieved value
-
-cli_get(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_get(Obj,N,V)).
-
-cli_get(Obj,_,_):-cli_non_obj(Obj),!,fail.
-cli_get(Obj,[P],Value):-!,cli_get(Obj,P,Value).
-cli_get(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_get(M,N,Value),!.
-cli_get(Obj,P,ValueOut):-hcli_get_overloaded(Obj,P,Value),!,cli_unify(Value,ValueOut).
-
-hcli_get_overloaded(Obj,_,_):-cli_non_obj(Obj),!,fail,throw(cli_non_obj(Obj)).
-hcli_get_overloaded(Obj,P,Value):-cli_get_hook(Obj,P,Value),!.
-hcli_get_overloaded(Obj,P,Value):-compound(P),!,cli_call(Obj,P,Value),!.
-hcli_get_overloaded(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
-hcli_get_overloaded(Obj,P,Value):-not(atom(Obj)),cli_get_type(Obj,CType),!,hcli_get_type_subprops(CType,Sub),hcli_get_raw_0(Obj,Sub,SubValue),hcli_get_overloaded(SubValue,P,Value),!.
-
-hcli_get_raw_0(Obj,[P],Value):-!,hcli_get_raw_0(Obj,P,Value).
-hcli_get_raw_0(Obj,[P|N],Value):-!,hcli_get_raw_0(Obj,P,M),hcli_get_raw_0(M,N,Value),!.
-hcli_get_raw_0(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
-
-%%hcli_get_type_subprops(CType,Sub):-cli_ProppedType(
-hcli_get_type_subprops(CType,Sub):-cli_subproperty(Type,Sub),cli_subclass(CType,Type).
-
-:-dynamic(cli_get_hook/3).
-:-multifile(cli_get_hook/3).
-
-
-%% cli_set(+Obj, +PropTerm, +NewValue).
-
-cli_set(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_set(Obj,N,V)).
-
-cli_set(Obj,_,_):-cli_non_obj(Obj),!,fail.
-cli_set(Obj,[P],Value):-!,cli_set(Obj,P,Value).
-cli_set(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_set(M,N,Value),!.
-cli_set(Obj,P,Value):-hcli_set_overloaded(Obj,P,Value).
-
-hcli_set_overloaded(Obj,_,_):- cli_non_obj(Obj),!,fail.
-hcli_set_overloaded(Obj,P,ValueI):-cli_expand(ValueI,Value),ValueI \== Value,!,hcli_set_overloaded(Obj,P,Value).
-hcli_set_overloaded(Obj,P,Value):-cli_set_hook(Obj,P,Value),!.
-hcli_set_overloaded(Obj,P,Value):-cli_subproperty(Type,Sub),cli_is_type(Obj,Type),hcli_get_raw_0(Obj,Sub,SubValue),hcli_set_overloaded(SubValue,P,Value),!.
-hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
-
-:-dynamic(cli_set_hook/3).
-:-multifile(cli_set_hook/3).
-
-
-
-%% cli_unify(OE,PE)
-
-cli_unify(OE,PE):-OE=PE,!.
-cli_unify(enum(_,O1),O2):-!,cli_unify(O1,O2).
-cli_unify(O2,enum(_,O1)):-!,cli_unify(O1,O2).
-cli_unify(eval(O1),O2):-cli_expand(O1,O11),!,cli_unify(O11,O2).
-cli_unify(O2,eval(O1)):-cli_expand(O1,O11),!,cli_unify(O11,O2).
-cli_unify(O1,O2):-atomic(O1),atomic(O2),string_to_atom(S1,O1),string_to_atom(S2,O2),!,S1==S2.
-cli_unify([O1|ARGS1],[O2|ARGS2]):-!,cli_unify(O1,O2),cli_unify(ARGS1,ARGS2).
-cli_unify(O1,O2):-cli_is_tagged(O1),cli_to_str(O1,S1),!,cli_unify(O2,S1).
-cli_unify(O1,O2):-O1=..[F|[A1|RGS1]],!,O2=..[F|[A2|RGS2]],cli_unify([A1|RGS1],[A2|RGS2]).
-
-%type   jpl_iterator_element(object, datum)
-
-% jpl_iterator_element(+Iterator, -Element) :-
-
-cli_iterator_element(I, E) :- cli_is_type(I,'java.util.Iterator'),!,
-	(   cli_call(I, hasNext, [], @(true))
-	->  (   cli_call(I, next, [], E)        % surely it's steadfast...
-	;   cli_iterator_element(I, E)
-	)
-	).
-
-cli_enumerator_element(I, _E) :- cli_call_raw(I, 'MoveNext', [], @(false)),!,fail.
-cli_enumerator_element(I, E) :- cli_get(I, 'Current', E).
-cli_enumerator_element(I, E) :- cli_enumerator_element(I, E).
-
-old_cli_enumerator_element(I, E) :- %%cli_is_type('System.Collections.IEnumerator',I),!,
-	(   cli_call_raw(I, 'MoveNext', [], @(true))
-	->  (   cli_get(I, 'Current', E)        % surely it's steadfast...
-	;   cli_enumerator_element(I, E)
-	)
-	).
-
-
-
-cli_to_data(Term,String):- cli_new('System.Collections.Generic.List'(object),[],[],Objs),cli_to_data(Objs,Term,String).
-cli_to_data(_,Term,Term):- not(compound(Term)),!.
-%%cli_to_data(_Objs,[A|B],[A|B]):-!.
-cli_to_data(_Objs,[A|B],[A|B]):-'\+' '\+' A=[_=_],!.
-cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
-cli_to_data(Objs,Term,String):-cli_is_tagged(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
-cli_to_data(Objs,Term,FAS):-Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
-
-hcli_to_data_1(_Objs,struct,_A,Term,Term):-!.
-hcli_to_data_1(_Objs,object,_A,Term,Term):-!.
-hcli_to_data_1(_Objs,enum,_A,Term,Term):-!.
-
-hcli_to_data_1(Objs,F,A,_Term,String):-cli_to_data(Objs,A,AS),!,String=..[F|AS].
-
-%% hcli_get_termdata(+Obj,+Arg2,+Arg3) is det.
-%
-hcli_get_termdata(Objs,Term,String):-cli_get_type(Term,Type),cli_props_for_type(Type,Props),hcli_getmap(Objs,Term,Props,Name,Value,Name=Value,Mid),!,cli_to_data(Objs,Mid,String).
-hcli_get_termdata(Objs,Term,Mid):-cli_getterm(Objs,Term,Mid),!.
-
-
-hcli_getmap(Objs,Term,_,_,_,_,List):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Objs,E,ED)),List),!.
-hcli_getmap(Objs,Term,Props,Name,Value,NameValue,List):-hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List).
-
-hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):-findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
-
-
-%% cli_with_lock(+Lock,+Call)
-% 
-%  Lock the first arg while calling Call
-cli_with_lock(Lock,Call):-setup_call_cleanup(cli_lock_enter(Lock),Call,cli_lock_exit(Lock)).
-
-%% cli_lock_enter(+LockObj) is det.
-% Does a Monitor.Enter on LockObj
-%% cli_lock_exit(+LockObj) is det.
-% Does a Monitor.Exit on LockObj
-
-
-
-%% cli_with_gc(+Call)
-%
-% use Forienly defined cli_tracker_begin/1 and cli_tracker_free/1
-
-cli_with_gc(Call):-setup_call_cleanup(cli_tracker_begin(Mark),Call,cli_tracker_free(Mark)).
-
-
-
-%% cli_make_list(+Obj,+Arg2,+Arg3) is det.
-% @see  cli_new_list_1/2
-
-%% cli_new_list_1(+Obj,+Arg2,+Arg3) is det.
-% @see cli_make_list/2
-
-cli_new_list_1(Item,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),cli_call(List,add(Item),_).
-cli_make_list(Items,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),forall(member(Item,Items),cli_call(List,add(Item),_)).
-
-
-%% cli_sublist(+Mask,+List)
-%  Test to see if Mask appears in List
-
-cli_sublist(What,What):-!.
-cli_sublist(Mask,What):-append(Pre,_,What),append(_,Mask,Pre).
-
-
-% cli_debug/[1,2]
-
-
-cli_debug(format(Format,Args)):-atom(Format),sformat(S,Format,Args),!,cli_debug(S).
-cli_debug(Data):-format(user_error,'~n %% cli_-DEBUG: ~q~n',[Data]),flush_output(user_error).
-
-%%cli_debug(Engine,Data):- format(user_error,'~n %% ENGINE-DEBUG: ~q',[Engine]),cli_debug(Data).
-
-%%to_string(Object,String):-jpl_is_ref(Object),!,jpl_call(Object,toString,[],String).
-to_string(Object,String):-cli_to_str(Object,String).
-
-
-% cli_intern/3
-
-:-dynamic(cli_interned/3).
-:-multifile(cli_interned/3).
-:-module_transparent(cli_interned/3).
-cli_intern(Engine,Name,Value):-retractall(cli_interned(Engine,Name,_)),assert(cli_interned(Engine,Name,Value)),cli_debug(cli_interned(Name,Value)),!.
-
-
-
-% cli_eval/3
-
-
-:-dynamic(cli_eval_hook/3).
-:-multifile(cli_eval_hook/3).
-:-module_transparent(cli_eval_hook/3).
-
-cli_eval(Engine,Name,Value):- cli_eval_hook(Engine,Name,Value),!,cli_debug(cli_eval(Engine,Name,Value)),!.
-cli_eval(Engine,Name,Value):- Value=cli_eval(Engine,Name),cli_debug(cli_eval(Name,Value)),!.
-cli_eval_hook(Engine,In,Out):- catch(call((In,Out=In)),E,Out= foobar(Engine,In,E)).
-cli_is_defined(_Engine,Name):-cli_debug(cli_not_is_defined(Name)),!,fail.
-cli_get_symbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_UnDefined(Name)),!,cli_debug(cli_get_symbol(Name,Value)),!.
 
 %:-use_module(library(jpl)).
 %:-use_module(library(pce)).
@@ -940,12 +986,6 @@ cli_notrace(Call):-call(Call).
 
 :-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
 
-
-
-%% link_swiplcs(+PathName) is det.
-%% cli_add_layout(+ClazzSpec,+MemberSpec) is det.
-%% cli_array_to_term(+ArrayValue,-Value) is det.
-%% cli_array_to_termlist(+ArrayValue,-Value) is det.
 %% cli_call_raw(+ClazzOrInstance,+MemberSpec,+Params,-Value) is det.
 %% cli_cast(+Value,+ClazzSpec,-Value) is det.
 %% cli_cast_immediate(+Value,+ClazzSpec,-Value) is det.
@@ -972,7 +1012,7 @@ cli_notrace(Call):-call(Call).
 %% cli_props_for_type(+ClazzSpec,+MemberSpecs) is det.
 %% cli_set_raw(+ClazzOrInstance,+MemberSpec,+Param) is det.
 %% cli_shorttype(+ValueName,+Value) is det.
-%% cli_term_to_array(+ArrayValue,-Value) is det.
+%% cli_add_layout(+ClazzSpec,+MemberSpec) is det.
 %% cli_to_from_layout(+ClazzSpec,+MemberSpec,+ToSpec) is det.
 %% cli_to_from_recomposer(+ClazzSpec,+MemberSpec,+Obj2r,+R2obj) is det.
 %% cli_to_str_raw(+Obj,+Str) is det.
@@ -1370,4 +1410,5 @@ Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/Swi
 %    
 
 end_of_file.
+
 
