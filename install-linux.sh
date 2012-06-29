@@ -6,7 +6,7 @@ if [ -z "$SWI_HOME_DIR" ]; then echo "set your SWI_HOME_DIR"; exit 1; fi
 
 if [ -n "swicli-inst" ]; then 
 cd "swicli-inst"
-if
+fi
 
 cp pl/library/* $SWI_HOME_DIR/library/
 
