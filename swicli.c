@@ -89,7 +89,7 @@ extern "C" {
 
 				/*  mono_jit_init() creates a domain: each assembly is loaded and run in a MonoDomain. */
 				domain = mono_jit_init (dnamestr);
-
+				if(domain==0) ;
 				/* add our special internal call, so that C# code can call us back. */
 				//mono_add_internal_call ("MonoEmbed::gimme", gimme);
 			}
