@@ -335,22 +335,12 @@
 			MinFrameworkVersion="131072"
 		/>
 		<ProjectReference
-			ReferencedProjectIdentifier="{1DC6259A-8FD3-4540-8649-C52C87517E1B}"
-			CopyLocal="false"
-			CopyLocalDependencies="false"
-			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject=".\sources\main\Cogbot\Cogbot.csproj"
+			ReferencedProjectIdentifier="{44645676-D8D5-4A1F-9F8C-4105912CFE68}"
+			RelativePathToProject=".\Swicli.Library\Swicli.Library.csproj"
 		/>
 		<ProjectReference
-			ReferencedProjectIdentifier="{DF2EEDB7-F40D-44DD-B145-7AB989B10300}"
-			RelativePathToProject=".\sources\main\Swicli.Library\Swicli.Library.csproj"
-		/>
-		<ProjectReference
-			ReferencedProjectIdentifier="{13146BC9-3BC9-41AD-B896-992166D5189E}"
-			CopyLocal="false"
-			CopyLocalDependencies="false"
-			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject=".\sources\chatbot\AIMLBotModule\AIMLBotModule.csproj"
+			ReferencedProjectIdentifier="{E8ED0021-C042-40EB-AFA6-19E1577820A1}"
+			RelativePathToProject=".\SWICLITestDLL\SWICLITestDLL.csproj"
 		/>
 	</References>
 	<Files>
