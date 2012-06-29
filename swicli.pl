@@ -29,248 +29,8 @@
             member_elipse/2
           ]).
 
-/** <module> SWI-Prolog 2-Way interface to .NET/Mono
 
-*Introduction*
 
-This is an overview of an interface which allows SWI-Prolog programs to dynamically create and manipulate .NET objects. 
-
-Here are some significant features of the interface and its implementation: 
-
-* API is similar to that of XPCE: the four main interface calls are cli_new, cli_call, cli_set and cli_get (there is a single cli_free, though .NET's garbage collection is extended transparently into Prolog) 
-* Uses @/1 to construct representations of certain .NET values; if  @/1 is defined as a prefix operator (as used by XPCE), then you can write @false, @true, @null etc. in your source code; otherwise (and for portability) you'll have to write e.g. @(true) etc. 
-* cli_call/4 (modeled from JPL's jpl_call/4) resolves overloaded methods automatically and dynamically, inferring the types of the call's actual parameters, and identifying the most specific of the applicable method implementations (similarly, cli_new resolves overloaded constructors)
-* Completely dynamic: no precompilation is required to manipulate any .NET classes which can be found at run time, and any objects which can be instantiated from them 
-* Interoperable with SwiPlCS's .NET API (which has evolved from Uwe Lesta's SwiPlCS) 
-* Exploits the Invocation API of the .NET P/Invoke Interface: this is a mandatory feature of any compliant .NET 
-* Implemented with a fair amount of C# code and Prolog code in one module (swicli.pl)  (which I believe to be ISO Standard Prolog compliant and portable) and a SWI-Prolog-specific foreign library (swicli[32].dll for Windows and swicli[32].so *nix), implemented in ANSI C but making a lot of use of the SWI-Prolog Foreign Language Interface Then uses Swicli.Library.dll (Managed binary) that runs on both Mono and .NET runtimes. 
-* the Prolog-calls-CLI (mine) and CLI-calls-Prolog (Ewe's) parts of SWICLI are largely independent; mine concentrates on representing all .NET data values and objects within Prolog, and supporting manipulation of objects; Ewe's concentrates on representing any Prolog term within .NET, and supporting the calling of goals within Prolog and the retrieving of results back into .NET 
-* @(terms) are canonical (two references are ==/2 equal if-and-only-if they refer to the same object within the .NET) 
-* are represented as structures containing a distinctive atom so as to exploit SWI-Prolog's atom garbage collection: when an object reference is garbage-collected in Prolog, the .NET garbage collector is informed, so there is sound and complete overall garbage collection of .NET objects within the combined Prolog+.NET system 
-* .NET class methods can be called by name: SWICLI invisibly fetches (and caches) essential details of method invocation, exploiting .NET Reflection facilities 
-* Reason about the types of .NET data values, object references, fields and methods: SWICLI supports a canonical representation of all .NET types as structured terms (e.g. array(array(byte))) and also as atomic .NET signatures 
-* when called from Prolog, void methods return a @(void) value (which is distinct from all other SWICLI values and references) 
-* Tested on Windows XP, Windows7 and Fedora Linux, but is believed to be readily portable to SWI-Prolog on other platforms as far as is feasible, .NET data values and object references are represented within Prolog canonically and without loss of information (minor exceptions: .NET float and double values are both converted to Prolog float values; .NET byte, char, short, int and long values are all converted to Prolog integer values; the type distinctions which are lost are normally of no significance) 
-* Requires .NET 2.0 and class libraries (although it doesn't depend on any .NET 2-specific facilities, and originally was developed for use with both 1.0 thru 4.0 .NETs, I haven't tested it with 1.0 recently, and don't support this) 
-
-
-==
-?- use_module(library(swicli)).
-
-?- cli_call('System.Threading.ThreadPool','GetAvailableThreads'(X,Y),_).
-
-X=499, Y=1000
-
-==
-Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/SwiCLI
-
-
-@see	CSharp.txt
-	
-@author	Douglas Miles
-
-*/
-/*
--------
-=====
-" 
-format's
-**/
-
-
-%% cwl(+StringValue) is det.
-% allas for System.Console.WriteLine(+String)   (not user_output but what .NET thinks its System.Console.Out)
-
-%% link_swiplcs(+PathName) is det.
-%
-
-%% cli_typespec(+ClazzSpec,-Value) is det.
-% coerces a ClazzSpec to a Value representing a TypeSpec term
-
-%% cli_to_from_layout(+ClazzSpec,+MemberSpec,+ToSpec) is det.
-%
-
-%% cli_add_layout(+ClazzSpec,+MemberSpec) is det.
-%
-
-%% cli_to_from_recomposer(+ClazzSpec,+MemberSpec,+Obj2r,+R2obj) is det.
-%
-
-%% test_out(+Incoming,+ByrefInt32Outbound) is det.
-%
-
-%% test_opt(+Incoming,+StringOptionalstr,+ByrefInt32Outbound) is det.
-%
-
-%% test_opt(+Incoming,+StringOptionalstr,+ByrefInt32Outbound) is det.
-%
-
-%% test_ref(+Incoming,+ByrefStringOptionalstr,+ByrefInt32Outbound) is det.
-%
-
-%% test_ref(+Incoming,+ByrefStringOptionalstr,+ByrefInt32Outbound) is det.
-%
-
-%% test_var_arg(+ByrefInt32Outbound,+ArrayOfInt32Incoming) is det.
-%
-
-%% cli_find_constructor(+ClazzSpec,+MemberSpec,-Method) is det.
-%
-
-%% cli_new(+ClazzSpec,+MemberSpec,+Param,-Value) is det.
-%
-
-%% cli_new_array(+ClazzSpec,+Rank,-Value) is det.
-%
-
-%% cli_lock_enter(+LockObj) is det.
-%
-
-%% cli_lock_exit(+LockObj) is det.
-%
-
-%% cli_find_method(+ClazzOrInstance,+MemberSpec,-Method) is det.
-%
-
-%% cli_call_raw(+ClazzOrInstance,+MemberSpec,+Params,-Value) is det.
-%
-
-
-
-%% cli_get_raw(+ClazzOrInstance,+MemberSpec,-Value) is det.
-%
-
-%% cli_get_property(+ClazzOrInstance,+MemberSpec,+IndexValues,-Value) is det.
-%
-
-%% cli_set_raw(+ClazzOrInstance,+MemberSpec,+Param) is det.
-%
-
-%% cli_to_str_raw(+Obj,+Str) is det.
-%
-
-%% cli_java_to_string(+Param,-Value) is det.
-%
-
-%% cli_props_for_type(+ClazzSpec,+MemberSpecs) is det.
-%
-
-%% cli_members(+ClazzOrInstance,-Members) is det.
-%
-
-%% cli_member_doc(+Memb,+Doc,+Xml) is det.
-%
-
-%% cli_getterm(+ValueCol,+Value,-Value) is det.
-%
-
-%% cli_cast(+Value,+ClazzSpec,-Value) is det.
-%
-
-%% cli_cast_immediate(+Value,+ClazzSpec,-Value) is det.
-%
-
-%% pl_list_to_casted_array(+IEnumerablePlTermTerm,+ArrayOfParameterInfo,+ByrefActionTodo) is det.
-%
-
-%% pl_list_to_casted_array(+Skip,+IEnumerablePlTermTerm,+ArrayOfParameterInfo,+ByrefActionTodo) is det.
-%
-
-%% cli_test_pbd(+Pred,+Counted) is det.
-%
-
-%% cli_test_pbdt(+Pred,+Counted) is det.
-%
-
-%% cli_test_pbct(+Pred,+Counted) is det.
-%
-
-%% cli_test_pbc(+Pred,+Counted) is det.
-%
-
-%% cli_load_type(+TypeT) is det.
-%
-
-%% cli_find_type(+ClazzSpec,+ClassRef) is det.
-%
-
-%% cli_find_class(+ClazzName,-ClazzObject) is det.
-%
-
-%% cli_get_type(+Value,-Value) is det.
-%
-
-%% cli_get_class(+Value,-Value) is det.
-%
-
-%% cli_class_from_type(+Value,-Value) is det.
-%
-
-%% cli_type_from_class(+Value,-Value) is det.
-%
-
-%% cli_shorttype(+ValueName,+Value) is det.
-%
-
-%% cli_get_classname(+Value,-Value) is det.
-%
-
-%% cli_get_type_fullname(+Value,-Value) is det.
-%
-
-%% cli_new_delegate(+DelegateClass,+PrologPred,-Value) is det.
-%
-
-%% cli_delegate_term(+TypeFi,+PrologPred,+BooleanSaveKey) is det.
-%
-
-%% cli_array_to_term(+ArrayValue,-Value) is det.
-%
-
-%% cli_test_array_to_term1(-Value) is det.
-%
-
-%% cli_test_array_to_term2(-Value) is det.
-%
-
-%% cli_array_to_termlist(+ArrayValue,-Value) is det.
-%
-
-%% cli_term_to_array(+ArrayValue,-Value) is det.
-%
-
-
-%% cli_add_tag(+TaggedObj,+TagString) is det.
-%  lowlevel access to create a tag name 
-
-%% cli_remove_tag(+TagString) is det.
-%  lowlevel access to remove a tag name
-
-%% cli_to_tagged(+Obj,+Str) is det.
-%  return a @(Str) version of the object 
-
-%% cli_immediate_object(+Immediate,-Value) is det.
-%  return a @(Value) version of the Immediate value 
-
-%% cli_tracker_begin(-Tracker) is det.
-%  Return a Tracker ref and all objects created from this point can be released via cli_tracker_free/1
-
-%% cli_tracker_free(+Tracker) is det.
-%  @see cli_tracker_begin/1
-
-%% cli_free(+TaggedObject) is det.
-%  remove a TaggedObject from the heap
-
-%% cli_heap(+TaggedObject) is det.
-%  Pin a TaggedObject onto the heap
-
-
-
-%% cli_throw(+Ex) is det.
-%
-
-%% cli_break(+Ex) is det.
-%
 
 :- push_operators([op(600, fx, ('*'))]).
 
@@ -296,27 +56,58 @@ loadcli_Assembly:-assert(loadedcli_Assembly),fail.
 loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_library(DLL).
 :-loadcli_Assembly.
 
-cli_halt:-cli_halt(0).
-cli_halt(_Status):-cli_call('Swicli.Library.PrologClient','ManagedHalt',_).
-
 
 onWindows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
 
-%------------------------------------------------------------------------------
 
-% cli_load_lib(+AppDomainName, +AssemblyPartialName, +FullClassName, +StaticMethodName).
-%  The C++ DLL should have given us cli_load_lib/4
-%  remember to: export LD_LIBRARY_PATH=/development/opensim4opencog/bin:/development/opensim4opencog/lib/x86_64-linux:$LD_LIBRARY_PATH
-%  should have given us cli_load_assembly/1
+%=========================================
+
+%% cli_load_lib(+AppDomainName, +AssemblyPartialName, +FullClassName, +StaticMethodName).
+%  Loads an assembly into AppDomainName
+%
+%  cli_load_lib/4 is what was used to bootstrap SWICLI 
+%  (it defined the next stage where cli_load_assembly/1) became present
+%
+%  remember to: export LD_LIBRARY_PATH=/development/opensim4opencog/bin:$LD_LIBRARY_PATH
+%
+% in swicli.pl we called:
+% ==
+% :- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
+% ==
 :- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
 
-%------------------------------------------------------------------------------
+%=========================================
 
-%% cli_load_assembly(+Term1) is det.
-% the cli_load_assembly/1 should have give us a few more cli_<Predicates>
+%% cli_load_assembly(+AssemblyPartialNameOrPath) is det.
+%% cli_load_assembly_uncaught(+AssemblyPartialNameOrPath) is det.
+% the cli_<Predicates> came because we had:
+% ==
+% ?- cli_load_assembly('Swicli.Library').
+% ==
+% The uncaught version allows exception to come from .NET
 :- cli_load_assembly('Swicli.Library').
 
-%------------------------------------------------------------------------------
+
+%=========================================
+
+%% cli_add_assembly_search_path(+Path) is det.
+%% cli_remove_assembly_search_path(+Path) is det.
+%  Add or remove directories to the search path
+% ==
+% ?- cli_add_assembly_search_path('c:/myproj/bin').
+%
+% ?- cli_remove_assembly_search_path('c:/myproj/bin').
+% ==
+%
+% This now makes the System assembly resolver see Assemblies in that directory
+%
+%  Simular to
+%  _Windows_: adding to %PATH%
+%  _Linux_:  adding to $MONO_PATH
+%
+
+
+%=========================================
 
 %%  cli_is_type(+Impl,?Type) is det.
 %
@@ -326,14 +117,107 @@ cli_is_type(Impl,Type):-not(ground(Impl)),nonvar(Type),!,attach_console,trace,cl
 cli_is_type(Impl,Type):-nonvar(Type),cli_find_type(Type,RealType),!,cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
 cli_is_type(Impl,Type):-cli_get_type(Impl,Type).
 
-%------------------------------------------------------------------------------
+%=========================================
 
 %% cli_subclass(+Subclass,+Superclass) 
 % tests to see if the Subclass is assignable to Superclass
 
 cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli_call(RealSup,'IsAssignableFrom'('System.Type'),[RealSub],'@'(true)).
 
-%------------------------------------------------------------------------------
+
+%% cli_halt(+Obj) is det.
+%
+
+%% cli_halt is det.
+%
+cli_halt:-cli_halt(0).
+cli_halt(_Status):-cli_call('Swicli.Library.PrologClient','ManagedHalt',_).
+
+
+%% cli_typespec(+ClazzSpec,-Value) is det.
+% coerces a ClazzSpec to a Value representing a TypeSpec term
+
+%% cwl(+StringValue) is det.
+% allas for System.Console.WriteLine(+String)   (not user_output but what .NET thinks its System.Console.Out)
+
+%% cli_add_tag(+TaggedObj,+TagString) is det.
+%  lowlevel access to create a tag name 
+
+%% cli_remove_tag(+TagString) is det.
+%  lowlevel access to remove a tag name
+
+%% cli_to_tagged(+Obj,+Str) is det.
+%  return a @(Str) version of the object 
+%     ==
+%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.SByte"
+%     O = @'C#283319280',
+%     T = @'C#283324332'.
+%
+%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.Int64"
+%     O = @'C#283345876',
+%     T = @'C#283345868'.
+%
+%     17 ?- cli_to_tagged(ulong(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.UInt64"
+%     O = @'C#283346772',
+%     T = @'C#283346760'.
+%
+%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.SByte"
+%     O = @'C#283319280',
+%     T = @'C#283324332'.
+%
+%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     "127"is"System.Int64"
+%     O = @'C#283345876',
+%     T = @'C#283345868'.
+%
+%     18 ?- cli_to_tagged(343434127,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "343434127"is"System.Int32"
+%     O = @'C#281925284',
+%     T = @'C#281925280'.
+%
+%     19 ?- cli_to_tagged(3434341271,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "3434341271"is"System.UInt64"
+%     O = @'C#281926616',
+%     T = @'C#283346760'.
+%
+%     21 ?- cli_to_tagged(343434127111,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "343434127111"is"System.UInt64"
+%     O = @'C#281930092',
+%     T = @'C#283346760'.
+%
+%     28 ?- cli_to_tagged(34343412711111111111111111111111111111,O),cli_get_type(O,T),cli_writeln(O is T).
+%     "34343412711111111111111111111111111111"is"java.math.BigInteger"
+%     O = @'C#281813796',
+%     T = @'C#281810860'.
+%     ==
+
+
+%% cli_immediate_object(+Immediate,-Value) is det.
+%  return a @(Value) version of the Immediate value 
+
+%% cli_tracker_begin(-Tracker) is det.
+%  Return a Tracker ref and all objects created from this point can be released via cli_tracker_free/1
+
+%% cli_tracker_free(+Tracker) is det.
+%  @see cli_tracker_begin/1
+
+%% cli_free(+TaggedObject) is det.
+%  remove a TaggedObject from the heap
+
+%% cli_heap(+TaggedObject) is det.
+%  Pin a TaggedObject onto the heap
+
+%% cli_throw(+Ex) is det.
+% throw an exception to .NET
+
+%% cli_break(+Ex) is det.
+%
+
+%=========================================
 
 %% cli_col(+Col,-Elem) 
 % iterates out Elems for Col
@@ -351,11 +235,11 @@ cli_collection(Obj,Ele):-cli_array_to_termlist(Obj,Vect),!,member(Ele,Vect).
 
 cli_col(X,Y):-cli_collection(X,Y).
 
-%------------------------------------------------------------------------------
+%=========================================
 
 cli_array_to_term_args(Array,Term):-cli_array_to_term(Array,array(_,Term)).
 
-%------------------------------------------------------------------------------
+%=========================================
 
 %% cli_col_add(+Col,+Item)
 % add an Item to Col
@@ -393,13 +277,13 @@ cli_fmt(String,Args):-cli_call('System.String','Format'('string','object[]'),[St
 %% cli_to_str(+Obj,-String) 
 % Resolves inner @(Obj)s to strings
 
-cli_to_str(Term,String):-catch(ignore(cli_to_str0(Term,String0)),_,true),copy_term(String0,String),numbervars(String,666,_).
-cli_to_str0(Term,Term):- not(compound(Term)),!.
-cli_to_str0(Term,String):-Term='@'(_),cli_is_object(Term),catch(cli_to_str_raw(Term,String),_,Term==String),!.
-cli_to_str0([A|B],[AS|BS]):-!,cli_to_str0(A,AS),cli_to_str0(B,BS).
-cli_to_str0(eval(Call),String):-nonvar(Call),!,call(Call,Result),cli_to_str0(Result,String).
-cli_to_str0(Term,String):-Term=..[F|A],cli_to_str0(A,AS),String=..[F|AS],!.
-cli_to_str0(Term,Term).
+cli_to_str(Term,String):-catch(ignore(hcli_to_str_0(Term,String0)),_,true),copy_term(String0,String),numbervars(String,666,_).
+hcli_to_str_0(Term,Term):- not(compound(Term)),!.
+hcli_to_str_0(Term,String):-Term='@'(_),cli_is_object(Term),catch(cli_to_str_raw(Term,String),_,Term==String),!.
+hcli_to_str_0([A|B],[AS|BS]):-!,hcli_to_str_0(A,AS),hcli_to_str_0(B,BS).
+hcli_to_str_0(eval(Call),String):-nonvar(Call),!,call(Call,Result),hcli_to_str_0(Result,String).
+hcli_to_str_0(Term,String):-Term=..[F|A],hcli_to_str_0(A,AS),String=..[F|AS],!.
+hcli_to_str_0(Term,Term).
 
 
 %% cli_new_prolog_collection(+PredImpl,+ElementType,-PBD)
@@ -542,43 +426,50 @@ cli_demo(PBC,PBD):- asserta(( add_new_flag(Flag) :- create_prolog_flag(Flag,_,[a
 
 
 
-%% cli_is_null(+Obj)
-% is null or void
-
-cli_is_null(Obj):-once(Obj='@'(null);Obj='@'(void)).
-
-
 
 %% cli_non_obj(+Obj) 
 % is null or void or var
-
 cli_non_obj(Obj):-once(var(Obj);(Obj='@'(null));(Obj='@'(void))).
-
 
 %% cli_non_null(+Obj)
 % is not null or void
-
 cli_non_null(Obj):- \+(cli_is_null(Obj)).
 
 
+%% cli_is_null(+Obj)
+% equiv to  Obj == @(null)
+cli_is_null(Obj):- Obj == @(null).
+%% cli_null(+Obj)
+% construct a null
+cli_null(@(null)).
+
+
+%% cli_is_true(+Obj) is det.
+%  equiv to  Obj == @(true)
 cli_is_true(Obj):- Obj == @(true).
+%% cli_true(+Obj)
+% construct a @(true)
 cli_true(@(true)).
 
 
-
+%% cli_is_false(+Obj) is det.
+%  equiv to  Obj == @(false)
 cli_is_false(Obj):- Obj== @(false).
+%% cli_false(+Obj)
+% construct a @(false)
 cli_false(@(false)).
 
-
-
+%% cli_is_void(+Obj) is det.
+%  equiv to  Obj == @(void)
 cli_is_void(Obj):- Obj== @(void).
+%% cli_void(+Obj)
+% construct a @(void)
 cli_void(@(void)).
 
 
-
+%% cli_is_type(+Obj) is det.
+%  equiv to cli_is_type(Obj,'System.Type')
 cli_is_type(Obj):-nonvar(Obj),cli_is_type(Obj,'System.Type').
-
-
 
 
 %% cli_is_object(+Obj) is det.
@@ -690,6 +581,8 @@ cli_map(Map,Key,Value):-cli_col(Map,Ele),cli_get(Ele,'Key',Key),cli_get(Ele,'Val
 cli_map_set(Map,Key,Value):-cli_call(Map,'[]'(type(Key)),[Key,Value],_).
 cli_map_add(Map,Key,Value):-cli_call(Map,'Add'(Key,Value),_).
 cli_map_remove(Map,Key,Value):-cli_map(Map,Key,Value),!,cli_call(Map,'Remove'(Key),_).
+%% cli_map_removeall(+Obj) is det.
+%
 cli_map_removeall(Map):-cli_call(Map,'Clear',_).
 cli_map_size(Map,Count):-cli_call(Map,'Count',Count).
 
@@ -717,7 +610,7 @@ L = 32,
 T = array('String', values(@null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null, @null)).
 */
 
-%% cli_array_to_list(+Arg1,+Arg2) is det.
+%% cli_array_to_list(+Obj,+Arg2) is det.
 %
 cli_array_to_list(Array,List):-cli_array_to_term(Array,array(_,Term)),Term=..[_|List].
 
@@ -849,23 +742,23 @@ cli_get(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_get(Obj,N,V)).
 cli_get(Obj,_,_):-cli_non_obj(Obj),!,fail.
 cli_get(Obj,[P],Value):-!,cli_get(Obj,P,Value).
 cli_get(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_get(M,N,Value),!.
-cli_get(Obj,P,ValueOut):-cli_getOverloaded(Obj,P,Value),!,cli_unify(Value,ValueOut).
+cli_get(Obj,P,ValueOut):-hcli_get_overloaded(Obj,P,Value),!,cli_unify(Value,ValueOut).
 
-cli_getOverloaded(Obj,_,_):-cli_non_obj(Obj),!,fail,throw(cli_non_obj(Obj)).
-cli_getOverloaded(Obj,P,Value):-cli_getHook(Obj,P,Value),!.
-cli_getOverloaded(Obj,P,Value):-compound(P),!,cli_call(Obj,P,Value),!.
-cli_getOverloaded(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
-cli_getOverloaded(Obj,P,Value):-not(atom(Obj)),cli_get_type(Obj,CType),!,cli_get_typeSubProps(CType,Sub),cli_get_rawS(Obj,Sub,SubValue),cli_getOverloaded(SubValue,P,Value),!.
+hcli_get_overloaded(Obj,_,_):-cli_non_obj(Obj),!,fail,throw(cli_non_obj(Obj)).
+hcli_get_overloaded(Obj,P,Value):-cli_get_hook(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):-compound(P),!,cli_call(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):-not(atom(Obj)),cli_get_type(Obj,CType),!,hcli_get_type_subprops(CType,Sub),hcli_get_raw_0(Obj,Sub,SubValue),hcli_get_overloaded(SubValue,P,Value),!.
 
-cli_get_rawS(Obj,[P],Value):-!,cli_get_rawS(Obj,P,Value).
-cli_get_rawS(Obj,[P|N],Value):-!,cli_get_rawS(Obj,P,M),cli_get_rawS(M,N,Value),!.
-cli_get_rawS(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
+hcli_get_raw_0(Obj,[P],Value):-!,hcli_get_raw_0(Obj,P,Value).
+hcli_get_raw_0(Obj,[P|N],Value):-!,hcli_get_raw_0(Obj,P,M),hcli_get_raw_0(M,N,Value),!.
+hcli_get_raw_0(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
 
-%%cli_get_typeSubProps(CType,Sub):-cli_ProppedType(
-cli_get_typeSubProps(CType,Sub):-cli_subproperty(Type,Sub),cli_subclass(CType,Type).
+%%hcli_get_type_subprops(CType,Sub):-cli_ProppedType(
+hcli_get_type_subprops(CType,Sub):-cli_subproperty(Type,Sub),cli_subclass(CType,Type).
 
-:-dynamic(cli_getHook/3).
-:-multifile(cli_getHook/3).
+:-dynamic(cli_get_hook/3).
+:-multifile(cli_get_hook/3).
 
 
 %% cli_set(+Obj, +PropTerm, +NewValue).
@@ -875,16 +768,16 @@ cli_set(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_set(Obj,N,V)).
 cli_set(Obj,_,_):-cli_non_obj(Obj),!,fail.
 cli_set(Obj,[P],Value):-!,cli_set(Obj,P,Value).
 cli_set(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_set(M,N,Value),!.
-cli_set(Obj,P,Value):-cli_setOverloaded(Obj,P,Value).
+cli_set(Obj,P,Value):-hcli_set_overloaded(Obj,P,Value).
 
-cli_setOverloaded(Obj,_,_):- cli_non_obj(Obj),!,fail.
-cli_setOverloaded(Obj,P,ValueI):-cli_expand(ValueI,Value),ValueI \== Value,!,cli_setOverloaded(Obj,P,Value).
-cli_setOverloaded(Obj,P,Value):-cli_setHook(Obj,P,Value),!.
-cli_setOverloaded(Obj,P,Value):-cli_subproperty(Type,Sub),cli_is_type(Obj,Type),cli_get_rawS(Obj,Sub,SubValue),cli_setOverloaded(SubValue,P,Value),!.
-cli_setOverloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
+hcli_set_overloaded(Obj,_,_):- cli_non_obj(Obj),!,fail.
+hcli_set_overloaded(Obj,P,ValueI):-cli_expand(ValueI,Value),ValueI \== Value,!,hcli_set_overloaded(Obj,P,Value).
+hcli_set_overloaded(Obj,P,Value):-cli_set_hook(Obj,P,Value),!.
+hcli_set_overloaded(Obj,P,Value):-cli_subproperty(Type,Sub),cli_is_type(Obj,Type),hcli_get_raw_0(Obj,Sub,SubValue),hcli_set_overloaded(SubValue,P,Value),!.
+hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
 
-:-dynamic(cli_setHook/3).
-:-multifile(cli_setHook/3).
+:-dynamic(cli_set_hook/3).
+:-multifile(cli_set_hook/3).
 
 
 
@@ -929,30 +822,36 @@ cli_to_data(_,Term,Term):- not(compound(Term)),!.
 %%cli_to_data(_Objs,[A|B],[A|B]):-!.
 cli_to_data(_Objs,[A|B],[A|B]):-'\+' '\+' A=[_=_],!.
 cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
-cli_to_data(Objs,Term,String):-cli_is_tagged(Term),!,cli_gettermData(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
-cli_to_data(Objs,Term,FAS):-Term=..[F|A],cli_to_data1(Objs,F,A,Term,FAS).
+cli_to_data(Objs,Term,String):-cli_is_tagged(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
+cli_to_data(Objs,Term,FAS):-Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
 
-cli_to_data1(_Objs,struct,_A,Term,Term):-!.
-cli_to_data1(_Objs,object,_A,Term,Term):-!.
-cli_to_data1(_Objs,enum,_A,Term,Term):-!.
+hcli_to_data_1(_Objs,struct,_A,Term,Term):-!.
+hcli_to_data_1(_Objs,object,_A,Term,Term):-!.
+hcli_to_data_1(_Objs,enum,_A,Term,Term):-!.
 
-cli_to_data1(Objs,F,A,_Term,String):-cli_to_data(Objs,A,AS),!,String=..[F|AS].
+hcli_to_data_1(Objs,F,A,_Term,String):-cli_to_data(Objs,A,AS),!,String=..[F|AS].
 
-cli_gettermData(Objs,Term,String):-cli_get_type(Term,Type),cli_props_for_type(Type,Props),cli_getMap(Objs,Term,Props,Name,Value,Name=Value,Mid),!,cli_to_data(Objs,Mid,String).
-cli_gettermData(Objs,Term,Mid):-cli_getterm(Objs,Term,Mid),!.
+%% hcli_get_termdata(+Obj,+Arg2,+Arg3) is det.
+%
+hcli_get_termdata(Objs,Term,String):-cli_get_type(Term,Type),cli_props_for_type(Type,Props),hcli_getmap(Objs,Term,Props,Name,Value,Name=Value,Mid),!,cli_to_data(Objs,Mid,String).
+hcli_get_termdata(Objs,Term,Mid):-cli_getterm(Objs,Term,Mid),!.
 
 
-cli_getMap(Objs,Term,_,_,_,_,List):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Objs,E,ED)),List),!.
-cli_getMap(Objs,Term,Props,Name,Value,NameValue,List):-cli_getMap1(Objs,Term,Props,Name,Value,NameValue,List).
+hcli_getmap(Objs,Term,_,_,_,_,List):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Objs,E,ED)),List),!.
+hcli_getmap(Objs,Term,Props,Name,Value,NameValue,List):-hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List).
 
-cli_getMap1(Objs,Term,Props,Name,Value,NameValue,List):-findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
+hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):-findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
 
 
 %% cli_with_lock(+Lock,+Call)
 % 
 %  Lock the first arg while calling Call
-
 cli_with_lock(Lock,Call):-setup_call_cleanup(cli_lock_enter(Lock),Call,cli_lock_exit(Lock)).
+
+%% cli_lock_enter(+LockObj) is det.
+% Does a Monitor.Enter on LockObj
+%% cli_lock_exit(+LockObj) is det.
+% Does a Monitor.Exit on LockObj
 
 
 
@@ -964,10 +863,10 @@ cli_with_gc(Call):-setup_call_cleanup(cli_tracker_begin(Mark),Call,cli_tracker_f
 
 
 
-%% cli_make_list(+Arg1,+Arg2,+Arg3) is det.
+%% cli_make_list(+Obj,+Arg2,+Arg3) is det.
 % @see  cli_new_list_1/2
 
-%% cli_new_list_1(+Arg1,+Arg2,+Arg3) is det.
+%% cli_new_list_1(+Obj,+Arg2,+Arg3) is det.
 % @see cli_make_list/2
 
 cli_new_list_1(Item,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),cli_call(List,add(Item),_).
@@ -1013,7 +912,7 @@ cli_eval(Engine,Name,Value):- cli_eval_hook(Engine,Name,Value),!,cli_debug(cli_e
 cli_eval(Engine,Name,Value):- Value=cli_eval(Engine,Name),cli_debug(cli_eval(Name,Value)),!.
 cli_eval_hook(Engine,In,Out):- catch(call((In,Out=In)),E,Out= foobar(Engine,In,E)).
 cli_is_defined(_Engine,Name):-cli_debug(cli_not_is_defined(Name)),!,fail.
-cli_getSymbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_UnDefined(Name)),!,cli_debug(cli_getSymbol(Name,Value)),!.
+cli_get_symbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_UnDefined(Name)),!,cli_debug(cli_get_symbol(Name,Value)),!.
 
 %:-use_module(library(jpl)).
 %:-use_module(library(pce)).
@@ -1042,447 +941,433 @@ cli_notrace(Call):-call(Call).
 :-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
 
 
-%% cli_new_delegate(+Arg1,+Arg2,+Arg3) is det.
-%
 
-%% cli_true(+Arg1) is det.
-%
-
-%% member_elipse(+Arg1,+Arg2) is det.
-%
-
-%% cli_setHook(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_get_typeSubProps(+Arg1,+Arg2) is det.
-%
-
-%% cli_type_from_class(+Arg1,+Arg2) is det.
-%
-
-%% cli_subclass(+Arg1,+Arg2) is det.
-%
-
-
-%% cli_expand(+Arg1,+Arg2) is det.
-%
-
-%% cli_find_class(+Arg1,+Arg2) is det.
-%
-
-%% cli_add_layout(+Arg1,+Arg2) is det.
-%
-
-
-%% cli_new_prolog_dictionary(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-
-%% cli_cast_immediate(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_writeln(+Arg1) is det.
-%
-
-%% cli_subproperty(+Arg1,+Arg2) is det.
-%
-
-%% cli_map_size(+Arg1,+Arg2) is det.
-%
-
-%% cli_members(+Arg1,+Arg2) is det.
-%
-
-%% cli_halt(+Arg1) is det.
-%
-
-%% cli_col_removeall(+Arg1) is det.
-%
-
-%% cli_map_add(+Arg1,+Arg2,+Arg3) is det.
-%
-
-
-%% cli_set_raw(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_col_contains(+Arg1,+Arg2) is det.
-%
-
-%% cli_call_raw(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_void(+Arg1) is det.
-%
-
-%% cli_to_data(+Arg1,+Arg2) is det.
-%
-
-%% cli_col(+Arg1,+Arg2) is det.
-%
-
-%% cli_test_array_to_term2(+Arg1) is det.
-%
-
-%% cli_to_data1(+Arg1,+Arg2,+Arg3,+Arg4,+Arg5) is det.
-%
-
-%% cli_get_type_fullname(+Arg1,+Arg2) is det.
-%
-
-%% cli_is_true(+Arg1) is det.
-%
-
-%% cli_lock_enter(+Arg1) is det.
-%
-
-%% cli_memb(+Arg1,+Arg2) is det.
-%
-
-%% cli_class_from_type(+Arg1,+Arg2) is det.
-%
-
-%% cli_get_rawS(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_getSymbol(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_find_type(+Arg1,+Arg2) is det.
-%
-
-%% cli_get(+Arg1,+Arg2) is det.
-%
-
-%% cli_to_from_recomposer(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_test_pbdt(+Arg1,+Arg2) is det.
-%
-
-%% cli_new(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_intern(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_to_str0(+Arg1,+Arg2) is det.
-%
-
-%% cli_load_lib(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_map_removeall(+Arg1) is det.
-%
-
-%% cli_sublist(+Arg1,+Arg2) is det.
-%
-
-%% cli_fmt(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_heap(+Arg1) is det.
-%
-
-%% cli_member_doc(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_immediate_object(+Arg1,+Arg2) is det.
-%
-
-%% cli_col_size(+Arg1,+Arg2) is det.
-%
-
-%% cli_to_str_raw(+Arg1,+Arg2) is det.
-%
-
-%% cli_memb(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_getMap(+Arg1,+Arg2,+Arg3,+Arg4,+Arg5,+Arg6,+Arg7) is det.
-%
-
-%% cli_is_void(+Arg1) is det.
-%
-
-
-%% cli_test_array_to_term1(+Arg1) is det.
-%
-
-%% cli_enumerator_element(+Arg1,+Arg2) is det.
-%
-
-%% cli_set(+Arg1,+Arg2) is det.
-%
-
-%% cli_false(+Arg1) is det.
-%
-
-%% cli_find_constructor(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_get_classname(+Arg1,+Arg2) is det.
-%
-
-%% module_functor(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_collection(+Arg1,+Arg2) is det.
-%
-
-%% cli_non_null(+Arg1) is det.
-%
-
-%% cli_getOverloaded(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_get_class(+Arg1,+Arg2) is det.
-%
-
-%% cli_load_type(+Arg1) is det.
-%
-
-%% cli_demo(+Arg1,+Arg2) is det.
-%
-
-%% cli_eval(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_unify(+Arg1,+Arg2) is det.
-%
-
-
-%% cli_with_collection(+Arg1) is det.
-%
-
-%% cli_interned(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_typespec(+Arg1,+Arg2) is det.
-%
-
-%% cli_call(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_test_pbd(+Arg1,+Arg2) is det.
-%
-
-%% cli_throw(+Arg1) is det.
-%
-
-%% cli_set(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_free(+Arg1) is det.
-%
-
-%% cli_fmt(+Arg1,+Arg2) is det.
-%
-
-%% cli_new_list_1(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_getMap1(+Arg1,+Arg2,+Arg3,+Arg4,+Arg5,+Arg6,+Arg7) is det.
-%
-
-%% cli_getterm(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_map_remove(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_call(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_java_to_string(+Arg1,+Arg2) is det.
-%
-
-%% cli_to_tagged(+Arg1,+Arg2) is det.
-%
-
-%% cli_write(+Arg1) is det.
-%
-
-%% cli_map_set(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_col_remove(+Arg1,+Arg2) is det.
-%
-
-%% cli_to_data(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_get_raw(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_term_to_array(+Arg1,+Arg2) is det.
-%
-
-%% cli_col_add(+Arg1,+Arg2) is det.
-%
-
-%% cli_lock_exit(+Arg1) is det.
-%
-
-%% cli_iterator_element(+Arg1,+Arg2) is det.
-%
-
-
-%% cli_array_to_term(+Arg1,+Arg2) is det.
-%
-
-%% cli_array_to_term_args(+Arg1,+Arg2) is det.
-%
-
-%% cli_setOverloaded(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_shorttype(+Arg1,+Arg2) is det.
-%
-
-%% to_string(+Arg1,+Arg2) is det.
-%
-
-%% cli_is_false(+Arg1) is det.
-%
-
-%% cli_new(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_is_defined(+Arg1,+Arg2) is det.
-%
-
-%% cli_getHook(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_get_type(+Arg1,+Arg2) is det.
-%
-
-%% cli_is_null(+Arg1) is det.
-%
-
-%% cli_non_obj(+Arg1) is det.
-%
-
-%% cli_remove_event_handler(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_lib_call(+Arg1,+Arg2) is det.
-%
-
-%% cli_eval_hook(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_new_prolog_collection(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_debug(+Arg1) is det.
-%
-
-%% cli_break(+Arg1) is det.
-%
-
-%% cli_to_from_layout(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_array_to_length(+Arg1,+Arg2) is det.
-%
-
-%% cli_preserve(+Arg1,+Arg2) is det.
-%
-
-%% cli_tracker_free(+Arg1) is det.
-%
-
-%% cli_cast(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_to_str(+Arg1,+Arg2) is det.
-%
-
-%% cli_remove_tag(+Arg1) is det.
-%
-
-%% cli_halt is det.
-%
-
-%% cli_props_for_type(+Arg1,+Arg2) is det.
-%
-
-%% cli_with_lock(+Arg1,+Arg2) is det.
-%
-
-%% cli_delegate_term(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_get(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_array_to_termlist(+Arg1,+Arg2) is det.
-%
-
-%% cli_gettermData(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_get_property(+Arg1,+Arg2,+Arg3,+Arg4) is det.
-%
-
-%% cli_find_method(+Arg1,+Arg2,+Arg3) is det.
-%
-
-%% cli_is_type(+Arg1) is det. 
-%
-
-end_of_file.
-
-
-
-
-15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
-"127"is"System.SByte"
-O = @'C#283319280',
-T = @'C#283324332'.
-
-16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
-"127"is"System.Int64"
-O = @'C#283345876',
-T = @'C#283345868'.
-
-17 ?- cli_to_tagged(ulong(127),O),cli_get_type(O,T),cli_writeln(O is T).
-"127"is"System.UInt64"
-O = @'C#283346772',
-T = @'C#283346760'.
-
-15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
-"127"is"System.SByte"
-O = @'C#283319280',
-T = @'C#283324332'.
-
-16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
-"127"is"System.Int64"
-O = @'C#283345876',
-T = @'C#283345868'.
-
-18 ?- cli_to_tagged(343434127,O),cli_get_type(O,T),cli_writeln(O is T).
-"343434127"is"System.Int32"
-O = @'C#281925284',
-T = @'C#281925280'.
-
-19 ?- cli_to_tagged(3434341271,O),cli_get_type(O,T),cli_writeln(O is T).
-"3434341271"is"System.UInt64"
-O = @'C#281926616',
-T = @'C#283346760'.
-
-21 ?- cli_to_tagged(343434127111,O),cli_get_type(O,T),cli_writeln(O is T).
-"343434127111"is"System.UInt64"
-O = @'C#281930092',
-T = @'C#283346760'.
-
-28 ?- cli_to_tagged(34343412711111111111111111111111111111,O),cli_get_type(O,T),cli_writeln(O is T).
-"34343412711111111111111111111111111111"is"java.math.BigInteger"
-O = @'C#281813796',
-T = @'C#281810860'.
+%% link_swiplcs(+PathName) is det.
+%% cli_add_layout(+ClazzSpec,+MemberSpec) is det.
+%% cli_array_to_term(+ArrayValue,-Value) is det.
+%% cli_array_to_termlist(+ArrayValue,-Value) is det.
+%% cli_call_raw(+ClazzOrInstance,+MemberSpec,+Params,-Value) is det.
+%% cli_cast(+Value,+ClazzSpec,-Value) is det.
+%% cli_cast_immediate(+Value,+ClazzSpec,-Value) is det.
+%% cli_class_from_type(+Value,-Value) is det.
+%% cli_delegate_term(+TypeFi,+PrologPred,+BooleanSaveKey) is det.
+%% cli_find_class(+ClazzName,-ClazzObject) is det.
+%% cli_find_constructor(+ClazzSpec,+MemberSpec,-Method) is det.
+%% cli_find_method(+ClazzOrInstance,+MemberSpec,-Method) is det.
+%% cli_find_type(+ClazzSpec,+ClassRef) is det.
+%% cli_get_class(+Value,-Value) is det.
+%% cli_get_classname(+Value,-Value) is det.
+%% cli_get_property(+ClazzOrInstance,+MemberSpec,+IndexValues,-Value) is det.
+%% cli_get_raw(+ClazzOrInstance,+MemberSpec,-Value) is det.
+%% cli_get_type(+Value,-Value) is det.
+%% cli_get_type_fullname(+Value,-Value) is det.
+%% cli_getterm(+ValueCol,+Value,-Value) is det.
+%% cli_java_to_string(+Param,-Value) is det.
+%% cli_load_type(+TypeT) is det.
+%% cli_member_doc(+Memb,+Doc,+Xml) is det.
+%% cli_members(+ClazzOrInstance,-Members) is det.
+%% cli_new(+ClazzSpec,+MemberSpec,+Param,-Value) is det.
+%% cli_new_array(+ClazzSpec,+Rank,-Value) is det.
+%% cli_new_delegate(+DelegateClass,+PrologPred,-Value) is det.
+%% cli_props_for_type(+ClazzSpec,+MemberSpecs) is det.
+%% cli_set_raw(+ClazzOrInstance,+MemberSpec,+Param) is det.
+%% cli_shorttype(+ValueName,+Value) is det.
+%% cli_term_to_array(+ArrayValue,-Value) is det.
+%% cli_to_from_layout(+ClazzSpec,+MemberSpec,+ToSpec) is det.
+%% cli_to_from_recomposer(+ClazzSpec,+MemberSpec,+Obj2r,+R2obj) is det.
+%% cli_to_str_raw(+Obj,+Str) is det.
+%% cli_type_from_class(+Value,-Value) is det.
+% need doc!
+
+% ===================================================
+% test preds
+% ===================================================
+
+%% cli_test_array_to_term1(-Value) is det.
+%% cli_test_array_to_term2(-Value) is det.
+%% cli_test_opt(+Incoming,?REFInt32Outbound) is det.
+%% cli_test_opt(+Incoming,+StringOptionalstr,?REFInt32Outbound) is det.
+%% cli_test_out(+Incoming,?REFInt32Outbound) is det.
+%% cli_test_pbc(+Pred,+Counted) is det.
+%% cli_test_pbct(+Pred,+Counted) is det.
+%% cli_test_pbd(+Pred,+Counted) is det.
+%% cli_test_pbdt(+Pred,+Counted) is det.
+%% cli_test_ref(+Incoming,?REFInt32Outbound) is det.
+%% cli_test_ref(+Incoming,?REFStringOptionalstr,?REFInt32Outbound) is det.
+%% cli_test_var_arg(?REFInt32Outbound,+ArrayOfInt32Incoming) is det.
+% Assembly definition test preds for Examples
+
+/** <module> SWI-Prolog 2-Way interface to .NET/Mono
+
+*Introduction*
+
+This is an overview of an interface which allows SWI-Prolog programs to dynamically create and manipulate .NET objects. 
+
+Here are some significant features of the interface and its implementation: 
+
+* API is similar to that of XPCE: the four main interface calls are cli_new, cli_call, cli_set and cli_get (there is a single cli_free, though .NET's garbage collection is extended transparently into Prolog) 
+* Uses @/1 to construct representations of certain .NET values; if  @/1 is defined as a prefix operator (as used by XPCE), then you can write @false, @true, @null etc. in your source code; otherwise (and for portability) you'll have to write e.g. @(true) etc. 
+* cli_call/4 (modeled from JPL's jpl_call/4) resolves overloaded methods automatically and dynamically, inferring the types of the call's actual parameters, and identifying the most specific of the applicable method implementations (similarly, cli_new resolves overloaded constructors)
+* Completely dynamic: no precompilation is required to manipulate any .NET classes which can be found at run time, and any objects which can be instantiated from them 
+* Interoperable with SwiPlCS's .NET API (which has evolved from Uwe Lesta's SwiPlCS) 
+* Exploits the Invocation API of the .NET P/Invoke Interface: this is a mandatory feature of any compliant .NET 
+* Implemented with a fair amount of C# code and Prolog code in one module (swicli.pl)  (which I believe to be ISO Standard Prolog compliant and portable) and a SWI-Prolog-specific foreign library (swicli[32].dll for Windows and swicli[32].so *nix), implemented in ANSI C but making a lot of use of the SWI-Prolog Foreign Language Interface Then uses Swicli.Library.dll (Managed binary) that runs on both Mono and .NET runtimes. 
+* the Prolog-calls-CLI (mine) and CLI-calls-Prolog (Ewe's) parts of SWICLI are largely independent; mine concentrates on representing all .NET data values and objects within Prolog, and supporting manipulation of objects; Ewe's concentrates on representing any Prolog term within .NET, and supporting the calling of goals within Prolog and the retrieving of results back into .NET 
+* @(terms) are canonical (two references are ==/2 equal if-and-only-if they refer to the same object within the .NET) 
+* are represented as structures containing a distinctive atom so as to exploit SWI-Prolog's atom garbage collection: when an object reference is garbage-collected in Prolog, the .NET garbage collector is informed, so there is sound and complete overall garbage collection of .NET objects within the combined Prolog+.NET system 
+* .NET class methods can be called by name: SWICLI invisibly fetches (and caches) essential details of method invocation, exploiting .NET Reflection facilities 
+* Reason about the types of .NET data values, object references, fields and methods: SWICLI supports a canonical representation of all .NET types as structured terms (e.g. array(array(byte))) and also as atomic .NET signatures 
+* when called from Prolog, void methods return a @(void) value (which is distinct from all other SWICLI values and references) 
+* Tested on Windows XP, Windows7 and Fedora Linux, but is believed to be readily portable to SWI-Prolog on other platforms as far as is feasible, .NET data values and object references are represented within Prolog canonically and without loss of information (minor exceptions: .NET float and double values are both converted to Prolog float values; .NET byte, char, short, int and long values are all converted to Prolog integer values; the type distinctions which are lost are normally of no significance) 
+* Requires .NET 2.0 and class libraries (although it doesn't depend on any .NET 2-specific facilities, and originally was developed for use with both 1.0 thru 4.0 .NETs, I haven't tested it with 1.0 recently, and don't support this) 
+
+==
+
+?- use_module(library(swicli)).
+
+?- cli_call('System.Threading.ThreadPool','GetAvailableThreads'(X,Y),_).
+
+X=499, Y=1000
+
+==
 
 ?- cli_call('System.Environment','Version',X),cli_writeln(X).
 "2.0.50727.5448"
 X = @'C#499252128'.
+
+
+==
+Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/SwiCLI
+
+
+@see	CSharp.txt
+	
+@author	Douglas Miles
+
+*/
+
+%
+%    ?- cli_new('System.Collections.Generic.List'('System.String'),[int],[10],Obj).
+%    Obj = @'C#516939544'.
+%
+%
+%    ?- cli_get($Obj,'Count',Out).
+%    Out = 0.
+%
+%
+%    ?- cli_call($Obj,'Add'("foo"),Out).
+%    Out = @void.
+%
+%
+%    ?- cli_call($Obj,'Add'("bar"),Out).
+%    Out = @void.
+%
+%
+%    ?- cli_get($Out,'Count',Out).
+%    Out = 2.
+%
+%
+%    ?- cli_col($Obj,E).
+%    E = "foo" ;
+%    E = "bar" ;
+%    false.
+%
+%
+%    ?- cli_get_type($Obj,Type),cli_get_typename(Type,Name).
+%    Type = @'C#516939520',
+%    Name = 'System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]'.
+%
+%
+%    ?- cli_get_type($Obj,Type), cli_typespec(Type,Name).
+%    Type = @'C#516939520',
+%    Name = 'System.Collections.Generic.List'('String').
+%
+%
+%    ?- cli_shorttype(stringl,'System.Collections.Generic.List'('String')).
+%    true.
+%
+%
+%    ?- cli_new(stringl,[],O).
+%    O = @'C#516939472'.
+%
+%
+%    ?- cli_get_type($O,Type),cli_typespec(Type,Name).
+%    Type = @'C#516939520',
+%    Name = 'System.Collections.Generic.List'('String').
+%
+%    
+%    
+%    [debug] 3 ?- cli_new('System.Collections.Generic.List'(string),[int],[10],O),cli_members(O,M),!,member(E,M),writeq(E),nl,fail.
+%    f(0,'_items'(arrayOf('String')))
+%    f(1,'_size'('Int32'))
+%    f(2,'_version'('Int32'))
+%    f(3,'_syncRoot'('Object'))
+%    f(4,'_emptyArray'(arrayOf('String')))
+%    f(5,'_defaultCapacity'('Int32'))
+%    p(0,'Capacity'('Int32'))
+%    p(1,'Count'('Int32'))
+%    p(2,'System.Collections.IList.IsFixedSize'('Boolean'))
+%    p(3,'System.Collections.Generic.ICollection<T>.IsReadOnly'('Boolean'))
+%    p(4,'System.Collections.IList.IsReadOnly'('Boolean'))
+%    p(5,'System.Collections.ICollection.IsSynchronized'('Boolean'))
+%    p(6,'System.Collections.ICollection.SyncRoot'('Object'))
+%    p(7,'Item'('String'))
+%    p(8,'System.Collections.IList.Item'('Object'))
+%    m(0,'ConvertAll'('Converter'('String',<)))
+%    m(1,get_Capacity)
+%    m(2,set_Capacity('Int32'))
+%    m(3,get_Count)
+%    m(4,'System.Collections.IList.get_is_FixedSize')
+%    m(5,'System.Collections.Generic.ICollection<T>.get_is_ReadOnly')
+%    m(6,'System.Collections.IList.get_is_ReadOnly')
+%    m(7,'System.Collections.ICollection.get_is_Synchronized')
+%    m(8,'System.Collections.ICollection.get_SyncRoot')
+%    m(9,get_item('Int32'))
+%    m(10,set_item('Int32','String'))
+%    m(11,'IsCompatibleObject'('Object'))
+%    m(12,'VerifyValueType'('Object'))
+%    m(13,'System.Collections.IList.get_item'('Int32'))
+%    m(14,'System.Collections.IList.set_item'('Int32','Object'))
+%    m(15,'Add'('String'))
+%    m(16,'System.Collections.IList.Add'('Object'))
+%    m(17,'AddRange'('System.Collections.Generic.IEnumerable'('String')))
+%    m(18,'AsReadOnly')
+%    m(19,'BinarySearch'('Int32','Int32','String','System.Collections.Generic.IComparer'('String')))
+%    m(20,'BinarySearch'('String'))
+%    m(21,'BinarySearch'('String','System.Collections.Generic.IComparer'('String')))
+%    m(22,'Clear')
+%    m(23,'Contains'('String'))
+%    m(24,'System.Collections.IList.Contains'('Object'))
+%    m(25,'CopyTo'(arrayOf('String')))
+%    m(26,'System.Collections.ICollection.CopyTo'('Array','Int32'))
+%    m(27,'CopyTo'('Int32',arrayOf('String'),'Int32','Int32'))
+%    m(28,'CopyTo'(arrayOf('String'),'Int32'))
+%    m(29,'EnsureCapacity'('Int32'))
+%    m(30,'Exists'('System.Predicate'('String')))
+%    m(31,'Find'('System.Predicate'('String')))
+%    m(32,'FindAll'('System.Predicate'('String')))
+%    m(33,'FindIndex'('System.Predicate'('String')))
+%    m(34,'FindIndex'('Int32','System.Predicate'('String')))
+%    m(35,'FindIndex'('Int32','Int32','System.Predicate'('String')))
+%    m(36,'FindLast'('System.Predicate'('String')))
+%    m(37,'FindLastIndex'('System.Predicate'('String')))
+%    m(38,'FindLastIndex'('Int32','System.Predicate'('String')))
+%    m(39,'FindLastIndex'('Int32','Int32','System.Predicate'('String')))
+%    m(40,'ForEach'('System.Action'('String')))
+%    m(41,'GetEnumerator')
+%    m(42,'System.Collections.Generic.IEnumerable<T>.GetEnumerator')
+%    m(43,'System.Collections.IEnumerable.GetEnumerator')
+%    m(44,'GetRange'('Int32','Int32'))
+%    m(45,'IndexOf'('String'))
+%    m(46,'System.Collections.IList.IndexOf'('Object'))
+%    m(47,'IndexOf'('String','Int32'))
+%    m(48,'IndexOf'('String','Int32','Int32'))
+%    m(49,'Insert'('Int32','String'))
+%    m(50,'System.Collections.IList.Insert'('Int32','Object'))
+%    m(51,'InsertRange'('Int32','System.Collections.Generic.IEnumerable'('String')))
+%    m(52,'LastIndexOf'('String'))
+%    m(53,'LastIndexOf'('String','Int32'))
+%    m(54,'LastIndexOf'('String','Int32','Int32'))
+%    m(55,'Remove'('String'))
+%    m(56,'System.Collections.IList.Remove'('Object'))
+%    m(57,'RemoveAll'('System.Predicate'('String')))
+%    m(58,'RemoveAt'('Int32'))
+%    m(59,'RemoveRange'('Int32','Int32'))
+%    m(60,'Reverse')
+%    m(61,'Reverse'('Int32','Int32'))
+%    m(62,'Sort')
+%    m(63,'Sort'('System.Collections.Generic.IComparer'('String')))
+%    m(64,'Sort'('Int32','Int32','System.Collections.Generic.IComparer'('String')))
+%    m(65,'Sort'('System.Comparison'('String')))
+%    m(66,'ToArray')
+%    m(67,'TrimExcess')
+%    m(68,'TrueForAll'('System.Predicate'('String')))
+%    m(69,'ToString')
+%    m(70,'Equals'('Object'))
+%    m(71,'GetHashCode')
+%    m(72,'GetType')
+%    m(73,'Finalize')
+%    m(74,'MemberwiseClone')
+%    c(0,'List`1')
+%    c(1,'List`1'('Int32'))
+%    c(2,'List`1'('System.Collections.Generic.IEnumerable'('String')))
+%    c(3,'List`1')
+%    
+%    2 ?- botget([self,simposition],X).
+%    X = struct('Vector3', 153.20449829101562, 44.02702713012695, 63.06859588623047).
+%    
+%    cli_get_type(struct('Vector3', 153.20449829101562, 44.02702713012695, 63.06859588623047),T),cli_writeln(T).
+%    
+%    cli_writeln(struct('Vector3', 153.20449829101562, 44.02702713012695, 63.06859588623047)).
+%    
+%    cli_typeToSpec/2
+%    
+%    cli_SpecToType/2
+%    
+%     Just file storage now...
+%    
+%     [debug] 8 ?- cli_new('System.Collections.Generic.Dictionary'(string,string),[],[],O),cli_get(O,count,C)
+%    
+%     cli_new('System.Collections.Generic.List'(string),[int],[10],O),cli_get_type(O,T),cli_writeln(T).
+%    
+%     cli_new('System.Collections.Generic.List'(string),[int],[10],O),cli_members(O,M)
+%    
+%     ERROR: findField IsVar _g929 on type System.Collections.Generic.Dictionary`2[System.String,System.String]
+%    ERROR: findProperty IsVar _g929 on type System.Collections.Generic.Dictionary`2[System.String,System.String]
+%       Call: (9) message_to_string('Only possible for compound or atoms', _g1079) ? leap
+%    
+%    cli_ShortType(dict,'System.Collections.Generic.Dictionary`2').
+%    
+%    cli_find_type(dict(string,string),Found).
+%    
+%    12 ?- cli_find_class('System.Collections.Generic.Dictionary'('int','string'),X),cli_to_str(X,Y).
+%    X = @'C#592691552',
+%    Y = "class cli.System.Collections.Generic.Dictionary$$00602_$$$_i_$$_Ljava_lang_String_$$$$_".
+%    
+%    13 ?- cli_find_type('System.Collections.Generic.Dictionary'('int','string'),X),cli_to_str(X,Y).
+%    X = @'C#592687600',
+%    Y = "System.Collections.Generic.Dictionary`2[System.Int32,System.String]".
+%    
+%    
+%    ?- cli_find_type('System.Collections.Generic.Dictionary'(string,string),NewObj).
+%    
+%    ?- cli_new('System.Collections.Generic.Dictionary'(string,string),NewObj).
+%    %=========================================
+%    %=========================================
+%    5 ?- grid_object(O),cli_get(O,simregion,X),cli_to_str(X,S).
+%    O = @'C#701938432',
+%    X = @'C#702256808',
+%    S = "Belphegor (216.82.46.79:13005)" .
+%    
+%    4 ?- grid_object(O),cli_get(O,name,X),cli_to_str(X,S).
+%    O = @'C#701938432',
+%    X = S, S = "BinaBot Daxeline" .
+%    
+%    5 ?- grid_object(O),cli_get(O,simulator,X),cli_to_str(X,S).
+%    O = @'C#701938432',
+%    X = @'C#701938424',
+%    S = "Belphegor (216.82.46.79:13005)" .
+%    
+%    1 ?- grid_object(O),cli_get(O,'Type',X),cli_to_str(X,S).
+%    O = @'C#679175768',
+%    X = @'C#679175760',
+%    S = "cogbot.TheOpenSims.SimAvatarImpl" .
+%    
+%    7 ?- cli_get('cogbot.Listeners.WorldObjects','SimObjects',Objs),cli_get(Objs,'count',X).
+%    Objs = @'C#585755456',
+%    X = 5905.
+%    
+%    
+%    22 ?- current_bot(X),cli_members(X,M),cli_to_str(M,S).
+%    X = @'C#585755312',
+%    M = [m('GetFolderItems'('String')), m('GetFolderItems'('UUID')), m('SetRadegastLoginOptions'), m('GetGridIndex'('String', 'Int32&')), m('SetRadegastLoginForm'('LoginConsole', 'LoginOptions')), m('GetLoginOptionsFromRadegast'), m('ShowTab'('String')), m('AddTab'(..., ..., ..., ...)), m(...)|...],
+%    S = "[m(GetFolderItems(String)),m(GetFolderItems(UUID)),m(SetRadegastLoginOptions),m(GetGridIndex(String,Int32&)),m(SetRadegastLoginForm(LoginConsole,LoginOptions)),m(GetLoginOptionsFromRadegast),m(ShowTab(String)),m(AddTab(String,String,UserControl,EventHandler)),m(InvokeThread(String,ThreadStart)),m(InvokeGUI(Control,ThreadStart)),m(InvokeGUI(ThreadStart)),m(GetSecurityLevel(UUID)),m(ExecuteTask(String,TextReader,OutputDelegate)),m(DoHttpGet(String)),m(DoHttpPost(arrayOf(Object))),m(ExecuteXmlCommand(String,OutputDelegate)),m(XmlTalk(String,OutputDelegate)),m(DoAnimation(String)),m(GetAnimationOrGesture(String)),m(Talk(String)),m(Talk(String,Int32,ChatType)),m(InstantMessage(UUID,String,UUID)),m(NameKey),m(get_EventsEnabled),m(set_EventsEnabled(Boolean)),m(<.ctor>b_0),m(<.ctor>b_1),m(<.ctor>b_2),m(<.ctor>b_3),m(<.ctor>b_4),m(<DoAnimation>b_34),m(op_implicit(current_bot)),m(get_network),m(get_Settings),m(get_Parcels),m(get_Self),m(get_Avatars),m(get_Friends),m(get_grid),m(get_Objects),m(get_groups),m(get_Assets),m(get_Estate),m(get_Appearance),m(get_inventory),m(get_directory),m(get_terrain),m(get_Sound),m(get_throttle),m(OnEachSimEvent(SimObjectEvent)),m(add_EachSimEvent(EventHandler`1)),m(remove_EachSimEvent(EventHandler`1)),m(get_is_LoggedInAndReady),m(Login),m(Login(Boolean)),m(LogException(String,Exception)),m(get_BotLoginParams),m(GetBotCommandThreads),m(AddThread(Thread)),m(RemoveThread(Thread)),m(getPosterBoard(Object)),m(get_masterName),m(set_masterName(String)),m(get_masterKey),m(set_masterKey(UUID)),m(get_AllowObjectMaster),m(get_is_RegionMaster),m(get_theRadegastInstance),m(set_theRadegastInstance(RadegastInstance)),m(IMSent(Object,InstantMessageSentEventArgs)),m(add_OnInstantMessageSent(InstantMessageSentArgs)),m(remove_OnInstantMessageSent(InstantMessageSentArgs)),m(SetLoginName(String,String)),m(SetLoginAcct(LoginDetails)),m(LoadTaskInterpreter),m(StartupClientLisp),m(RunOnLogin),m(SendResponseIM(GridClient,UUID,OutputDelegate,String)),m(updateTimer_Elapsed(Object,ElapsedEventArgs)),m(AgentDataUpdateHandler(Object,PacketReceivedEventArgs)),m(GroupMembersHandler(Object,GroupMembersReplyEventArgs)),m(AvatarAppearanceHandler(Object,PacketReceivedEventArgs)),m(AlertMessageHandler(Object,PacketReceivedEventArgs)),m(ReloadGroupsCache),m(GroupName2UUID(String)),m(Groups_OnCurrentGroups(Object,CurrentGroupsEventArgs)),m(Self_OnTeleport(Object,TeleportEventArgs)),m(Self_OnChat(Object,ChatEventArgs)),m(Self_OnInstantMessage(Object,InstantMessageEventArgs)),m(DisplayNotificationInChat(String)),m(Inventory_OnInventoryObjectReceived(Object,InventoryObjectOfferedEventArgs)),m(Network_OnDisconnected(Object,DisconnectedEventArgs)),m(EnsureConnectedCheck(DisconnectType)),m(Network_OnConnected(Object)),m(Network_OnSimDisconnected(Object,SimDisconnectedEventArgs)),m(Client_OnLogMessage(Object,LogLevel)),m(Network_OnEventQueueRunning(Object,EventQueueRunningEventArgs)),m(Network_OnSimConnected(Object,SimConnectedEventArgs)),m(Network_OnSimConnecting(Simulator)),m(Network_OnLogoutReply(Object,LoggedOutEventArgs)),m(UseInventoryItem(String,String)),m(ListObjectsFolder),m(wearFolder(String)),m(PrintInventoryAll),m(findInventoryItem(String)),m(logout),m(WriteLine(String)),m(DebugWriteLine(String,arrayOf(Object))),m(WriteLine(String,arrayOf(Object))),m(output(String)),m(describeAll(Boolean,OutputDelegate)),m(describeSituation(OutputDelegate)),m(describeLocation(Boolean,OutputDelegate)),m(describePeople(Boolean,OutputDelegate)),m(describeObjects(Boolean,OutputDelegate)),m(describeBuildings(Boolean,OutputDelegate)),m(get_LispTaskInterperter),m(enqueueLispTask(Object)),m(evalLispReader(TextReader)),m(evalLispReaderString(TextReader)),m(evalXMLString(TextReader)),m(XML2Lisp2(String,String)),m(XML2Lisp(String)),m(evalLispString(String)),m(evalLispCode(Object)),m(ToString),m(Network_OnLogin(Object,LoginProgressEventArgs)),m(InvokeAssembly(Assembly,String,OutputDelegate)),m(ConstructType(Assembly,Type,String,System.Predicate`1[[System.Type, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]],System.Action`1[[System.Type, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]])),m(LoadAssembly(Assembly)),m(RegisterCommand(String,Command)),m(RegisterCommand(Command)),m(DoCommandAll(String,UUID,OutputDelegate)),m(GetVoiceManager),m(Dispose),m(AddBotMessageSubscriber(SimEventSubscriber)),m(RemoveBotMessageSubscriber(SimEventSubscriber)),m(SendNetworkEvent(String,arrayOf(Object))),m(SendPersonalEvent(SimEventType,String,arrayOf(Object))),m(SendPipelineEvent(SimObjectEvent)),m(argsListString(IEnumerable)),m(argString(Object)),m(ExecuteCommand(String)),m(InvokeJoin(String)),m(InvokeJoin(String,Int32)),m(InvokeJoin(String,Int32,ThreadStart,ThreadStart)),m(InvokeNext(String,ThreadStart)),m(ExecuteCommand(String,OutputDelegate)),m(ExecuteBotCommand(String,OutputDelegate)),m(DoCmdAct(Command,String,String,OutputDelegate)),m(GetName),m(cogbot.Listeners.SimEventSubscriber.OnEvent(SimObjectEvent)),m(cogbot.Listeners.SimEventSubscriber.Dispose),m(TalkExact(String)),m(Intern(String,Object)),m(InternType(Type)),m(RegisterListener(Listener)),m(RegisterType(Type)),m(GetAvatar),m(FakeEvent(Object,String,arrayOf(Object))),m(Equals(Object)),m(GetHashCode),m(GetType),m(Finalize),m(MemberwiseClone),c(current_bot),c(current_bot(ClientManager,GridClient)),p(Network(NetworkManager)),p(Settings(Settings)),p(Parcels(ParcelManager)),p(Self(AgentManager)),p(Avatars(AvatarManager)),p(Friends(FriendsManager)),p(Grid(GridManager)),p(Objects(ObjectManager)),p(Groups(GroupManager)),p(Assets(AssetManager)),p(Estate(EstateTools)),p(Appearance(AppearanceManager)),p(Inventory(InventoryManager)),p(Directory(DirectoryManager)),p(Terrain(TerrainManager)),p(Sound(SoundManager)),p(Throttle(AgentThrottle)),p(IsLoggedInAndReady(Boolean)),p(BotLoginParams(LoginDetails)),p(MasterName(String)),p(MasterKey(UUID)),p(AllowObjectMaster(Boolean)),p(IsRegionMaster(Boolean)),p(TheRadegastInstance(RadegastInstance)),p(LispTaskInterperter(ScriptInterpreter)),p(EventsEnabled(Boolean)),e(EachSimEvent(Object,SimObjectEvent)),e(OnInstantMessageSent(Object,IMessageSentEventArgs)),f(m_EachSimEvent(EventHandler`1)),f(m_EachSimEventLock(Object)),f(OneAtATimeQueue(TaskQueueHandler)),f(gridclient_ref(GridClient)),f(LoginRetriesFresh(Int32)),f(LoginRetries(Int32)),f(ExpectConnected(Boolean)),f(thisTcpPort(Int32)),f(_BotLoginParams(LoginDetails)),f(botPipeline(SimEventPublisher)),f(botCommandThreads(IList`1)),f(XmlInterp(XmlScriptInterpreter)),f(GroupID(UUID)),f(GroupMembers(System.Collections.Generic.Dictionary`2[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[OpenMetaverse.GroupMember, OpenMetaverse, Version=0.0.0.26031, Culture=neutral, PublicKeyToken=null]])),f(Appearances(System.Collections.Generic.Dictionary`2[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[OpenMetaverse.Packets.AvatarAppearancePacket, OpenMetaverse, Version=0.0.0.26031, Culture=neutral, PublicKeyToken=null]])),f(Running(Boolean)),f(GroupCommands(Boolean)),f(_masterName(String)),f(PosterBoard(Hashtable)),f(SecurityLevels(System.Collections.Generic.Dictionary`2[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[cogbot.BotPermissions, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(_masterKey(UUID)),f(_theRadegastInstance(RadegastInstance)),f(OnInstantMessageSent(InstantMessageSentArgs)),f(VoiceManager(VoiceManager)),f(CurrentDirectory(InventoryFolder)),f(bodyRotation(Quaternion)),f(forward(Vector3)),f(left(Vector3)),f(up(Vector3)),f(updateTimer(System.Timers.Timer)),f(WorldSystem(WorldObjects)),f(GetTextures(Boolean)),f(describers(System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[cogbot.DescribeDelegate, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(listeners(System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[cogbot.Listeners.Listener, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(Commands(SortedDictionary`2)),f(tutorials(System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[cogbot.Tutorials.Tutorial, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(describeNext(Boolean)),f(describePos(Int32)),f(currTutorial(String)),f(BoringNamesCount(Int32)),f(GoodNamesCount(Int32)),f(RunningMode(Int32)),f(AnimationFolder(UUID)),f(searcher(BotInventoryEval)),f(taskInterperterType(String)),f(scriptEventListener(ScriptEventListener)),f(ClientManager(ClientManager)),f(muteList(System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]])),f(muted(Boolean)),f(GroupMembersRequestID(UUID)),f(GroupsCache(System.Collections.Generic.Dictionary`2[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[OpenMetaverse.Group, OpenMetaverse, Version=0.0.0.26031, Culture=neutral, PublicKeyToken=null]])),f(GroupsEvent(ManualResetEvent)),f(CatchUpInterns(MethodInvoker)),f(useLispEventProducer(Boolean)),f(lispEventProducer(LispEventProducer)),f(RunStartupClientLisp(Boolean)),f(RunStartupClientLisplock(Object)),f(_LispTaskInterperter(ScriptInterpreter)),f(LispTaskInterperterLock(Object)),f(registeredTypes(System.Collections.Generic.List`1[[System.Type, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]])),f(KnownAssembies(System.Collections.Generic.Dictionary`2[[System.Reflection.Assembly, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Collections.Generic.List`1[[cogbot.Listeners.Listener, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]])),f(AssemblyListeners(System.Collections.Generic.Dictionary`2[[System.Reflection.Assembly, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Collections.Generic.List`1[[cogbot.Listeners.Listener, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]])),f(TalkingAllowed(Boolean)),f(IsEnsuredRunning(Boolean)),f(EnsuredRadegastRunning(Boolean)),f(InvokedMakeRunning(Boolean)),f(AddingTypesToBotclientNow(Boolean)),f(NeedRunOnLogin(Boolean)),f(debugLevel(Int32)),f(CS$<>9_CachedAnonymousMethodDelegate5(MethodInvoker)),f(CS$<>9_CachedAnonymousMethodDelegate35(ThreadStart))]".
+%    
+%    24 ?- world_avatar(X),cli_members(X,M),cli_to_str(M,S).
+%    X = @'C#585739064',
+%    S = "[m(get_SelectedBeam),m(set_SelectedBeam(Boolean)),m(cogbot.TheOpenSims.SimActor.GetSelectedObjects),m(SelectedRemove(SimPosition)),m(SelectedAdd(SimPosition)),m(get_ProfileProperties),m(set_ProfileProperties(AvatarProperties)),m(get_AvatarInterests),m(set_AvatarInterests(Interests)),m(get_AvatarGroups),m(set_AvatarGroups(System.Collections.Generic.List`1[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]])),m(set_is_Killed(Boolean)),m(ThreadJump),m(WithAnim(UUID,ThreadStart)),m(OpenNearbyClosedPassages),m(OnMoverStateChange(SimMoverState)),m(DebugInfo),m(LogEvent(SimObjectEvent)),m(AddCanBeTargetOf(Int32,SimObjectEvent)),m(get_theAvatar),m(get_SightRange),m(set_SightRange(Double)),m(GetKnownObjects),m(GetNearByObjects(Double,Boolean)),m(get_LastAction),m(set_LastAction(BotAction)),m(get_CurrentAction),m(set_CurrentAction(BotAction)),m(makeActionThread(BotAction)),m(MakeEnterable(SimMover)),m(RestoreEnterable(SimMover)),m(get_is_Root),m(get_is_Sitting),m(set_is_Sitting(Boolean)),m(get_HasPrim),m(get_is_Controllable),m(GetSimulator),m(get_globalPosition),m(GetSimRegion),m(get_SimRotation),m(Do(SimTypeUsage,SimObject)),m(TakeObject(SimObject)),m(AttachToSelf(SimObject)),m(WearItem(InventoryItem)),m(ScanNewObjects(Int32,Double,Boolean)),m(AddKnowns(System.Collections.Generic.IEnumerable`1[[cogbot.TheOpenSims.SimObject, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),m(ResetRegion(UInt64)),m(GetSizeDistance),m(GetGridClient),m(AddGoupRoles(System.Collections.Generic.List`1[[OpenMetaverse.AvatarGroup, OpenMetaverse, Version=0.0.0.26031, Culture=neutral, PublicKeyToken=null]])),m(TalkTo(SimAvatar,String)),m(TalkTo(SimAvatar,BotMentalAspect)),m(Debug(String,arrayOf(Object))),m(Eat(SimObject)),m(WithSitOn(SimObject,ThreadStart)),m(StopAllAnimations),m(WithGrabAt(SimObject,ThreadStart)),m(WithAnim(SimAsset,ThreadStart)),m(ExecuteLisp(SimObjectUsage,Object)),m(get_Flying),m(set_Flying(Boolean)),m(KilledPrim(Primitive,Simulator)),m(ResetPrim(Primitive,current_bot,Simulator)),m(SetFirstPrim(Primitive)),m(GetName),m(ToString),m(SetClient(current_bot)),m(FindSimObject(SimObjectType,Double,Double)),m(Matches(String)),m(StandUp),m(UpdateObject(ObjectMovementUpdate,ObjectMovementUpdate)),m(Touch(SimObject)),m(RemoveObject(SimObject)),m(StopMoving),m(Approach(SimObject,Double)),m(TrackerLoop),m(MoveTo(Vector3d,Double,Single)),m(Write(String)),m(GotoTarget(SimPosition)),m(SendUpdate(Int32)),m(TeleportTo(SimRegion,Vector3)),m(SetMoveTarget(SimPosition,Double)),m(OnlyMoveOnThisThread),m(SetMoveTarget(Vector3d)),m(EnsureTrackerRunning),m(get_ApproachPosition),m(set_ApproachPosition(SimPosition)),m(get_ApproachVector3D),m(set_ApproachVector3D(Vector3d)),m(get_KnownTypeUsages),m(SitOn(SimObject)),m(SitOnGround),m(SetObjectRotation(Quaternion)),m(TurnToward(Vector3)),m(TurnToward0(Vector3)),m(get_is_drivingVehical),m(UpdateOccupied),m(get_is_Walking),m(get_is_Flying),m(get_is_Standing),m(get_is_Sleeping),m(get_debugLevel),m(set_debugLevel(Int32)),m(GetCurrentAnims),m(GetAnimUUIDs(List`1)),m(GetBeforeUUIDs(List`1,Int32)),m(GetAfterUUIDs(List`1,Int32)),m(GetDurringUUIDs(List`1,Int32)),m(GetCurrentAnimDict),m(OnAvatarAnimations(List`1)),m(AnimEvent(UUID,SimEventStatus,Int32)),m(get_groupRoles),m(set_groupRoles(Dictionary`2)),m(SetPosture(SimObjectEvent)),m(GetSequenceNumbers(System.Collections.Generic.IEnumerable`1[[System.Collections.Generic.KeyValuePair`2[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Int32, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]],Int32&,Int32&)),m(StartOrStopAnimEvent(IDictionary`2,IDictionary`2,String,System.Collections.Generic.IList`1[[cogbot.TheOpenSims.SimObjectEvent, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),m(Overlaps(System.Collections.Generic.IEnumerable`1[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]],System.Collections.Generic.IEnumerable`1[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]])),m(GetLastEvent(String,Int32)),m(<ThreadJump>b_13),m(get_ConfirmedObject),m(set_ConfirmedObject(Boolean)),m(get_UsePosition),m(get_ZHeading),m(GetHeading),m(CanShoot(SimPosition)),m(AddInfoMap(Object,String)),m(get_propertiesCache),m(set_propertiesCache(ObjectProperties)),m(GetObject(String)),m(get_RegionHandle),m(set_RegionHandle(UInt64)),m(get_iD),m(set_iD(UUID)),m(get_Properties),m(set_Properties(ObjectProperties)),m(GetCubicMeters),m(GetGroupLeader),m(GetTerm),m(get_PathStore),m(TurnToward(SimPosition)),m(IndicateTarget(SimPosition,Boolean)),m(FollowPathTo(SimPosition,Double)),m(TeleportTo(SimPosition)),m(SetObjectPosition(Vector3d)),m(SetObjectPosition(Vector3)),m(TurnToward(Vector3d)),m(get_OuterBox),m(get_LocalID),m(get_ParentID),m(GetInfoMap),m(SetInfoMap(String,MemberInfo,Object)),m(AddInfoMapItem(NamedParam)),m(PollForPrim(WorldObjects,Simulator)),m(get_is_touchDefined),m(get_is_SitDefined),m(get_is_Sculpted),m(get_is_Passable),m(set_is_Passable(Boolean)),m(get_is_Phantom),m(set_is_Phantom(Boolean)),m(get_is_Physical),m(set_is_Physical(Boolean)),m(get_inventoryEmpty),m(get_Sandbox),m(get_temporary),m(get_AnimSource),m(get_AllowInventoryDrop),m(get_is_Avatar),m(Distance(SimPosition)),m(get_Prim),m(get_ObjectType),m(set_ObjectType(SimObjectType)),m(get_needsUpdate),m(get_is_Killed),m(RemoveCollisions),m(IsTypeOf(SimObjectType)),m(get_Children),m(get_HasChildren),m(get_Parent),m(set_Parent(SimObject)),m(AddChild(SimObject)),m(get_is_typed),m(RateIt(BotNeeds)),m(GetTypeUsages),m(GetUsages),m(GetMenu(SimAvatar)),m(IsParentAccruate(Primitive)),m(UpdateOccupied0),m(UpdateOccupied1),m(UpdateOccupied2),m(AddSuperTypes(System.Collections.Generic.IList`1[[cogbot.TheOpenSims.SimObjectType, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),m(SuperTypeString),m(get_is_RegionAttached),m(GetSimScale),m(TryGetGlobalPosition(Vector3d&)),m(UpdatePosition(UInt64,Vector3)),m(TryGetGlobalPosition(Vector3d&,OutputDelegate)),m(TryGetSimPosition(Vector3&)),m(TryGetSimPosition(Vector3&,OutputDelegate)),m(get_SimPosition),m(set_SimPosition(Vector3)),m(GetParentPrim(Primitive,OutputDelegate)),m(GetParentPrim0(Primitive,OutputDelegate)),m(EnsureParentRequested(Simulator)),m(get_ParentGrabber),m(BadLocation(Vector3)),m(GetActualUpdate(String)),m(GetBestUse(BotNeeds)),m(GetProposedUpdate(String)),m(ToGlobal(UInt64,Vector3)),m(HasFlag(Object)),m(Error(String,arrayOf(Object))),m(SortByDistance(System.Collections.Generic.List`1[[cogbot.TheOpenSims.SimObject, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),m(CompareDistance(SimObject,SimObject)),m(CompareDistance(Vector3d,Vector3d)),m(DistanceVectorString(SimPosition)),m(DistanceVectorString(Vector3d)),m(DistanceVectorString(Vector3)),m(get_mesh),m(BottemArea),m(GetGlobalLeftPos(Int32,Double)),m(IsInside(Vector3)),m(get_ActionEventQueue),m(set_ActionEventQueue(Queue`1)),m(get_ShouldEventSource),m(GetSimVerb),m(get_SitName),m(get_touchName),m(get_is_Attachment),m(get_AttachPoint),m(get_is_Attachable),m(get_is_Child),m(set_is_Child(Boolean)),m(OnSound(UUID,Single)),m(OnEffect(String,Object,Object,Single,UUID)),m(get_is_Solid),m(set_is_Solid(Boolean)),m(get_is_Useable),m(set_is_Useable(Boolean)),m(DebugColor),m(get_is_debugging),m(set_is_debugging(Boolean)),m(get_is_meshed),m(set_is_meshed(Boolean)),m(get_item(String)),m(set_item(String,Object)),m(Equals(Object)),m(GetHashCode),m(GetType),m(Finalize),m(MemberwiseClone),c(SimAvatarImpl(UUID,WorldObjects,Simulator)),c(SimAvatarImpl),p(SelectedBeam(Boolean)),p(ProfileProperties(AvatarProperties)),p(AvatarInterests(Interests)),p(AvatarGroups(System.Collections.Generic.List`1[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]])),p(IsKilled(Boolean)),p(theAvatar(Avatar)),p(SightRange(Double)),p(LastAction(BotAction)),p(CurrentAction(BotAction)),p(IsRoot(Boolean)),p(IsSitting(Boolean)),p(HasPrim(Boolean)),p(IsControllable(Boolean)),p(GlobalPosition(Vector3d)),p(SimRotation(Quaternion)),p(Flying(Boolean)),p(ApproachPosition(SimPosition)),p(ApproachVector3D(Vector3d)),p(KnownTypeUsages(IEnumerable`1)),p(IsDrivingVehical(Boolean)),p(IsWalking(Boolean)),p(IsFlying(Boolean)),p(IsStanding(Boolean)),p(IsSleeping(Boolean)),p(DebugLevel(Int32)),p(GroupRoles(Dictionary`2)),p(ConfirmedObject(Boolean)),p(UsePosition(SimPosition)),p(ZHeading(Single)),p(_propertiesCache(ObjectProperties)),p(RegionHandle(UInt64)),p(ID(UUID)),p(Properties(ObjectProperties)),p(PathStore(SimPathStore)),p(OuterBox(Box3Fill)),p(LocalID(UInt32)),p(ParentID(UInt32)),p(IsTouchDefined(Boolean)),p(IsSitDefined(Boolean)),p(IsSculpted(Boolean)),p(IsPassable(Boolean)),p(IsPhantom(Boolean)),p(IsPhysical(Boolean)),p(InventoryEmpty(Boolean)),p(Sandbox(Boolean)),p(Temporary(Boolean)),p(AnimSource(Boolean)),p(AllowInventoryDrop(Boolean)),p(IsAvatar(Boolean)),p(Prim(Primitive)),p(ObjectType(SimObjectType)),p(NeedsUpdate(Boolean)),p(Children(ListAsSet`1)),p(HasChildren(Boolean)),p(Parent(SimObject)),p(IsTyped(Boolean)),p(IsRegionAttached(Boolean)),p(SimPosition(Vector3)),p(ParentGrabber(TaskQueueHandler)),p(Mesh(SimMesh)),p(ActionEventQueue(Queue`1)),p(ShouldEventSource(Boolean)),p(SitName(String)),p(TouchName(String)),p(IsAttachment(Boolean)),p(AttachPoint(AttachmentPoint)),p(IsAttachable(Boolean)),p(IsChild(Boolean)),p(IsSolid(Boolean)),p(IsUseable(Boolean)),p(IsDebugging(Boolean)),p(IsMeshed(Boolean)),p(Item(Object)),f(BeamInfos(MushDLR223.Utilities.ListAsSet`1[[cogbot.TheOpenSims.EffectBeamInfo, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(SelectedObjects(MushDLR223.Utilities.ListAsSet`1[[PathSystem3D.Navigation.SimPosition, PathSystem3D, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(_debugLevel(Int32)),f(_SelectedBeam(Boolean)),f(_profileProperties(AvatarProperties)),f(_AvatarInterests(Interests)),f(_AvatarGroups(System.Collections.Generic.List`1[[OpenMetaverse.UUID, OpenMetaverseTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(old(SimMoverState)),f(_SightRange(Double)),f(KnownSimObjects(ListAsSet`1)),f(_knownTypeUsages(MushDLR223.Utilities.ListAsSet`1[[cogbot.TheOpenSims.SimTypeUsage, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(_currentAction(BotAction)),f(actionThread(Thread)),f(actionLock(Object)),f(AspectName(String)),f(Client(current_bot)),f(TrackerLoopLock(Object)),f(IsBlocked(Boolean)),f(lastDistance(Double)),f(MoveToMovementProceedure(MovementProceedure)),f(GotoMovementProceedure(MovementProceedure)),f(MovementConsumer(Thread)),f(ApproachDistance(Double)),f(ApproachThread(Thread)),f(ExpectedCurrentAnims(InternalDictionary`2)),f(CurrentAnimSequenceNumber(Int32)),f(PostureType(String)),f(LastPostureEvent(SimObjectEvent)),f(postureLock(Object)),f(IsProfile(Boolean)),f(<LastAction>k_BackingField(BotAction)),f(<ApproachPosition>k_BackingField(SimPosition)),f(<ApproachVector3D>k_BackingField(Vector3d)),f(<GroupRoles>k_BackingField(Dictionary`2)),f(InTurn(Int32)),f(mergeEvents(Boolean)),f(UseTeleportFallback(Boolean)),f(ObjectMovementUpdateValue(ObjectMovementUpdate)),f(_Prim0(Primitive)),f(WorldSystem(WorldObjects)),f(WasKilled(Boolean)),f(_children(ListAsSet`1)),f(scaleOnNeeds(Single)),f(_Parent(SimObject)),f(RequestedParent(Boolean)),f(LastKnownSimPos(Vector3)),f(lastEvent(SimObjectEvent)),f(LastEventByName(System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[cogbot.TheOpenSims.SimObjectEvent, Cogbot.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]])),f(HasPrimLock(Object)),f(toStringNeedsUpdate(Boolean))]"
+%    
+%    
+%    6 ?- cli_find_type('ulong&',X),cli_to_str(X,S).
+%    X = @'C#40644616',
+%    S = "System.UInt64&".
+%    
+%    6 ?- cli_find_type('ulong',X),cli_to_str(X,S).
+%    X = @'C#40644616',
+%    S = "System.UInt64".
+%    
+%    
+%    3 ?- cli_find_type('int',X),cli_to_str(X,S).
+%    X = @'C#40644880',
+%    S = "System.Int32".
+%    
+%    4 ?- cli_find_class('int',X),cli_to_str(X,S).
+%    X = @'C#40644792',
+%    S = "int".
+%    
+%    5 ?- cli_find_class('ulong',X),cli_to_str(X,S).
+%    X = @'C#40644704',
+%    S = "class cli.System.UInt64".
+%    
+%    6 ?- cli_find_type('ulong',X),cli_to_str(X,S).
+%    X = @'C#40644616',
+%    S = "System.UInt64".
+%    
+%    7 ?- cli_find_type('java.lang.String',X),cli_to_str(X,S).
+%    X = @'C#40644608',
+%    S = "System.String".
+%    
+%    8 ?- cli_find_class('java.lang.String',X),cli_to_str(X,S).
+%    X = @'C#40643064',
+%    S = "class java.lang.String".
+%    
+%    9 ?- cli_find_type('System.String',X),cli_to_str(X,S).
+%    X = @'C#40644608',
+%    S = "System.String".
+%    
+%    10 ?- cli_find_class('System.String',X),cli_to_str(X,S).
+%    X = @'C#40643064',
+%    S = "class java.lang.String".
+%    
+%    11 ?- cli_find_class('cli_.System.String',X),cli_to_str(X,S).
+%    X = @'C#40643064',
+%    S = "class java.lang.String".
+%    
+%    cli_find_class('Dictionary'('int','string'),X)
+%    
+%    8 ?- cli_get('System.UInt64','MaxValue',X),cli_to_str(X,S).
+%    X = @'C#33826112',
+%    S = "18446744073709551615".
+%    
+%    cli_to_str(18446744073709551615,S).
+%    cli_to_str(18446744073709551616,S).
+%    cli_to_str(18446744073709551617,S).
+%    
+%    1 ?- cli_get_type(X,Y).
+%    Y = @'C#8398216'.
+%    
+%    2 ?- cli_get_type(X,Y),cli_to_str(Y,W).
+%    Y = @'C#8398216',
+%    W = "SbsSW.SwiPlCs.PlTerm".
+%    
+%    3 ?- cli_get_type(1,Y),cli_to_str(Y,W).
+%    Y = @'C#8398208',
+%    W = "System.Int32".
+%    
+%    4 ?- cli_get_type(1.1,Y),cli_to_str(Y,W).
+%    Y = @'C#8398200',
+%    W = "System.Double".
+%    
+%    5 ?- cli_get_type(1.1,Y),cli_to_str(Y,W).
+%    Y = @'C#8398200',
+%    W = "System.Double".
+%    
+%    6 ?- cli_getClass(1.1,Y),cli_to_str(Y,W).
+%    Y = @'C#8398192',
+%    W = "class cli.System.Double".
+%    
+%    7 ?- cli_getClass(f,Y),cli_to_str(Y,W).
+%    Y = @'C#8398184',
+%    W = "class java.lang.String".
+%    
+%    8 ?- cli_getClass('f',Y),cli_to_str(Y,W).
+%    Y = @'C#8398184',
+%    W = "class java.lang.String".
+%    
+%    
+%    9 ?- cli_get_type(1,Y),cli_to_str(Y,W).
+%    Y = @'C#8398208',
+%    W = "System.Int32".
+%    
+%    
+%    9 ?- cli_get_type(c(a),Y),cli_to_str(Y,W).
+%    
+%    cli_get_type('ABuildStartup.Program',Y),cli_to_str(Y,W).
+%    
+%    cli_load_assembly('Cogbot.exe'),cli_call('ABuildStartup.Program','Main',[],Y),cli_to_str(Y,W).
+%    cli_find_type('ABuildStartup.Program',Y),cli_to_str(Y,W).
+%    
+%    
+
+end_of_file.
+
