@@ -494,7 +494,7 @@ typedef struct // define a context structure  { ... } context;
                 object to = o;
                 if (!info.DeclaringType.IsInstanceOfType(o)) to = null;
                 object ret = info.Invoke(to, os);
-                if (todo != null) todo();
+                CommitPostCall(todo);
                 if (ret == null)
                 {
                     //return VoidOrNull(info);
@@ -789,6 +789,11 @@ typedef struct // define a context structure  { ... } context;
                 }
             }
             return term.Arity;
+        }
+
+        private static void CommitPostCall(Action action)
+        {
+            if (action != null) action();
         }
     }
 

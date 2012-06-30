@@ -830,7 +830,7 @@ namespace Swicli.Library
                 res = mi.Invoke(null, values);
             }
             var ret = valueOut.FromObject(res);
-            postCallHook();
+            CommitPostCall(postCallHook);
             return ret;
         }
         public class OpImplTest
@@ -1026,7 +1026,7 @@ namespace Swicli.Library
                         var ret = valueOut.FromObject((del.DynamicInvoke(
                                                           PlListToCastedArray(paramIn, paramInfos,
                                                                               out postCallHook))));
-                        postCallHook();
+                        CommitPostCall(postCallHook);
                         return ret;
                     }
                 }
@@ -1045,7 +1045,7 @@ namespace Swicli.Library
                                 var ret = valueOut.FromObject((del.DynamicInvoke(
                                                                   PlListToCastedArray(paramIn, paramInfos,
                                                                                       out postCallHook))));
-                                postCallHook();
+                                CommitPostCall(postCallHook);
                                 return ret;
                             }
                         }
@@ -1188,8 +1188,39 @@ namespace Swicli.Library
             Action postCallHook;
             var ps = PlListToCastedArray(indexValues, pi.GetIndexParameters(), out postCallHook);
             object cliGet01 = pi.GetValue(getInstance, ps);
-            if (postCallHook != null) postCallHook();
+            CommitPostCall(postCallHook);
             return valueOut.FromObject(cliGet01);
+        }
+        [PrologVisible]
+        static public bool cliSetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueIn)
+        {
+            if (clazzOrInstance.IsVar)
+            {
+                return Error("Cant find instance {0}", clazzOrInstance);
+            }
+            if (!valueIn.IsVar)
+            {
+                return Error("Cant set property with a var {0}", valueIn);
+            }
+            object getInstance = GetInstance(clazzOrInstance);
+            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            if (getInstance == null && c == null)
+            {
+                Error("Cant find instance {0}", clazzOrInstance);
+                return false;
+            }
+            Type[] paramz = null;
+            var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz);
+            if (pi == null)
+            {
+                Error("Cant find property {0} on {1}", memberSpec, c);
+                return false;
+            }
+            Action postCallHook;
+            var ps = PlListToCastedArray(indexValues, pi.GetIndexParameters(), out postCallHook);
+            pi.SetValue(getInstance, CastTerm(valueIn,pi.PropertyType), ps);
+            CommitPostCall(postCallHook);
+            return true;
         }
 
         private static MethodInfo GetMethod(Type type, string s, BindingFlags flags)
@@ -1300,6 +1331,7 @@ namespace Swicli.Library
             }
         }
 
+        [IKVMBased]
         [PrologVisible]
         static public bool cliJavaToString(PlTerm paramIn, PlTerm valueOut)
         {

@@ -31,6 +31,10 @@ using SbsSW.SwiPlCs.Exceptions;
 
 namespace Swicli.Library
 {
+    public class IKVMBased : Attribute
+    {
+        
+    }
     public class PrologVisible : Attribute
     {
         public string ModuleName;

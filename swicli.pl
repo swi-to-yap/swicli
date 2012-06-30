@@ -53,6 +53,7 @@ loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_librar
 %=========================================
 % Library Loading
 %=========================================
+
 %% cli_load_lib(+AppDomainName, +AssemblyPartialName, +FullClassName, +StaticMethodName).
 %  Loads an assembly into AppDomainName
 %
@@ -480,11 +481,19 @@ T = array('String', values(@null, @null, @null, @null, @null, @null, @null, @nul
 %=========================================
 
 %% cli_map(Map,?Key,?Value).
+%% cli_map_add(+Map,+Key,+Value).
+%% cli_map_set(+Map,+Key,+Value).
+%% cli_map_remove(+Map,+Key).
+%% cli_map_remove(+Map,?Key,?Value).
+%% cli_map_removeall(+Map).
+%% cli_map_size(+Map,-Count).
+% Map calls
 
 cli_map(Map,Key,Value):-nonvar(Key),!,cli_call(Map,'TryGetValue',[Key,Value],@(true)).
 cli_map(Map,Key,Value):-cli_col(Map,Ele),cli_get(Ele,'Key',Key),cli_get(Ele,'Value',Value).
 cli_map_set(Map,Key,Value):-cli_call(Map,'[]'(type(Key)),[Key,Value],_).
 cli_map_add(Map,Key,Value):-cli_call(Map,'Add'(Key,Value),_).
+cli_map_remove(Map,Key):-cli_call(Map,'Remove'(Key),_).
 cli_map_remove(Map,Key,Value):-cli_map(Map,Key,Value),!,cli_call(Map,'Remove'(Key),_).
 %% cli_map_removeall(+Obj) is det.
 %
@@ -583,6 +592,7 @@ cli_get_symbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_U
 
 
 %% cli_new(+X, +Params, -V).
+%% cli_new(+ClazzSpec,+MemberSpec,+Params,-V) is det.
 % ==
 % ?- cli_load_assembly('IKVM.OpenJDK.Core')
 % ?- cli_new('java.lang.Long'(long),[44],Out),cli_to_str(Out,Str).
@@ -638,10 +648,11 @@ cli_new(Clazz,ConstArgs,Out):-Clazz=..[BasicType|ParmSpc],cli_new(BasicType,Parm
 % Object CALL
 %=========================================
 
-%% cli_call(+Obj, +CallTerm, -Result).
-%% cli_call(+X, +MethodSpec, +Params, -Result).
+%% cli_call(+ClazzOrInstance, +MethodSpec(Params), -Result).
+%% cli_call(+ClazzOrInstance, +MethodSpec, +Params, -Result).
+%% cli_call_raw(+ClazzOrInstance, +MethodSpec, +Params, -Result) is det.
 %
-%   X should be:
+%   ClazzOrInstance should be:
 %     an object reference
 %       (for static or instance methods)
 %     a classname, descriptor or type
@@ -679,9 +690,11 @@ cli_lib_call(CallTerm,Out):-cli_call('Swicli.Library.PrologClient',CallTerm,Out)
 :-dynamic(cli_get_hook/3).
 :-multifile(cli_get_hook/3).
 
-%% cli_get(+X, +Fspec, -V)
+%% cli_get(+ClazzOrInstance, +MemberSpec, -Value)
+%% cli_get_raw(+ClazzOrInstance,+MemberSpec,-Value) is det.
+%% cli_get_property(+ClazzOrInstance,+MemberSpec,+IndexValues,-Value) is det.
 %
-%   X can be:
+%   ClazzOrInstance can be:
 %     * a classname, a descriptor, or an (object or array) type
 %       (for static fields);
 %     * a non-array object
@@ -692,14 +705,14 @@ cli_lib_call(CallTerm,Out):-cli_call('Swicli.Library.PrologClient',CallTerm,Out)
 %     * a String
 %       (clashes with class name; anyway, String has no fields to retrieve)
 %
-%   Fspec can be:
+%   MemberSpec can be:
 %       * an atomic field name,
 %       * or an integral array index (to get an element from an array,
 %	* or a pair I-J of integers (to get a subrange (slice?) of an
 %	  array)
 %       * A list of  [a,b(1),c] to denoate cli_getting X.a.b(1).c
 %
-%   finally, an attempt will be made to unify V with the retrieved value
+%   finally, an attempt will be made to unify Value with the retrieved value
 
 %% cli_get(+Obj,+NameValueParis:list).
 %  returns multiple values
@@ -732,11 +745,11 @@ hcli_get_type_subprops(CType,Sub):-cli_subproperty(Type,Sub),cli_subclass(CType,
 :-multifile(cli_set_hook/3).
 
 %% cli_set(+Obj,+NameValueParis:list).
-% like cli_get/2 but sets instead
+%% cli_set(+ClazzOrInstance, +MemberSpec, +Value)
+%% cli_set_raw(+ClazzOrInstance,+MemberSpec,+Value) is det.
+%% cli_set_property(+ClazzOrInstance,+MemberSpec,+IndexValues,+Value) is det.
+% like cli_get*/N but sets instead
 cli_set(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_set(Obj,N,V)).
-
-%% cli_set(+Obj, +PropTerm, +NewValue).
-% like cli_get/3 but sets instead
 cli_set(Obj,_,_):-cli_non_obj(Obj),!,fail.
 cli_set(Obj,[P],Value):-!,cli_set(Obj,P,Value).
 cli_set(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_set(M,N,Value),!.
@@ -986,7 +999,6 @@ cli_notrace(Call):-call(Call).
 
 :-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
 
-%% cli_call_raw(+ClazzOrInstance,+MemberSpec,+Params,-Value) is det.
 %% cli_cast(+Value,+ClazzSpec,-Value) is det.
 %% cli_cast_immediate(+Value,+ClazzSpec,-Value) is det.
 %% cli_class_from_type(+Value,-Value) is det.
@@ -997,8 +1009,6 @@ cli_notrace(Call):-call(Call).
 %% cli_find_type(+ClazzSpec,+ClassRef) is det.
 %% cli_get_class(+Value,-Value) is det.
 %% cli_get_classname(+Value,-Value) is det.
-%% cli_get_property(+ClazzOrInstance,+MemberSpec,+IndexValues,-Value) is det.
-%% cli_get_raw(+ClazzOrInstance,+MemberSpec,-Value) is det.
 %% cli_get_type(+Value,-Value) is det.
 %% cli_get_type_fullname(+Value,-Value) is det.
 %% cli_getterm(+ValueCol,+Value,-Value) is det.
@@ -1006,7 +1016,6 @@ cli_notrace(Call):-call(Call).
 %% cli_load_type(+TypeT) is det.
 %% cli_member_doc(+Memb,+Doc,+Xml) is det.
 %% cli_members(+ClazzOrInstance,-Members) is det.
-%% cli_new(+ClazzSpec,+MemberSpec,+Param,-Value) is det.
 %% cli_new_array(+ClazzSpec,+Rank,-Value) is det.
 %% cli_new_delegate(+DelegateClass,+PrologPred,-Value) is det.
 %% cli_props_for_type(+ClazzSpec,+MemberSpecs) is det.

@@ -251,6 +251,7 @@ namespace Swicli.Library
             }  
         }
 
+        [IKVMBased]
         [PrologVisible]
         public static bool cliFindClass(CycFort clazzName, CycFort clazzObjectOut)
         {
@@ -374,6 +375,7 @@ namespace Swicli.Library
             return valueOut.FromObject((val.GetType()));
         }
 
+        [IKVMBased]
         [PrologVisible]
         static public bool cliGetClass(CycFort valueIn, CycFort valueOut)
         {
@@ -390,6 +392,7 @@ namespace Swicli.Library
             return valueOut.FromObject((val.GetType()));
 #endif
         }
+        [IKVMBased]
         [PrologVisible]
         static public bool cliClassFromType(CycFort valueIn, CycFort valueOut)
         {
@@ -407,6 +410,7 @@ namespace Swicli.Library
             return valueOut.FromObject((val));
 #endif
         }
+        [IKVMBased]
         [PrologVisible]
         static public bool cliTypeFromClass(CycFort valueIn, CycFort valueOut)
         {
@@ -467,6 +471,7 @@ namespace Swicli.Library
             }
         }
         [PrologVisible]
+        [IKVMBased]
         static public bool cliGetClassname(CycFort valueIn, CycFort valueOut)
         {
             if (!valueOut.IsVar)

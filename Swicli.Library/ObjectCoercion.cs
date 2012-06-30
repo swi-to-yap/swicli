@@ -1053,7 +1053,7 @@ namespace Swicli.Library
                         Action postCallHook;
                         var values = PlListToCastedArray(orig, m.GetParameters(), out postCallHook);
                         var retval = m.Invoke(values);
-                        postCallHook();
+                        CommitPostCall(postCallHook);
                         return retval;
                     }
                 }
