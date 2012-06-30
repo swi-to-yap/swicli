@@ -9,6 +9,12 @@ namespace Swicli.Library
 {
     public class LockInfo
     {
+
+        private static object oneSmarty = new object();
+        public static bool DisabledWatcher = false;
+        public static TimeSpan WatcherMax = TimeSpan.FromSeconds(40);
+
+/*
         public class WaiterThread
         {
             public DateTime StartTime;
@@ -23,9 +29,6 @@ namespace Swicli.Library
             }
         }
 
-        private static object oneSmarty = new object();
-        private static bool DisabledWatcher = true;
-        public static TimeSpan WatcherMax = TimeSpan.FromSeconds(40);
         public class Watcher //: LockInfo
         {
             private string Named;
@@ -132,7 +135,7 @@ namespace Swicli.Library
             Watcher info = CreateWatcher(name, o);
             var ct = Thread.CurrentThread;
             waiter = info.AquireWaiter(name, ct);
-            var watchLock = new object();
+            var watchLock = info;// new object();
             WaiterThread waiter1 = waiter;
             new Thread(() =>
                            {
@@ -151,6 +154,56 @@ namespace Swicli.Library
 
                            }).Start();
             return watchLock;
+        }
+        */
+
+        public class LWatcher
+        {
+            public string StackTraceString;
+            private readonly string Name;
+
+            public LWatcher(string name)
+            {
+                this.Name = name;
+            }
+
+            public override string ToString()
+            {
+                return Name + ": " + StackTraceString;
+            }
+        }
+
+        private static readonly Dictionary<object, LWatcher> Watchers = new Dictionary<object, LWatcher>();
+        public static LWatcher CreateWatcher(string lockType, object codeLock)
+        {
+            if (codeLock is LWatcher) return (LWatcher)codeLock;
+            lock (Watchers)
+            {
+                LWatcher lockinfo;
+                if (!Watchers.TryGetValue(codeLock, out lockinfo))
+                {
+                    return Watchers[codeLock] = new LWatcher(lockType);
+                }
+                return lockinfo;
+            }
+        }
+        public static object Watch(object o, params string[] named)
+        {
+            if (DisabledWatcher) return o;
+            string name = (named != null && named.Length > 0)
+                              ? named[0]
+                              : "SmartWatcher:" + o;
+            LWatcher locker;
+            lock (oneSmarty)
+            {
+                locker = CreateWatcher(name, o);
+                if (Monitor.TryEnter(locker))
+                {
+                    locker.StackTraceString = GetStackTraceString();
+                    Monitor.Exit(locker);
+                }
+            }
+            return locker;
         }
 
         public static IList<T> CopyOf<T>(List<T> list)
