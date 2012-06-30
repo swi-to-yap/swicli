@@ -70,7 +70,7 @@ loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_librar
 
 
 %% link_swiplcs(+PathName) is det.
-% @TODO
+%  TODO
 
 %=========================================
 % Assembly Loading
@@ -462,7 +462,7 @@ cli_sublist(Mask,What):-append(Pre,_,What),append(_,Mask,Pre).
 %% cli_array_to_term(+ArrayValue,-Value) is det.
 %% cli_array_to_termlist(+ArrayValue,-Value) is det.
 %% cli_term_to_array(+ArrayValue,-Value) is det.
-% @todo
+%  todo
 cli_array_to_list(Array,List):-cli_array_to_term(Array,array(_,Term)),Term=..[_|List].
 cli_array_to_term_args(Array,Term):-cli_array_to_term(Array,array(_,Term)).
 cli_array_to_length(Array,Length):-cli_get(Array,'Length',Length).
