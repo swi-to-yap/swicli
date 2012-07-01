@@ -114,7 +114,7 @@ typedef struct // define a context structure  { ... } context;
                     }
                     catch (Exception e)
                     {
-                        Error(m + " caused " + e);
+                        Error("{0} caused {1}", m, e);
                     }
                 }
             }
@@ -144,7 +144,7 @@ typedef struct // define a context structure  { ... } context;
                         }
                         catch (Exception e)
                         {
-                            Error(m + " caused " + e);
+                            Error("{0} caused {1}", m, e);
                         }
                         continue;
                     }
@@ -174,7 +174,7 @@ typedef struct // define a context structure  { ... } context;
                     }
                     catch (Exception e)
                     {
-                        Error(m + " caused " + e);
+                        Error("{0} caused {1}", m, e);
                     }
                 }
             }
@@ -449,6 +449,7 @@ typedef struct // define a context structure  { ... } context;
             bool add1FrameCount = false;
             bool openFFI = false;
             uint fid = 0;
+            object to = o;
             if (add1FrameCount)
             {
                 int fidCount = IncrementUseCount(threadCurrentThread, ForiegnFrameCounts);
@@ -491,7 +492,6 @@ typedef struct // define a context structure  { ... } context;
                 {
                     Warn("ArgCount mismatch " + info + ": call count=" + os.Length);
                 }
-                object to = o;
                 if (!info.DeclaringType.IsInstanceOfType(o)) to = null;
                 object ret = info.Invoke(to, os);
                 CommitPostCall(todo);
@@ -503,17 +503,28 @@ typedef struct // define a context structure  { ... } context;
             }
             catch (Exception ex)
             {
-                var pe = ToPlException(ex);
-                var ie = InnerMostException(ex);
-                string s = ie.ToString() + "\n" + ie.StackTrace;
-                Error("ex: {0}", s);
+                string s = ExceptionString(ex);
+                var callTerm = MakeCallTerm(info, to, os);
+                Error("{0} caused {1}", info, s);
                 //throw pe;
                 return false;// pe;
-            } finally
+            }
+            finally
             {
                 if (add1FrameCount) DecrementUseCount(threadCurrentThread, ForiegnFrameCounts);
                 if (fid > 0) libpl.PL_close_foreign_frame(fid);
             }
+        }
+
+        private static object MakeCallTerm(MethodInfo info, object to, object[] os)
+        {
+            return "callTerm: " + info + " " + ToString(to)  + " " + ToString(os);
+        }
+        public static string ExceptionString(Exception ex)
+        {
+            var pe = ToPlException(ex);
+            var ie = InnerMostException(ex);
+            return ie.ToString() + "\n" + ie.StackTrace;
         }
         private static Type[] GetObjectTypes(ParameterInfo[] parameterInfos)
         {

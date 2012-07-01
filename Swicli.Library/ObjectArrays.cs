@@ -30,6 +30,7 @@ using MushDLR223.Utilities;
 using jpl;
 using Class = java.lang.Class;
 #else
+using System.Reflection;
 using Class = System.Type;
 #endif
 using System;
@@ -353,6 +354,116 @@ namespace Swicli.Library
             }
             return al;
         }
+        private static IEnumerable CreateCollectionOfType(CycFort arrayValue, Type arrayType)
+        {
+            if (arrayType.IsArray)
+            {
+                return CreateArrayOfType(arrayValue, arrayType);
+            }
+            if (!typeof(IEnumerable).IsAssignableFrom(arrayType))
+            {
+                Warn("Return as collection?", arrayValue);
+            }
+            IEnumerable al = (IEnumerable)MakeDefaultInstance(arrayType);
+         
+            Type elementType = arrayType.GetElementType();
+            if (arrayType.GetArrayRank() != 1)
+            {
+                Warn("Non rank==1 " + arrayType);
+            }
+            PlTerm[] terms = ToTermArray(arrayValue);
+            int termsLength = terms.Length;
+            for (int i = 0; i < termsLength; i++)
+            {
+                PlTerm term = terms[i];
+                cliSetElement(al, i, term ,arrayType, elementType);
+            }
+            return al;
+        }
+
+        public static bool cliSetElement(IEnumerable enumerable, int i, PlTerm term, Type type, Type elementType)
+        {
+            if (enumerable is Array)
+            {
+                var al = enumerable as Array;
+                al.SetValue(CastTerm(term, elementType), i);
+                return true;
+            }
+
+            if (enumerable is IList)
+            {
+                var al = enumerable as IList;
+                al[i] = CastTerm(term, elementType);
+                return true;
+            }
+
+            if (type == null || type.IsGenericTypeDefinition) type = enumerable.GetType();
+            /*
+            if (typeof (IList<>).IsInstanceOfType(enumerable))
+            {
+                var al = (IList < ? >)
+                al[i] = CastTerm(term, elementType);
+                return true;
+            }
+            */
+
+            // do it all via bad reflection
+            foreach (var mname in new[] {"set_Item", "SetValue", "Set" /*, "Insert", "InsertAt"*/})
+            {
+                MethodInfo mi = type.GetMethod(mname, BindingFlagsInstance);
+                if (mi == null) continue;
+                var pt = mi.GetParameters();
+                if (pt.Length != 2) continue;
+                bool indexIsFirst = false;
+                if (pt[0].ParameterType == typeof (int))
+                {
+                    indexIsFirst = true;
+                }
+                if (indexIsFirst)
+                {
+                    mi.Invoke(enumerable, new object[] {i, CastTerm(term, elementType)});
+                }
+                else
+                {
+                    mi.Invoke(enumerable, new object[] {CastTerm(term, elementType), i});
+                }
+                return true;
+            }
+
+            // get the Count
+            int size = -1;
+            bool sizeFound = false;
+            foreach (var mname in new string[] {"Count", "Size", "Length"})
+            {
+                MethodInfo mi = type.GetMethod(mname, BindingFlagsInstance);
+                if (mi != null)
+                {
+                    size = (int) mi.Invoke(enumerable, ZERO_OBJECTS);
+                    sizeFound = true;
+                    break;
+                }
+            }
+            if (!sizeFound)
+            {
+                return Error("Cant even find Count on {0}", enumerable);
+            }
+            // append elements
+            if (i != size)
+            {
+                return Error("wrong size for element {0} on {1} with count of {2}", i, enumerable, size);
+            }
+            foreach (var mname in new string[] {"Add", "Append"})
+            {
+                MethodInfo mi = type.GetMethod(mname, BindingFlagsInstance);
+                if (mi == null) continue;
+                var pt = mi.GetParameters();
+                if (pt.Length != 1) continue;
+                mi.Invoke(enumerable, new object[] {CastTerm(term, elementType)});
+                return true;
+            }
+            return Error("No append method on {0}", enumerable);
+        }
+
     }
 
     public class ArrayIndexEnumerator : IEnumerator<int[]>

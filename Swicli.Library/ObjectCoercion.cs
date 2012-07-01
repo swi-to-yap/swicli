@@ -574,7 +574,8 @@ namespace Swicli.Library
             {
                 return GetType(o);
             }
-            switch (o.PlType)
+            PlType plType = o.PlType;
+            switch (plType)
             {
                 case PlType.PlUnknown:
                     {
@@ -623,12 +624,9 @@ namespace Swicli.Library
                 case PlType.PlAtom:
                 case PlType.PlString:
                     {
-                        if (pt != null && pt.IsArray)
+                        if (plType == PlType.PlAtom && o.Name == "[]")
                         {
-                            if (o.Name == "[]")
-                            {
-                                return Array.CreateInstance(pt.GetElementType(), 0);
-                            }
+                            return CastCompoundTerm(o.Name, o.Arity, o, o, pt);
                         }
                         string s = (string)o;
                         if (pt == null) return s;
@@ -877,6 +875,19 @@ namespace Swicli.Library
                     }
                 }
             }
+            if (key == "[]/0")
+            {
+                if (pt != null)
+                {
+                    if (pt.IsArray)
+                    {
+                        return Array.CreateInstance(pt.GetElementType(), 0);
+                    }
+                    return MakeDefaultInstance(pt);
+                }
+                Warn("Not sure what to convert `[]` too");
+                return null;
+            }
             if (key == "static/1")
             {
                 return null;
@@ -1017,18 +1028,26 @@ namespace Swicli.Library
                 }
                 else
                 {
-                    var o1 = GetInstance(arg1);
-                    if (o1 != null)
-                    {
-                        // send a list into cliGet0
-                        bool found;
-                        var res = cliGet0(arg1, orig.Arg(1), o1.GetType(), out found);
-                        if (found) return res;
-                    }
                     if (pt == null)
                     {
-                        // Return as array?
-                        return CreateArrayOfType(orig, typeof(object[]));
+                        var o1 = GetInstance(arg1);
+                        if (o1 != null)
+                        {
+                            Warn(" send a list into cliGet0 ", orig);
+                            bool found;
+                            var res = cliGet0(arg1, orig.Arg(1), o1.GetType(), out found);
+                            if (found) return res;
+                        }
+                        Warn("Return as array of object[]?", orig);
+                        return CreateArrayOfType(orig, typeof (object[]));
+                    }
+                    else
+                    {
+                        if (!typeof (IEnumerable).IsAssignableFrom(pt))
+                        {
+                            Warn("Return as collection?", orig);
+                        }
+                        return CreateCollectionOfType(orig, pt);
                     }
                 }
             }
@@ -1061,6 +1080,19 @@ namespace Swicli.Library
             // Debug("Get Instance fallthru");
             MemberInfo[] ofs = GetStructFormat(t);
             return CreateInstance(t, ofs, orig, 1);
+        }
+
+        private static object MakeDefaultInstance(Type type)
+        {
+            try
+            {
+                return Activator.CreateInstance(type);
+            }
+            catch (Exception e)
+            {
+                Error("MakeDefaultInstance: " + type + " caused " + e);
+                throw;
+            }
         }
 
         private static Type argOneType(MemberInfo info)
@@ -1116,7 +1148,7 @@ namespace Swicli.Library
             object newStruct = null;
             try
             {
-                newStruct = Activator.CreateInstance(type);
+                newStruct = MakeDefaultInstance(type);
             }
             catch (System.MissingMethodException)
             {

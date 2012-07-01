@@ -295,7 +295,7 @@ namespace SbsSW.SwiPlCs
                 }
                 catch (Exception e)
                 {
-                    PrologClient.Warn("Free caused: {0}", e);
+                    PrologClient.Warn("Free caused: " + PrologClient.ExceptionString(e));
                 }
             }
             _qid = 0;

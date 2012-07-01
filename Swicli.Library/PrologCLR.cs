@@ -126,7 +126,22 @@ namespace Swicli.Library
             RegisterCurrentThread();
             try
             {
-                if (ps != null && ps.Length > 0) text = String.Format(text, ps);
+                if (ps != null && ps.Length > 0)
+                {
+                    for (int i = 0; i < ps.Length; i++)
+                    {
+                        var o = ps[i];
+                        if (o==null)
+                        {
+                            ps[i] = "NULL";
+                        }
+                        else if (o is Exception)
+                        {
+                            ps[i] = PrologClient.ExceptionString((Exception)o);
+                        }
+                    }
+                    text = String.Format(text, ps);
+                }
             }
             catch (Exception)            
             {
@@ -566,8 +581,18 @@ namespace Swicli.Library
                 return mi;
             }
         }
-
-        private static object ToString(object o)
+        private static string ToString(object o)
+        {
+            try
+            {
+                return ToString0(o);
+            }
+            catch (Exception)
+            {
+                return "" + o;
+            }
+        }
+        private static string ToString0(object o)
         {
             if (o == null) return "null";
             if (o is IConvertible) return o.ToString();
@@ -580,7 +605,7 @@ namespace Swicli.Library
                 {
                     if (count>1) ret += ",";
                     count++;
-                    ret += ToString(o1);
+                    ret += ToString0(o1);
                 }
                 return ret + "]";
             }
@@ -1332,17 +1357,16 @@ namespace Swicli.Library
                 if (obj.IsVar) return str.Unify((string)obj);
                 object o = GetInstance(obj);
                 if (o == null) return str.FromObject("" + obj);
-                return str.FromObject("" + o);
+                return str.FromObject(ToString(o));
             }
             catch (Exception e)
             {
                 Warn("cliToString: {0}", e);
                 object o = GetInstance(obj);
                 if (o == null) return str.FromObject("" + obj);
-                return str.FromObject("" + o);
+                return str.FromObject(ToString(o));
             }
         }
-
         [IKVMBased]
         [PrologVisible]
         static public bool cliJavaToString(PlTerm paramIn, PlTerm valueOut)

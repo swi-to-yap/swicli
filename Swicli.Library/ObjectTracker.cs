@@ -184,12 +184,12 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliToTagged(PlTerm obj, PlTerm str)
+        static public bool cliToRef(PlTerm obj, PlTerm str)
         {
             if (!str.IsVar)
             {
                 var plvar = PlTerm.PlVar();
-                return cliToTagged(obj, plvar) && SpecialUnify(str, plvar);
+                return cliToRef(obj, plvar) && SpecialUnify(str, plvar);
             }
             //if (obj.IsString) return str.Unify(obj);
             if (obj.IsVar) return str.Unify(obj);
@@ -198,7 +198,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliImmediateObject(PlTerm valueIn, PlTerm valueOut)
+        static public bool cliToImmediate(PlTerm valueIn, PlTerm valueOut)
         {
             if (valueIn.IsVar)
             {
@@ -208,7 +208,7 @@ namespace Swicli.Library
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
-                return cliImmediateObject(valueIn, plvar) && SpecialUnify(valueOut, plvar);
+                return cliToImmediate(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
             object retval = GetInstance(valueIn);
             return valueOut.FromObject(retval);
