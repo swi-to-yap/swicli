@@ -625,7 +625,19 @@ namespace Swicli.Library
             }
             try
             {
-                mi = c.GetMethod(fn, BindingFlagsALL, null, CallingConventions.Any, paramz, null);
+                bool hasNull = false;
+                foreach (var s in paramz)
+                {
+                    if (s == null)
+                    {
+                        hasNull = true;
+                        break;                       
+                    }
+                }
+                if (!hasNull)
+                {
+                    mi = c.GetMethod(fn, BindingFlagsALL, null, CallingConventions.Any, paramz, null);
+                }
                 if (mi != null)
                 {
                     return mi;
