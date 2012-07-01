@@ -164,14 +164,15 @@ cli_is_type(Obj):-nonvar(Obj),cli_is_type(Obj,'System.Type').
 
 cli_is_object([_|_]):-!,fail.
 cli_is_object('@'(O)):-!,O\=void,O\=null.
-cli_is_object(O):-functor(O,F,_),memberchk(F,[struct,enum,object,event]).
+cli_is_object(O):-functor(O,CLRF,_),hcli_clr_functor(CLRF).
 
+hcli_clr_functor(F):-memberchk(F,[struct,enum,object,event,'{}']).
 
-%% cli_is_tagged(+Obj) 
-% is Object a tagged object and not null or void (excludes struct,enum,object,event)
+%% cli_is_ref(+Obj) 
+% is Object a ref object and not null or void (excludes struct,enum,object/N,event refernces)
 
-cli_is_tagged([_|_]):-!,fail.
-cli_is_tagged('@'(O)):- O\=void,O\=null.
+cli_is_ref([_|_]):-!,fail.
+cli_is_ref('@'(O)):- O\=void,O\=null.
 
 
 %=========================================
@@ -220,64 +221,68 @@ cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli
 %% cli_typespec(+ClazzSpec,-Value).
 % coerces a ClazzSpec to a Value representing a TypeSpec term
 
-%% cli_add_tag(+TaggedObj,+TagString).
+%% cli_add_tag(+RefObj,+TagString).
 %  lowlevel access to create a tag name 
 
 %% cli_remove_tag(+TagString).
 %  lowlevel access to remove a tag name
 
-%% cli_to_tagged(+Obj,+Str).
-%  return a @(Str) version of the object 
+%% cli_to_ref(+Obj,+Ref).
+%  return a @(Ref) version of the object (even if a enum) 
 %     ==
-%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     15 ?- cli_to_ref(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
 %     "127"is"System.SByte"
 %     O = @'C#283319280',
 %     T = @'C#283324332'.
 %
-%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     16 ?- cli_to_ref(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
 %     "127"is"System.Int64"
 %     O = @'C#283345876',
 %     T = @'C#283345868'.
 %
-%     17 ?- cli_to_tagged(ulong(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     17 ?- cli_to_ref(ulong(127),O),cli_get_type(O,T),cli_writeln(O is T).
 %     "127"is"System.UInt64"
 %     O = @'C#283346772',
 %     T = @'C#283346760'.
 %
-%     15 ?- cli_to_tagged(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     15 ?- cli_to_ref(sbyte(127),O),cli_get_type(O,T),cli_writeln(O is T).
 %     "127"is"System.SByte"
 %     O = @'C#283319280',
 %     T = @'C#283324332'.
 %
-%     16 ?- cli_to_tagged(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
+%     16 ?- cli_to_ref(long(127),O),cli_get_type(O,T),cli_writeln(O is T).
 %     "127"is"System.Int64"
 %     O = @'C#283345876',
 %     T = @'C#283345868'.
 %
-%     18 ?- cli_to_tagged(343434127,O),cli_get_type(O,T),cli_writeln(O is T).
+%     18 ?- cli_to_ref(343434127,O),cli_get_type(O,T),cli_writeln(O is T).
 %     "343434127"is"System.Int32"
 %     O = @'C#281925284',
 %     T = @'C#281925280'.
 %
-%     19 ?- cli_to_tagged(3434341271,O),cli_get_type(O,T),cli_writeln(O is T).
+%     19 ?- cli_to_ref(3434341271,O),cli_get_type(O,T),cli_writeln(O is T).
 %     "3434341271"is"System.UInt64"
 %     O = @'C#281926616',
 %     T = @'C#283346760'.
 %
-%     21 ?- cli_to_tagged(343434127111,O),cli_get_type(O,T),cli_writeln(O is T).
+%     21 ?- cli_to_ref(343434127111,O),cli_get_type(O,T),cli_writeln(O is T).
 %     "343434127111"is"System.UInt64"
 %     O = @'C#281930092',
 %     T = @'C#283346760'.
 %
-%     28 ?- cli_to_tagged(34343412711111111111111111111111111111,O),cli_get_type(O,T),cli_writeln(O is T).
+%     28 ?- cli_to_ref(34343412711111111111111111111111111111,O),cli_get_type(O,T),cli_writeln(O is T).
 %     "34343412711111111111111111111111111111"is"java.math.BigInteger"
 %     O = @'C#281813796',
 %     T = @'C#281810860'.
 %     ==
 
 
-%% cli_immediate_object(+Immediate,-Value).
-%  return a @(Value) version of the Immediate value 
+%% cli_to_immediate(+Ref,-Immediate).
+%  return an Immediate value of Ref to just REf if no immediate type exists
+
+%% cli_cast(+Value,+ClazzSpec,-Ref).
+%% cli_cast_immediate(+Value,+ClazzSpec,-Immediate).
+% Convert the type of Value to ClazzSpec returning eigther a Ref or Immediate value.
 
 %=========================================
 % Object Tracker
@@ -289,14 +294,14 @@ cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli
 %% cli_tracker_free(+Tracker).
 %  @see cli_tracker_begin/1
 
-%% cli_free(+TaggedObject).
-%  remove a TaggedObject from the heap
+%% cli_free(+RefObject).
+%  remove a RefObject from the heap
 
-%% cli_heap(+TaggedObject).
-%  Pin a TaggedObject onto the heap
+%% cli_heap(+RefObject).
+%  Pin a RefObject onto the heap
 
 %% cli_with_gc(+Call)
-% as tagged objects are created they are tracked .. when the call is complete any new object tags are released
+% as ref objects are created they are tracked .. when the call is complete any new object tags are released
 % uses Forienly defined cli_tracker_begin/1 and cli_tracker_free/1
 cli_with_gc(Call):-setup_call_cleanup(cli_tracker_begin(Mark),Call,cli_tracker_free(Mark)).
 
@@ -551,7 +556,12 @@ member_elipse(NV,{NVs}):-!,member_elipse(NV,NVs).
 member_elipse(NV,(A,B)):-!,(member_elipse(NV,A);member_elipse(NV,B)).
 member_elipse(NV,NV).
 
+cli_expanded(In,Out):-cli_expand(In,Out),In\==Out,!.
+
+cli_expand(Value,Value):- (var(Value);atomic(Value);Value='@'(_)),!.
 cli_expand(eval(Call),Result):-nonvar(Call),!,call(Call,Result).
+cli_expand([A|B],Result):- cli_get(A,B,Result),!.
+cli_expand(Call,Result):- call(Call,Result),!.
 cli_expand(Value,Value).
 
 
@@ -560,13 +570,10 @@ cli_to_data(_,Term,Term):- not(compound(Term)),!.
 %%cli_to_data(_Objs,[A|B],[A|B]):-!.
 cli_to_data(_Objs,[A|B],[A|B]):-'\+' '\+' A=[_=_],!.
 cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
-cli_to_data(Objs,Term,String):-cli_is_tagged(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
+cli_to_data(Objs,Term,String):-cli_is_ref(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
 cli_to_data(Objs,Term,FAS):-Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
 
-hcli_to_data_1(_Objs,struct,_A,Term,Term):-!.
-hcli_to_data_1(_Objs,object,_A,Term,Term):-!.
-hcli_to_data_1(_Objs,enum,_A,Term,Term):-!.
-
+hcli_to_data_1(_Objs,CLRFunctor,_A,Term,Term):-hcli_clr_functor(CLRFunctor),!.
 hcli_to_data_1(Objs,F,A,_Term,String):-cli_to_data(Objs,A,AS),!,String=..[F|AS].
 
 %% hcli_get_termdata(+Obj,+Arg2,+Arg3).
@@ -594,7 +601,7 @@ cli_unify(eval(O1),O2):-cli_expand(O1,O11),!,cli_unify(O11,O2).
 cli_unify(O2,eval(O1)):-cli_expand(O1,O11),!,cli_unify(O11,O2).
 cli_unify(O1,O2):-atomic(O1),atomic(O2),string_to_atom(S1,O1),string_to_atom(S2,O2),!,S1==S2.
 cli_unify([O1|ARGS1],[O2|ARGS2]):-!,cli_unify(O1,O2),cli_unify(ARGS1,ARGS2).
-cli_unify(O1,O2):-cli_is_tagged(O1),cli_to_str(O1,S1),!,cli_unify(O2,S1).
+cli_unify(O1,O2):-cli_is_ref(O1),cli_to_str(O1,S1),!,cli_unify(O2,S1).
 cli_unify(O1,O2):-O1=..[F|[A1|RGS1]],!,O2=..[F|[A2|RGS2]],cli_unify([A1|RGS1],[A2|RGS2]).
 
 
@@ -715,7 +722,7 @@ cli_call(Obj,CallTerm,Out):-CallTerm=..[MethodName|Args],cli_call(Obj,MethodName
 
 % arity 4
 cli_call(Obj,[Prop|CallTerm],Params,Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Params,Out).
-cli_call(Obj,MethodSpec,Params,Out):-cli_call_raw(Obj,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
+cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
 
 
 %=========================================
@@ -777,6 +784,7 @@ cli_lib_call(CallTerm,Out):-cli_call('Swicli.Library.PrologClient',CallTerm,Out)
 cli_get(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_get(Obj,N,V)).
 
 cli_get(Obj,_,_):-cli_non_obj(Obj),!,fail.
+cli_get(Expand,Prop,Value):-cli_expanded(Expand,ExpandO),!,cli_get(ExpandO,Prop,Value).
 cli_get(Obj,[P],Value):-!,cli_get(Obj,P,Value).
 cli_get(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_get(M,N,Value),!.
 cli_get(Obj,P,ValueOut):-hcli_get_overloaded(Obj,P,Value),!,cli_unify(Value,ValueOut).
@@ -803,12 +811,13 @@ hcli_get_type_subprops(CType,Sub):-cli_subproperty(Type,Sub),cli_subclass(CType,
 
 cli_set(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_set(Obj,N,V)).
 cli_set(Obj,_,_):-cli_non_obj(Obj),!,fail.
+cli_set(Expand,Prop,Value):-cli_expanded(Expand,ExpandO),!,cli_set(ExpandO,Prop,Value).
 cli_set(Obj,[P],Value):-!,cli_set(Obj,P,Value).
 cli_set(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_set(M,N,Value),!.
 cli_set(Obj,P,Value):-hcli_set_overloaded(Obj,P,Value).
 
 hcli_set_overloaded(Obj,_,_):- cli_non_obj(Obj),!,fail.
-hcli_set_overloaded(Obj,P,ValueI):-cli_expand(ValueI,Value),ValueI \== Value,!,hcli_set_overloaded(Obj,P,Value).
+hcli_set_overloaded(Obj,P,ValueI):-cli_expanded(ValueI,Value),!,hcli_set_overloaded(Obj,P,Value).
 hcli_set_overloaded(Obj,P,Value):-cli_set_hook(Obj,P,Value),!.
 hcli_set_overloaded(Obj,P,Value):-cli_subproperty(Type,Sub),cli_is_type(Obj,Type),hcli_get_raw_0(Obj,Sub,SubValue),hcli_set_overloaded(SubValue,P,Value),!.
 hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
@@ -1050,9 +1059,7 @@ cli_notrace(Call):-call(Call).
 :-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
 
 
-%% cli_cast(+Value,+ClazzSpec,-Value).
-%% cli_cast_immediate(+Value,+ClazzSpec,-Value).
-% todo
+
 
 %% cli_class_from_type(+Value,-Value).
 %% cli_find_class(+ClazzName,-ClazzObject).
