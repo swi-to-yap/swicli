@@ -189,18 +189,19 @@ namespace Swicli.Library
         }
         public static object Watch(object o, params string[] named)
         {
+            return o;
             if (DisabledWatcher) return o;
             string name = (named != null && named.Length > 0)
                               ? named[0]
                               : "SmartWatcher:" + o;
             LWatcher locker;
-            lock (oneSmarty)
+            //lock (oneSmarty)
             {
                 locker = CreateWatcher(name, o);
                 if (Monitor.TryEnter(locker))
                 {
-                    locker.StackTraceString = GetStackTraceString();
                     Monitor.Exit(locker);
+                    locker.StackTraceString = GetStackTraceString();
                 }
             }
             return locker;
