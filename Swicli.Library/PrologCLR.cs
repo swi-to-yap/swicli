@@ -119,14 +119,15 @@ namespace Swicli.Library
         [PrologVisible]
         public static bool cliBreak(PlTerm ex)
         {
+            Trace();
             return WarnMissing(ToString(ex)) || true;
         }
-        private void Trace()
+        private static void Trace()
         {
             //throw new NotImplementedException();
         }
 
-        private object ToFort(object o)
+        private static object ToFort(object o)
         {
             return ToProlog(o);
         }
@@ -251,16 +252,6 @@ namespace Swicli.Library
             return valueOut.Unify(PlTerm.PlString(val.ToString()));
 #endif
         }
-
-        protected static PlTerm ATOM_NIL
-        {
-            get { return PlTerm.PlAtom("[]"); }
-        }
-
-        public static PlTerm PLNULL { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("null")); } }
-        public static PlTerm PLVOID { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("void")); } }
-        public static PlTerm PLTRUE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("true")); } }
-        public static PlTerm PLFALSE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("false")); } }
 
         private static MemberInfo findMember(PlTerm memberSpec, Type c)
         {

@@ -42,6 +42,26 @@ using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
+    internal class PrologTermLayout
+    {
+        public string Name;
+        public int Arity;
+        public Type ObjectType;
+        public MemberInfo[] FieldInfos;
+        public MemberInfo ToType;
+    }
+
+    internal class PrologTermRecomposer
+    {
+        public string module;
+        public string Name;
+        public int Arity;
+        public String obj2r;
+        public String r2obj;
+        //public MemberInfo[] FieldInfos;
+        public Type ToType;
+    }
+    
     public partial class PrologClient
     {
         [PrologVisible]
@@ -402,26 +422,387 @@ namespace Swicli.Library
                    !typeof(IEnumerable).IsAssignableFrom(t) &&
                    !typeof(ICollection).IsAssignableFrom(t);
         }
+        private static object MakeDefaultInstance(Type type)
+        {
+            try
+            {
+                return Activator.CreateInstance(type);
+            }
+            catch (Exception e)
+            {
+                Error("MakeDefaultInstance: " + type + " caused " + e);
+                throw;
+            }
+        }
 
-    }
-    internal class PrologTermLayout
-    {
-        public string Name;
-        public int Arity;
-        public Type ObjectType;
-        public MemberInfo[] FieldInfos;
-        public MemberInfo ToType;
-    }
+        private static Type argOneType(MemberInfo info)
+        {
+            {
+                var mi = info as MethodInfo;
+                if (mi != null)
+                {
 
-    internal class PrologTermRecomposer
-    {
-        public string module;
-        public string Name;
-        public int Arity;
-        public String obj2r;
-        public String r2obj;
-        //public MemberInfo[] FieldInfos;
-        public Type ToType;
+                    ParameterInfo[] miGetParameters = mi.GetParameters();
+                    if (miGetParameters.Length > 0)
+                    {
+                        return miGetParameters[0].ParameterType;
+                    }
+                }
+            }
+            {
+                var mi = info as ConstructorInfo;
+                if (mi != null)
+                {
+
+                    ParameterInfo[] miGetParameters = mi.GetParameters();
+                    if (miGetParameters.Length > 0)
+                    {
+                        return miGetParameters[0].ParameterType;
+                    }
+                }
+            }
+            var fi = info as FieldInfo;
+            if (fi != null)
+            {
+                return fi.FieldType;
+            }
+            return typeof(object);
+        }
+
+        private static object CreateInstance(Type type, MemberInfo[] fis, CycFort orig, int plarg)
+        {
+            int fisLength = fis.Length;
+            if (orig.Arity < fisLength)
+            {
+                fisLength = orig.Arity;
+                Warn("Struct length mismatch");
+            }
+            object[] paramz = new object[fisLength];
+            for (int i = 0; i < fisLength; i++)
+            {
+                MemberInfo fi = fis[i];
+                PlTerm origArg = orig[plarg];
+                paramz[i] = CastTerm(origArg, FieldType(fi, true));
+                plarg++;
+            }
+            object newStruct = null;
+            try
+            {
+                newStruct = MakeDefaultInstance(type);
+            }
+            catch (System.MissingMethodException)
+            {
+                foreach (ConstructorInfo ci in type.GetConstructors(BindingFlagsALL))
+                {
+                    if (ci.GetParameters().Length != paramz.Length) continue;
+                    if (ci.IsStatic) continue;
+                    newStruct = ci.Invoke(paramz);
+                }
+                if (newStruct != null) return newStruct;
+            }
+            for (int i = 0; i < fis.Length; i++)
+            {
+                MemberInfo fi = fis[i];
+                SetMemberValue(fi, newStruct, paramz[i]);
+            }
+
+
+            return newStruct;
+        }
+
+        private static int FillArray(IList fis, Type elementType, CycFort orig, int plarg)
+        {
+            int elements = 0;
+            for (int i = 0; i < fis.Count; i++)
+            {
+                fis[i] = CastTerm(orig[plarg], elementType);
+                plarg++;
+                elements++;
+            }
+            return elements;
+        }
+
+        static System.Collections.IEnumerable Unfold(object value, out bool unFolded)
+        {
+            IList<object> results = new List<object>();
+            var type = value.GetType();
+            var utype = Enum.GetUnderlyingType(type);
+            var values = Enum.GetValues(type);
+            if (utype == typeof(byte) || utype == typeof(sbyte) || utype == typeof(Int16) || utype == typeof(UInt16) || utype == typeof(Int32))
+            {
+                unFolded = true;
+                var num = (Int32)Convert.ChangeType(value, typeof(Int32));
+                if (num == 0)
+                {
+                    results.Add(value);
+                    return results;
+                }
+                foreach (var val in values)
+                {
+                    var v = (Int32)Convert.ChangeType(val, typeof(Int32));
+                    if (v == 0) continue;
+                    if ((v & num) == v)
+                    {
+                        results.Add(Enum.ToObject(value.GetType(), val));
+                    }
+                }
+            }
+            else if (utype == typeof(UInt32))
+            {
+                unFolded = true;
+                var num = (UInt32)value;
+                if (num == 0)
+                {
+                    results.Add(value);
+                    return results;
+                }
+                foreach (var val in values)
+                {
+                    var v = (UInt32)Convert.ChangeType(val, typeof(UInt32));
+                    if ((v & num) == v) results.Add(Enum.ToObject(value.GetType(), val));
+                }
+            }
+            else if (utype == typeof(Int64))
+            {
+                unFolded = true;
+                var num = (Int64)value;
+                if (num == 0)
+                {
+                    results.Add(value);
+                    return results;
+                }
+                foreach (var val in values)
+                {
+                    var v = (Int64)Convert.ChangeType(val, typeof(Int64));
+                    if (v == 0L)
+                    {
+                        continue;
+                    }
+                    if ((v & num) == v) results.Add(Enum.ToObject(value.GetType(), val));
+                }
+            }
+            else if (utype == typeof(UInt64))
+            {
+                unFolded = true;
+                var num = (UInt64)value;
+                if (num == 0)
+                {
+                    results.Add(value);
+                    return results;
+                }
+                foreach (var val in values)
+                {
+                    var v = (UInt64)Convert.ChangeType(val, typeof(UInt64));
+                    if (v == 0U)
+                    {
+                        continue;
+                    }
+                    if ((v & num) == v) results.Add(Enum.ToObject(value.GetType(), val));
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+            return results;
+        }
+
+        private delegate void WithEnum(CycFort p);
+        private void ForEachEnumValue(WithEnum withValue, object p)
+        {
+            Type pType = p.GetType();
+            if (!CycTypeInfo.IsFlagType(pType))
+            {
+                PlTerm fort = (PlTerm)ToFort(p);
+                withValue(fort);
+                return;
+            }
+            Array pTypeValues = System.Enum.GetValues(pType);
+            Array.Reverse(pTypeValues);
+
+            if (p is byte)
+            {
+                byte b = (byte)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    byte bv = (byte)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            if (p is sbyte)
+            {
+                sbyte b = (sbyte)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    sbyte bv = (sbyte)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            if (p is UInt16)
+            {
+                ushort b = (UInt16)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    ushort bv = (ushort)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            if (p is Int16)
+            {
+                short b = (Int16)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    short bv = (short)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            if (p is UInt32)
+            {
+                uint b = (UInt32)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    uint bv = (uint)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            if (p is Int32)
+            {
+                int b = (Int32)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    int bv = (int)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            if (p is UInt64)
+            {
+                ulong b = (UInt64)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    ulong bv = (ulong)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            if (p is Int64)
+            {
+                long b = (Int64)p;
+                if (b == 0)
+                {
+                    withValue((PlTerm)ToFort(p));
+                    return;
+                }
+                foreach (object v in pTypeValues)
+                {
+                    long bv = (long)v;
+                    if (bv >= b)
+                    {
+                        withValue((PlTerm)ToFort(v));
+                        b -= bv;
+                    }
+                    if (b == 0) return;
+                }
+                return;
+            }
+            string s = p.ToString();
+            bool unfolded;
+            foreach (var unfold in Unfold(p, out unfolded))
+            {
+                withValue((PlTerm)ToFort(unfold));
+                //return;
+            }
+            if (unfolded) return;
+            Trace();
+            if (p is IConvertible)
+            {
+                withValue((PlTerm)ToFort(p));
+                return;
+            }
+
+            if (p is Enum)
+            {
+                withValue((PlTerm)ToFort(p));
+                return;
+            }
+            withValue((PlTerm)ToFort(p));
+        }
+
     }
 
 }

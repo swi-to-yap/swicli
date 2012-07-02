@@ -776,6 +776,19 @@ namespace Swicli.Library
             return paramType.IsByRef;
         }
 
+        private static bool IsOptionalParam(ParameterInfo info)
+        {
+            if ((info.Attributes & ParameterAttributes.Optional) != 0)
+            {
+                return true;
+            }
+            if ((info.Attributes & ParameterAttributes.HasDefault) != 0)
+            {
+                return true;
+            }
+            return info.IsOptional || (info.Name != null && info.Name.ToLower().StartsWith("optional"));
+        }
+
         private static void Do_NOTHING()
         {
         }

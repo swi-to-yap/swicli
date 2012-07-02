@@ -44,6 +44,11 @@ namespace Swicli.Library
 {
     public partial class PrologClient
     {
+        public static PlTerm ATOM_NIL { get { return PlTerm.PlAtom("[]"); } }
+        public static PlTerm PLNULL { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("null")); } }
+        public static PlTerm PLVOID { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("void")); } }
+        public static PlTerm PLTRUE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("true")); } }
+        public static PlTerm PLFALSE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("false")); } }
 
         [PrologVisible]
         public static bool cliMakeDefault(PlTerm typeSpec, PlTerm valueOut)
