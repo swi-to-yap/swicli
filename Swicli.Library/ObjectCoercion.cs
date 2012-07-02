@@ -494,7 +494,7 @@ namespace Swicli.Library
                         }
                         string s = (string)o;
                         if (pt == null) return s;
-                        var constructor = pt.GetConstructor(new[] { typeof(string) });
+                        var constructor = pt.GetConstructor(ONE_STRING);
                         if (constructor != null)
                         {
                             return constructor.Invoke(new object[] { s });

@@ -390,7 +390,6 @@ namespace Swicli.Library
             return libpl.PL_unify(TermRef, temp);
         }
 
-        private static readonly Type[] arrayOfStringType = new Type[] { typeof(string) };
         private static uint _enum2;
         private static uint _obj1;
 
@@ -413,21 +412,21 @@ namespace Swicli.Library
             t = Type.GetType("Mono.Math.BigInteger");
             if (t != null)
             {
-                var m = t.GetMethod("Parse", arrayOfStringType);
+                var m = t.GetMethod("Parse", ONE_STRING);
                 if (m != null) return m.Invoke(null, new object[] { value });
             }
             // .net 4.0 and Mono
             t = ResolveType("System.Numerics.BigInteger");
             if (t != null)
             {
-                var m = t.GetMethod("Parse", arrayOfStringType);
+                var m = t.GetMethod("Parse", ONE_STRING);
                 if (m != null) return m.Invoke(null, new object[] { value });
             }
             // Just Mono Android
             t = ResolveType("Java.Math.BigInteger");
             if (t != null)
             {
-                var m = t.GetMethod("Parse", arrayOfStringType);
+                var m = t.GetMethod("Parse", ONE_STRING);
                 if (m != null) return m.Invoke(null, new object[] { value });
             }
 
@@ -435,7 +434,7 @@ namespace Swicli.Library
             t = ResolveType("java.math.BigInteger");
             if (t != null)
             {
-                var m = t.GetConstructor(arrayOfStringType);
+                var m = t.GetConstructor(ONE_STRING);
                 if (m != null) return m.Invoke(new object[] { value });
             }
 #if USE_IKVM
@@ -452,28 +451,28 @@ namespace Swicli.Library
             t = Type.GetType("Mono.Math.BigDecimal");
             if (t != null)
             {
-                var m = t.GetMethod("Parse", arrayOfStringType);
+                var m = t.GetMethod("Parse", ONE_STRING);
                 if (m != null) return m.Invoke(null, new object[] { value });
             }
             // .net 4.0 and Mono
             t = ResolveType("System.Numerics.BigDecimal");
             if (t != null)
             {
-                var m = t.GetMethod("Parse", arrayOfStringType);
+                var m = t.GetMethod("Parse", ONE_STRING);
                 if (m != null) return m.Invoke(null, new object[] { value });
             }
             // Just Mono Android
             t = ResolveType("Java.Math.BigDecimal");
             if (t != null)
             {
-                var m = t.GetMethod("Parse", arrayOfStringType);
+                var m = t.GetMethod("Parse", ONE_STRING);
                 if (m != null) return m.Invoke(null, new object[] { value });
             }
             // IKVM   
             t = ResolveType("java.math.BigDecimal");
             if (t != null)
             {
-                var m = t.GetConstructor(arrayOfStringType);
+                var m = t.GetConstructor(ONE_STRING);
                 if (m != null) return m.Invoke(new object[] { value });
             }
 #if USE_IKVM

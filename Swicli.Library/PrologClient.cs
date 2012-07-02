@@ -992,7 +992,7 @@ namespace Swicli.Library
             if (VerboseStartup) ConsoleWriteLine("RegisterPLCSForeigns");
 
             InternMethod(ExportModule, "load_assembly", typeof(PrologClient).GetMethod("LoadAssembly"));
-            InternMethod(null, "cwl", typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
+            InternMethod(null, "cwl", typeof(Console).GetMethod("WriteLine", ONE_STRING));
             RegisterJPLForeigns();
             //RegisterThread(CreatorThread);
             //PLNULL = PlTerm.PlCompound("@", PlTerm.PlAtom("null"));

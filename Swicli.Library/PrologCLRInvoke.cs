@@ -146,7 +146,7 @@ namespace Swicli.Library
                 return null;
             }
             if (!mi.IsGenericMethodDefinition) return mi;
-            var typeparams = mi.GetGenericArguments() ?? new Type[0];
+            var typeparams = mi.GetGenericArguments() ?? ZERO_TYPES;
             if (typeparams.Length == 0) return mi;
             if (memberSpec.IsAtom)
             {
