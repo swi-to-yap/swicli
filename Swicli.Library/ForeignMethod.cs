@@ -81,7 +81,52 @@ typedef struct // define a context structure  { ... } context;
          
  */
     public delegate object AnyMethod(params object[] any);
+    public class IKVMBased : Attribute
+    {
 
+    }
+    public class PrologVisible : Attribute
+    {
+        public string ModuleName;
+        public string Name;
+        public int Arity = -1;
+        public Type TypeOf;
+        public PlForeignSwitches ForeignSwitches = PlForeignSwitches.None;
+        public Delegate Delegate
+        {
+            get
+            {
+                if (_delegate == null) _delegate = Delegate.CreateDelegate(DelegateType, Method);
+                return _delegate;
+            }
+            set { this._delegate = value; }
+        }
+
+        public MethodInfo Method;
+        public Type DelegateType;
+        private Delegate _delegate;
+
+        public PrologVisible()
+        {
+
+        }
+    }
+    public class NonDet : PrologVisible
+    {
+        public NonDet()
+        {
+            ForeignSwitches = PlForeignSwitches.Nondeterministic;
+        }
+    }
+    public class PrologTest : Attribute
+    {
+        public string ModuleName;
+        public string Name;
+        public PrologTest()
+        {
+
+        }
+    }
     public partial class PrologClient
     {
 
