@@ -172,7 +172,10 @@ hcli_clr_functor(F):-memberchk(F,[struct,enum,object,event,'{}']).
 % is Object a ref object and not null or void (excludes struct,enum,object/N,event refernces)
 
 cli_is_ref([_|_]):-!,fail.
-cli_is_ref('@'(O)):- O\=void,O\=null.
+cli_is_ref('@'(O)):- \+ hcli_immed_funct(O).
+
+
+hcli_immed_funct(O):- member(O,[void,null,true,false]).
 
 
 %=========================================
@@ -283,7 +286,28 @@ cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli
 %% cli_cast(+Value,+ClazzSpec,-Ref).
 %% cli_cast_immediate(+Value,+ClazzSpec,-Immediate).
 % Convert the type of Value to ClazzSpec returning eigther a Ref or Immediate value.
+% ==
+% ?- cli_cast(1,'double',X).
+% X = @'C#568261440'.
+%
+% ?- cli_cast(1,'System.DayOfWeek',X).
+% X = @'C#568269000'.
+%
+% ?- cli_cast_immediate(1,'System.DayOfWeek',X).
+% X = enum('DayOfWeek', 'Monday').
+%
+% ?- cli_cast_immediate(1.0,'System.DayOfWeek',X).
+% X = enum('DayOfWeek', 'Monday').
+%
+% ?- cli_cast_immediate(1.01,'System.DayOfWeek',X).
+% ERROR: Having time of it convcerting 1.01 to System.DayOfWeek why System.ArgumentException: Requested value '1.01' was not found.
+% ==
 
+/*
+
+% ?- cli_cast_immediate(0,'System.Drawing.Color',X).
+
+*/
 %=========================================
 % Object Tracker
 %=========================================
@@ -556,14 +580,24 @@ member_elipse(NV,{NVs}):-!,member_elipse(NV,NVs).
 member_elipse(NV,(A,B)):-!,(member_elipse(NV,A);member_elipse(NV,B)).
 member_elipse(NV,NV).
 
-cli_expanded(In,Out):-cli_expand(In,Out),In\==Out,!.
+cli_expanded(In,Out):-cli_expand(In,Out),!,In\==Out,!.
 
-cli_expand(Value,Value):- (var(Value);atomic(Value);Value='@'(_)),!.
+cli_expand(Value,Value):- (var(Value);atomic(Value);cli_is_ref(Value)),!.
 cli_expand(eval(Call),Result):-nonvar(Call),!,call(Call,Result).
 cli_expand([A|B],Result):- cli_get(A,B,Result),!.
 cli_expand(Call,Result):- call(Call,Result),!.
 cli_expand(Value,Value).
 
+
+%% cli_to_data(+Ref,-Term).
+%
+% converts a Ref to prolog Term
+% ==
+% ?- cli_cast("Yellow",'System.Drawing.Color',C),cli_to_data(C,D),writeq(D).
+% ["R"=255,"G"=255,"B"=0,"A"=255,"IsKnownColor"= @true,"IsEmpty"= @false,"IsNamedColor"= @true,"IsSystemColor"= @false,"Name"="Yellow"]
+% C = @'C#802963000',
+% D = ["R"=255, "G"=255, "B"=0, "A"=255, "IsKnownColor"= @true, "IsEmpty"= @false, "IsNamedColor"= @true, "IsSystemColor"= @ ..., ... = ...].
+% ==
 
 cli_to_data(Term,String):- cli_new('System.Collections.Generic.List'(object),[],[],Objs),cli_to_data(Objs,Term,String).
 cli_to_data(_,Term,Term):- not(compound(Term)),!.
@@ -578,14 +612,16 @@ hcli_to_data_1(Objs,F,A,_Term,String):-cli_to_data(Objs,A,AS),!,String=..[F|AS].
 
 %% hcli_get_termdata(+Obj,+Arg2,+Arg3).
 %
-hcli_get_termdata(Objs,Term,String):-cli_get_type(Term,Type),cli_props_for_type(Type,Props),hcli_getmap(Objs,Term,Props,Name,Value,Name=Value,Mid),!,cli_to_data(Objs,Mid,String).
-hcli_get_termdata(Objs,Term,Mid):-cli_getterm(Objs,Term,Mid),!.
+hcli_get_termdata(Done,Term,String):-cli_get_type(Term,Type),cli_props_for_type(Type,Props),Props\=[],
+   hcli_getmap(Done,Term,Props,Name,Value,Name=Value,Mid),!,cli_to_data(Done,Mid,String).
+%%hcli_get_termdata(Done,Term,String):-cli_is_ref(Term),!,cli_getterm(Done,Term,String),!.
+hcli_get_termdata(_Done,Term,Mid):-Term=Mid.
 
 
-hcli_getmap(Objs,Term,_,_,_,_,List):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Objs,E,ED)),List),!.
-hcli_getmap(Objs,Term,Props,Name,Value,NameValue,List):-hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List).
+hcli_getmap(Done,Term,_,_,_,_,ListO):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Done,E,ED)),List),trace,ListO=List,!.
+hcli_getmap(Done,Term,Props,Name,Value,NameValue,List):-hcli_getmap_1(Done,Term,Props,Name,Value,NameValue,List).
 
-hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):-findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
+hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):- findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
 
 
 %=========================================
@@ -1459,4 +1495,5 @@ Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/Swi
 %    
 
 end_of_file.
+
 
