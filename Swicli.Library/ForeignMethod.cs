@@ -98,7 +98,7 @@ typedef struct // define a context structure  { ... } context;
         public static List<MethodInfo> ExportedMethodInfos = new List<MethodInfo>();
         private static void AddForeignMethods(Type t, bool onlyAttributed, string requiredPrefix)
         {
-            MethodInfo[] methods = t.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            MethodInfo[] methods = t.GetMethods(BindingFlagsJustStatic);
             foreach (var m in methods)
             {
                 object[] f = m.GetCustomAttributes(typeof(PrologVisible), false);

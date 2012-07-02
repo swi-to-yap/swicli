@@ -499,7 +499,7 @@ namespace Swicli.Library
                         {
                             return constructor.Invoke(new object[] { s });
                         }
-                        foreach (var m in pt.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                        foreach (var m in pt.GetMethods(BindingFlagsJustStatic))
                         {
 
                             ParameterInfo[] mGetParameters = m.GetParameters();

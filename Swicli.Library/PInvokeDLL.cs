@@ -70,7 +70,8 @@ namespace Swicli.Library
                CallingConvention.StdCall, CharSet.Auto);
 
             Type builtType = typeBuilder.CreateType();
-            MethodInfo returnMethodInfo = builtType.GetMethod("Invoke", BindingFlags.Static | BindingFlags.NonPublic);
+            MethodInfo returnMethodInfo = builtType.GetMethod("Invoke", BindingFlags.Static | BindingFlags.NonPublic) ??
+                                          builtType.GetMethod("Invoke", BindingFlags.Static | BindingFlags.Public);
             return Delegate.CreateDelegate(delegateType, returnMethodInfo);
         }
 
