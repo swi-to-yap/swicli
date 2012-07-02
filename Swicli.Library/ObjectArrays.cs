@@ -46,13 +46,60 @@ namespace Swicli.Library
 {
     public partial class PrologClient
     {
+
         /// <summary>
         /// ?- cliNewArray(long,10,Out),cliToString(Out,Str).
         /// </summary>
-        /// <param name="clazzSpec"></param>
-        /// <param name="rank"></param>
-        /// <param name="valueOut"></param>
+        /// <param name="ElementType"></param>
+        /// <param name="indexes">10 or [10] or [10,2]</param>
+        /// <param name="valueOut">Tagged ref to the array</param>
         /// <returns></returns>
+        [PrologVisible]
+        static public bool cliNewArray(PlTerm clazzSpec, PlTerm indexes, PlTerm valueOut)
+        {
+            if (!valueOut.IsVar)
+            {
+                var plvar = PlTerm.PlVar();
+                return cliNewArray(clazzSpec, indexes, plvar) && SpecialUnify(valueOut, plvar);
+            }
+            Type c = GetType(clazzSpec);
+            if (c == null)
+            {
+                Warn("Cant find type {0}", clazzSpec);
+                return false;
+            }
+            var dims = ToTermArray(indexes);
+            var arrayType = c.MakeArrayType(dims.Length);
+            var value = CreateArrayOfType(dims, c);
+            return UnifyTagged(value, valueOut);
+        }
+
+        [PrologVisible]
+        static public bool cliArrayFill(PlTerm arrayValue, PlTerm valueIn)
+        {
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(arrayValue, out getInstance, out c)) return false;
+            Array al = (Array)getInstance;
+            var initValue = CastTerm(valueIn, c.GetElementType());
+            var idxIter = new ArrayIndexEnumerator(al);
+            while (idxIter.MoveNext())
+            {
+                al.SetValue(initValue, idxIter.Current);
+            }
+            return true;
+        }
+        [PrologVisible]
+        static public bool cliArrayFillValues(PlTerm arrayValue, PlTerm valueIn)
+        {
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(arrayValue, out getInstance, out c)) return false;
+            Array al = (Array) getInstance;
+            FillArray(ToTermArray(valueIn), c.GetElementType(), al);
+            return true;
+        }
+
         [PrologVisible]
         static public bool cliArrayToTerm(CycFort arrayValue, CycFort valueOut)
         {
@@ -168,7 +215,7 @@ namespace Swicli.Library
                 Error("Cant find vector from {0}", arrayValue);
                 return false;
             }
-            var value = CreateArrayOfType(arrayValue, elementType.MakeArrayType());
+            var value = CreateArrayOfTypeRankOneFilled(arrayValue, elementType.MakeArrayType());
             return valueOut.FromObject((value));
         }
 
@@ -321,7 +368,7 @@ namespace Swicli.Library
         /// <param name="arrayValue"></param>
         /// <param name="arrayType">The parent array type .. not the Element type</param>
         /// <returns></returns>
-        private static Array CreateArrayOfType(CycFort arrayValue, CycFort indexes, Type arrayType)
+        private static Array CreateArrayOfType(CycFort[] dims, Type arrayType)
         {
             if (!arrayType.IsArray)
             {
@@ -329,25 +376,15 @@ namespace Swicli.Library
             }
             Type elementType = arrayType.GetElementType();
             int rank = arrayType.GetArrayRank();
-            PlTerm[] iterms = ToTermArray(indexes);
             int[] lengths = new int[rank];
             for (int i = 0; i < rank; i++)
             {
-                lengths[i] = iterms[i].intValue();
+                lengths[i] = dims[i].intValue();
             }
-            PlTerm[] terms = ToTermArray(arrayValue);
-            int termsLength = terms.Length;
             Array al = Array.CreateInstance(elementType, lengths);
-            var idxIter = new ArrayIndexEnumerator(al);
-            for (int i = 0; i < termsLength; i++)
-            {
-                idxIter.MoveNext();
-                PlTerm term = terms[i];
-                al.SetValue(CastTerm(term, elementType), idxIter.Current);
-            }
             return al;
         }
-        private static Array CreateArrayOfType(CycFort arrayValue, Type arrayType)
+        private static Array CreateArrayOfTypeRankOneFilled(CycFort arrayValue, Type arrayType)
         {
             if (!arrayType.IsArray)
             {
@@ -359,15 +396,23 @@ namespace Swicli.Library
                 Warn("Non rank==1 " + arrayType);
             }
             PlTerm[] terms = ToTermArray(arrayValue);
-            int termsLength = terms.Length;
-            Array al = Array.CreateInstance(elementType, termsLength);
-            for (int i = 0; i < termsLength; i++)
-            {
-                PlTerm term = terms[i];
-                al.SetValue(CastTerm(term, elementType), i);
-            }
+            Array al = Array.CreateInstance(elementType, terms.Length);
+            FillArray(terms, elementType, al);
             return al;
         }
+
+        private static void FillArray(PlTerm[] terms, Type elementType, Array al)
+        {
+            int termsLength = terms.Length;
+            var idxIter = new ArrayIndexEnumerator(al);
+            for (int i = 0; i < termsLength; i++)
+            {
+                idxIter.MoveNext();
+                PlTerm term = terms[i];
+                al.SetValue(CastTerm(term, elementType), idxIter.Current);
+            }
+        }
+
     }
 
     public class ArrayIndexEnumerator : IEnumerator<int[]>

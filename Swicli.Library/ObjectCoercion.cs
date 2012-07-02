@@ -749,12 +749,14 @@ namespace Swicli.Library
             if (key == "array/2")
             {
                 Type type = GetType(arg1);
-                return CreateArrayOfType(orig.Arg(1), type.MakeArrayType());
+                return CreateArrayOfTypeRankOneFilled(orig.Arg(1), type.MakeArrayType());
             }
             if (key == "array/3")
             {
                 Type type = GetType(arg1);
-                return CreateArrayOfType(orig.Arg(2), orig.Arg(1), type);
+                var ar = CreateArrayOfType(ToTermArray(orig.Arg(1)), type);
+                FillArray(ToTermArray(orig.Arg(2)), type.GetElementType(), ar);
+                return ar;
             }
             if (name == "values")
             {
@@ -770,7 +772,7 @@ namespace Swicli.Library
             {
                 if (pt != null && pt.IsArray)
                 {
-                    return CreateArrayOfType(orig, pt);
+                    return CreateArrayOfTypeRankOne(orig, pt);
                 }
                 if (arg1.IsInteger || arg1.IsAtom)
                 {
@@ -790,7 +792,7 @@ namespace Swicli.Library
                             if (found) return res;
                         }
                         Warn("Return as array of object[]?", orig);
-                        return CreateArrayOfType(orig, typeof (object[]));
+                        return CreateArrayOfTypeRankOne(orig, typeof (object[]));
                     }
                     else
                     {
@@ -804,7 +806,7 @@ namespace Swicli.Library
             }
             if (pt != null && pt.IsArray)
             {
-                return CreateArrayOfType(orig, pt);
+                return CreateArrayOfTypeRankOne(orig, pt);
             }
             Type t = ResolveType(name);
             if (t == null)

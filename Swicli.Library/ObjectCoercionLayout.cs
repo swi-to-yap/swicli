@@ -510,18 +510,6 @@ namespace Swicli.Library
             return newStruct;
         }
 
-        private static int FillArray(IList fis, Type elementType, CycFort orig, int plarg)
-        {
-            int elements = 0;
-            for (int i = 0; i < fis.Count; i++)
-            {
-                fis[i] = CastTerm(orig[plarg], elementType);
-                plarg++;
-                elements++;
-            }
-            return elements;
-        }
-
         static System.Collections.IEnumerable Unfold(object value, out bool unFolded)
         {
             IList<object> results = new List<object>();

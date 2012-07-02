@@ -449,30 +449,6 @@ namespace Swicli.Library
             return false;
         }
 
-        /// <summary>
-        /// ?- cliNewArray(long,10,Out),cliToString(Out,Str).
-        /// </summary>
-        /// <param name="clazzSpec"></param>
-        /// <param name="rank"></param>
-        /// <param name="valueOut"></param>
-        /// <returns></returns>
-        [PrologVisible]
-        static public bool cliNewArray(PlTerm clazzSpec, PlTerm rank, PlTerm valueOut)
-        {
-            if (!valueOut.IsVar)
-            {
-                var plvar = PlTerm.PlVar();
-                return cliNewArray(clazzSpec, rank, plvar) && SpecialUnify(valueOut, plvar);
-            }
-            Type c = GetType(clazzSpec);
-            if (c == null)
-            {
-                Warn("Cant find type {0}", clazzSpec);
-                return false;
-            }
-            var value = c.MakeArrayType(rank.intValue());
-            return valueOut.FromObject((value));
-        }
 
         [PrologVisible]
         static public bool cliLockEnter(PlTerm lockObj)

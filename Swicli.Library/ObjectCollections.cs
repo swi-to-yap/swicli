@@ -79,7 +79,7 @@ namespace Swicli.Library
         {
             if (colType.IsArray)
             {
-                return CreateArrayOfType(fromTerm, colType);
+                return CreateArrayOfTypeRankOne(fromTerm, colType);
             }
             if (!typeof(IEnumerable).IsAssignableFrom(colType))
             {
