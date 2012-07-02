@@ -649,7 +649,7 @@ namespace Swicli.Library
         {
             todo = Do_NOTHING;
             int len = paramInfos.Length;
-            if (len == 0) return ARRAY_OBJECT0;
+            if (len == 0) return ZERO_OBJECTS;
             MethodInfo methodInfo = paramInfos[0].Member as MethodInfo;
             bool isVarArg = methodInfo != null && (methodInfo.CallingConvention & CallingConventions.VarArgs) != 0;
             object[] ret = new object[len];

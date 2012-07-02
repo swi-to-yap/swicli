@@ -52,87 +52,6 @@ namespace Swicli.Library
             MethodInfo rc = MakeDefaultViaReflectionInfo.MakeGenericMethod(GetType(typeSpec));
             return UnifyTagged(rc.Invoke(null, ZERO_OBJECTS), valueOut);
         }
-        private static readonly Type[] arrayOfStringType = new Type[] { typeof(string) };
-        private static uint _enum2;
-        private static uint _obj1;
-        private static readonly object[] ARRAY_OBJECT0 = new object[0];
-
-        static object ToBigInteger(string value)
-        {
-            Type t;
-            // Just Mono
-            t = Type.GetType("Mono.Math.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // .net 4.0 and Mono
-            t = ResolveType("System.Numerics.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // Just Mono Android
-            t = ResolveType("Java.Math.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-
-            // IKVM         
-            t = ResolveType("java.math.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetConstructor(arrayOfStringType);
-                if (m != null) return m.Invoke(new object[] { value });
-            }
-#if USE_IKVM
-            return new java.math.BigInteger(value);
-#else
-            if (!value.StartsWith("-")) return ulong.Parse(value);
-            return long.Parse(value);
-#endif
-        }
-        static object ToBigDecimal(string value)
-        {
-            Type t;
-            // Just Mono
-            t = Type.GetType("Mono.Math.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // .net 4.0 and Mono
-            t = ResolveType("System.Numerics.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // Just Mono Android
-            t = ResolveType("Java.Math.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // IKVM   
-            t = ResolveType("java.math.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetConstructor(arrayOfStringType);
-                if (m != null) return m.Invoke(new object[] { value });
-            }
-#if USE_IKVM
-            return new java.math.BigDecimal(value);
-#else
-            return double.Parse(value);
-#endif
-        }
 
         public static object GetInstance(CycFort classOrInstance)
         {
@@ -466,6 +385,10 @@ namespace Swicli.Library
             return libpl.PL_unify(TermRef, temp);
         }
 
+        private static readonly Type[] arrayOfStringType = new Type[] { typeof(string) };
+        private static uint _enum2;
+        private static uint _obj1;
+
         protected static uint ENUM_2
         {
             get
@@ -476,6 +399,83 @@ namespace Swicli.Library
                 }
                 return _enum2;
             }
+        }
+
+        static object ToBigInteger(string value)
+        {
+            Type t;
+            // Just Mono
+            t = Type.GetType("Mono.Math.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // .net 4.0 and Mono
+            t = ResolveType("System.Numerics.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // Just Mono Android
+            t = ResolveType("Java.Math.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+
+            // IKVM         
+            t = ResolveType("java.math.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetConstructor(arrayOfStringType);
+                if (m != null) return m.Invoke(new object[] { value });
+            }
+#if USE_IKVM
+            return new java.math.BigInteger(value);
+#else
+            if (!value.StartsWith("-")) return ulong.Parse(value);
+            return long.Parse(value);
+#endif
+        }
+        static object ToBigDecimal(string value)
+        {
+            Type t;
+            // Just Mono
+            t = Type.GetType("Mono.Math.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // .net 4.0 and Mono
+            t = ResolveType("System.Numerics.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // Just Mono Android
+            t = ResolveType("Java.Math.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // IKVM   
+            t = ResolveType("java.math.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetConstructor(arrayOfStringType);
+                if (m != null) return m.Invoke(new object[] { value });
+            }
+#if USE_IKVM
+            return new java.math.BigDecimal(value);
+#else
+            return double.Parse(value);
+#endif
         }
 
     }
