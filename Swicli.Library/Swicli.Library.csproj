@@ -102,7 +102,7 @@
     <Compile Include="ObjectInstance.cs" />
     <Compile Include="ObjectCoercionLayout.cs" />
     <Compile Include="ObjectCollections.cs" />
-    <Compile Include="CycTypeInfo.cs">
+    <Compile Include="RuntimeTypeInfo.cs">
     </Compile>
     <Compile Include="DelegateObjectInProlog.cs">
     </Compile>
