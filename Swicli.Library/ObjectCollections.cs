@@ -165,9 +165,15 @@ namespace Swicli.Library
 
         public static bool colAddElementFallback(IEnumerable enumerable, object value, MethodInfo[] reflectCache)
         {
+            if (enumerable is IList)
+            {
+                var al = (IList)enumerable;
+                al.Add(value);
+                return true;
+            }
             if (enumerable is ICollection)
             {
-                var al = (ICollection) enumerable;
+                var al = (ICollection) enumerable;                
                 return colSetElementFallback(al, new[] {al.Count}, value, reflectCache);
             }
             return AppendReflectively(enumerable.GetType(), enumerable, value, reflectCache);
