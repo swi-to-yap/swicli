@@ -43,7 +43,7 @@ using System.Reflection.Emit;
 using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -338,7 +338,7 @@ namespace Swicli.Library
         /// </summary>
         /// <param name="term1"></param>
         /// <returns></returns>
-        public static bool cliLoadAssembly(CycFort term1)
+        public static bool cliLoadAssembly(PlTerm term1)
         {
             PingThreadFactories();
             try
@@ -356,7 +356,7 @@ namespace Swicli.Library
         /// </summary>
         /// <param name="term1"></param>
         /// <returns></returns>
-        public static bool cliAddAssemblySearchPath(CycFort term1)
+        public static bool cliAddAssemblySearchPath(PlTerm term1)
         {
             PingThreadFactories();
             try
@@ -379,7 +379,7 @@ namespace Swicli.Library
         /// </summary>
         /// <param name="term1"></param>
         /// <returns></returns>
-        public static bool cliRemoveAssemblySearchPath(CycFort term1)
+        public static bool cliRemoveAssemblySearchPath(PlTerm term1)
         {
             PingThreadFactories();
             try
@@ -398,7 +398,7 @@ namespace Swicli.Library
             return true;
         }
 
-        private static string AsString(CycFort term1)
+        private static string AsString(PlTerm term1)
         {
             if (term1.IsVar)
             {
@@ -416,7 +416,7 @@ namespace Swicli.Library
             return (string)term1;
         }
 
-        public static bool cliLoadAssemblyUncaught(CycFort term1)
+        public static bool cliLoadAssemblyUncaught(PlTerm term1)
         {
             try
             {

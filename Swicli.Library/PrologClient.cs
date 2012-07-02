@@ -41,7 +41,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -247,7 +247,7 @@ namespace Swicli.Library
             t.FromObject(value);
             return t;
         }
-        private static CycFort ToPlList(CycFort[] terms)
+        private static PlTerm ToPlList(PlTerm[] terms)
         {
             int termLen = terms.Length;
             if (termLen == 0) return ATOM_NIL;

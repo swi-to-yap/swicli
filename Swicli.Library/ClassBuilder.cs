@@ -34,7 +34,7 @@ using System.Threading;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
 using SbsSW.SwiPlCs.Exceptions;
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library

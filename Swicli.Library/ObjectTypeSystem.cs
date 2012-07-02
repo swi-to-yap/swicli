@@ -43,7 +43,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Exceptions;
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -64,12 +64,12 @@ namespace Swicli.Library
         }
         
         [PrologVisible]
-        static public bool cliTypespec(CycFort clazzSpec, CycFort valueOut)
+        static public bool cliTypespec(PlTerm clazzSpec, PlTerm valueOut)
         {
             return valueOut.Unify(typeToSpec(GetType(clazzSpec)));
         }
 
-        public static Class GetTypeThrowIfMissing(CycFort clazzSpec)
+        public static Class GetTypeThrowIfMissing(PlTerm clazzSpec)
         {
             Type fi = GetType(clazzSpec);
             if (fi == null)
@@ -78,11 +78,11 @@ namespace Swicli.Library
             }
             return fi;
         }
-        public static Class GetType(CycFort clazzSpec)
+        public static Class GetType(PlTerm clazzSpec)
         {
             return GetType(clazzSpec, false);
         }
-        public static Class GetType(CycFort clazzSpec, bool canBeObjects)
+        public static Class GetType(PlTerm clazzSpec, bool canBeObjects)
         {
             if (clazzSpec.IsVar)
             {
@@ -140,7 +140,7 @@ namespace Swicli.Library
                 }
                 if (clazzName == "{}")
                 {
-                    return typeof (CycFort);
+                    return typeof (PlTerm);
                 }
                 if (clazzName == "pointer")
                 {
@@ -222,7 +222,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        public static bool cliFindType(CycFort clazzSpec, CycFort classRef)
+        public static bool cliFindType(PlTerm clazzSpec, PlTerm classRef)
         {
             //            if (term1.IsAtom)
             {
@@ -259,7 +259,7 @@ namespace Swicli.Library
 
         [IKVMBased]
         [PrologVisible]
-        public static bool cliFindClass(CycFort clazzName, CycFort clazzObjectOut)
+        public static bool cliFindClass(PlTerm clazzName, PlTerm clazzObjectOut)
         {
             if (clazzName.IsAtom)
             {
@@ -293,7 +293,7 @@ namespace Swicli.Library
         private static readonly Dictionary<Class, string> TypeShortName = new Dictionary<Class, string>();
         private static object NEW_OBJECTFORTYPE = new object();
 
-        private static CycFort typeToSpec(Class type)
+        private static PlTerm typeToSpec(Class type)
         {
             if (type == null) return PLNULL;
             if (type.IsArray && type.HasElementType)
@@ -365,7 +365,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliGetType(CycFort valueIn, CycFort valueOut)
+        static public bool cliGetType(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -383,7 +383,7 @@ namespace Swicli.Library
 
         [IKVMBased]
         [PrologVisible]
-        static public bool cliGetClass(CycFort valueIn, CycFort valueOut)
+        static public bool cliGetClass(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -400,7 +400,7 @@ namespace Swicli.Library
         }
         [IKVMBased]
         [PrologVisible]
-        static public bool cliClassFromType(CycFort valueIn, CycFort valueOut)
+        static public bool cliClassFromType(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -418,7 +418,7 @@ namespace Swicli.Library
         }
         [IKVMBased]
         [PrologVisible]
-        static public bool cliTypeFromClass(CycFort valueIn, CycFort valueOut)
+        static public bool cliTypeFromClass(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -435,7 +435,7 @@ namespace Swicli.Library
 #endif
         }
         [PrologVisible]
-        static public bool cliShorttype(CycFort valueName, CycFort valueIn)
+        static public bool cliShorttype(PlTerm valueName, PlTerm valueIn)
         {
             if (!valueName.IsString && !valueName.IsAtom) return Warn("valueName must be string or atom {0}", valueName);
             string name = valueName.Name;
@@ -478,7 +478,7 @@ namespace Swicli.Library
         }
         [PrologVisible]
         [IKVMBased]
-        static public bool cliGetClassname(CycFort valueIn, CycFort valueOut)
+        static public bool cliGetClassname(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -495,7 +495,7 @@ namespace Swicli.Library
 #endif
         }
         [PrologVisible]
-        static public bool cliGetTypeFullname(CycFort valueIn, CycFort valueOut)
+        static public bool cliGetTypeFullname(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {

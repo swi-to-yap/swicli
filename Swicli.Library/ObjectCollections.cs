@@ -39,7 +39,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SbsSW.SwiPlCs;
 
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -75,11 +75,11 @@ namespace Swicli.Library
             return colType;
         }
 
-        private static IEnumerable CreateCollectionOfType(CycFort fromTerm, Type colType)
+        private static IEnumerable CreateCollectionOfType(PlTerm fromTerm, Type colType)
         {
             if (colType.IsArray)
             {
-                return CreateArrayOfTypeRankOne(fromTerm, colType);
+                return CreateArrayOfTypeRankOneFilled(fromTerm, colType);
             }
             if (!typeof(IEnumerable).IsAssignableFrom(colType))
             {

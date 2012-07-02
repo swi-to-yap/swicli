@@ -34,7 +34,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SbsSW.SwiPlCs;
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -650,11 +650,11 @@ namespace Swicli.Library
         {
             return info.ReturnType == typeof(void) ? (object)PLVOID : PLNULL;
         }
-        private static object[] PlListToCastedArray(IEnumerable<CycFort> term, ParameterInfo[] paramInfos, out Action todo)
+        private static object[] PlListToCastedArray(IEnumerable<PlTerm> term, ParameterInfo[] paramInfos, out Action todo)
         {
             return PlListToCastedArray(0, term, paramInfos, out todo);
         }
-        private static object[] PlListToCastedArray(int skip, IEnumerable<CycFort> term, ParameterInfo[] paramInfos, out Action todo)
+        private static object[] PlListToCastedArray(int skip, IEnumerable<PlTerm> term, ParameterInfo[] paramInfos, out Action todo)
         {
             todo = Do_NOTHING;
             int len = paramInfos.Length;

@@ -37,7 +37,7 @@ using System.Xml.Serialization;
 using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -65,7 +65,7 @@ namespace Swicli.Library
     public partial class PrologClient
     {
         [PrologVisible]
-        static public bool cliGetterm(CycFort valueCol, CycFort valueIn, CycFort valueOut)
+        static public bool cliGetterm(PlTerm valueCol, PlTerm valueIn, PlTerm valueOut)
         {
             List<object> objs;
             if (valueCol.IsVar)
@@ -79,7 +79,7 @@ namespace Swicli.Library
             }
             if (!valueOut.IsVar)
             {
-                var plvar = CycFort.PlVar();
+                var plvar = PlTerm.PlVar();
                 return cliGetterm(valueCol, valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
             if (IsTaggedObject(valueIn))
@@ -102,7 +102,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliToFromLayout(CycFort clazzSpec, CycFort memberSpec, CycFort toSpec)
+        static public bool cliToFromLayout(PlTerm clazzSpec, PlTerm memberSpec, PlTerm toSpec)
         {
             Type type = GetType(clazzSpec);
             string name = memberSpec.Name;
@@ -119,7 +119,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliAddLayout(CycFort clazzSpec, CycFort memberSpec)
+        static public bool cliAddLayout(PlTerm clazzSpec, PlTerm memberSpec)
         {
             Type type = GetType(clazzSpec);
             string name = memberSpec.Name;
@@ -158,7 +158,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliToFromRecomposer(CycFort clazzSpec, CycFort memberSpec, CycFort obj2r, CycFort r2obj)
+        static public bool cliToFromRecomposer(PlTerm clazzSpec, PlTerm memberSpec, PlTerm obj2r, PlTerm r2obj)
         {
             Type type = GetType(clazzSpec);
             string name = memberSpec.Name;
@@ -282,7 +282,7 @@ namespace Swicli.Library
         }
 
 
-        public static int ToFieldLayout(string named, string arg1, object o, Type t, CycFort term, bool childs, bool addNames)
+        public static int ToFieldLayout(string named, string arg1, object o, Type t, PlTerm term, bool childs, bool addNames)
         {
 
             MemberInfo[] tGetFields = GetStructFormat(t);
@@ -469,7 +469,7 @@ namespace Swicli.Library
             return typeof(object);
         }
 
-        private static object CreateInstance(Type type, MemberInfo[] fis, CycFort orig, int plarg)
+        private static object CreateInstance(Type type, MemberInfo[] fis, PlTerm orig, int plarg)
         {
             int fisLength = fis.Length;
             if (orig.Arity < fisLength)
@@ -595,7 +595,7 @@ namespace Swicli.Library
             return results;
         }
 
-        private delegate void WithEnum(CycFort p);
+        private delegate void WithEnum(PlTerm p);
         private void ForEachEnumValue(WithEnum withValue, object p)
         {
             Type pType = p.GetType();

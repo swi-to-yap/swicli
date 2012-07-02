@@ -39,7 +39,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SbsSW.SwiPlCs;
 
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -101,11 +101,11 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliArrayToTerm(CycFort arrayValue, CycFort valueOut)
+        static public bool cliArrayToTerm(PlTerm arrayValue, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
-                var plvar = CycFort.PlVar();
+                var plvar = PlTerm.PlVar();
                 return cliArrayToTerm(arrayValue, plvar) && SpecialUnify(valueOut, plvar);
             }
             object getInstance = GetInstance(arrayValue);
@@ -156,18 +156,18 @@ namespace Swicli.Library
 
         [PrologVisible]
         [PrologTest]
-        static public bool cliTestArrayToTerm1(CycFort valueOut)
+        static public bool cliTestArrayToTerm1(PlTerm valueOut)
         {
             return cliArrayToTerm(ToProlog(new[] { 1, 2, 3, 4, }), valueOut);
         }
         [PrologVisible]
         [PrologTest]
-        static public bool cliTestArrayToTerm2(CycFort valueOut)
+        static public bool cliTestArrayToTerm2(PlTerm valueOut)
         {
             return cliArrayToTerm(ToProlog(new[, ,] { { { 1, 2 }, { 3, 4 } }, { { 5, 6 }, { 7, 8 } } }), valueOut);
         }
         [PrologVisible]
-        static public bool cliArrayToTermlist(CycFort arrayValue, CycFort valueOut)
+        static public bool cliArrayToTermlist(PlTerm arrayValue, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -198,7 +198,7 @@ namespace Swicli.Library
             return valueOut.Unify(termv);
         }
         [PrologVisible]
-        static public bool cliTermToArray(CycFort arrayValue, CycFort valueOut)
+        static public bool cliTermToArray(PlTerm arrayValue, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -324,7 +324,7 @@ namespace Swicli.Library
             }
         }
 
-        public static CycFort[] ToTermArray(IEnumerable<CycFort> enumerable)
+        public static PlTerm[] ToTermArray(IEnumerable<PlTerm> enumerable)
         {
             if (enumerable is PlTerm[]) return (PlTerm[])enumerable;
             if (enumerable is PlTermV)
@@ -368,7 +368,7 @@ namespace Swicli.Library
         /// <param name="arrayValue"></param>
         /// <param name="arrayType">The parent array type .. not the Element type</param>
         /// <returns></returns>
-        private static Array CreateArrayOfType(CycFort[] dims, Type arrayType)
+        private static Array CreateArrayOfType(PlTerm[] dims, Type arrayType)
         {
             if (!arrayType.IsArray)
             {
@@ -384,7 +384,7 @@ namespace Swicli.Library
             Array al = Array.CreateInstance(elementType, lengths);
             return al;
         }
-        private static Array CreateArrayOfTypeRankOneFilled(CycFort arrayValue, Type arrayType)
+        private static Array CreateArrayOfTypeRankOneFilled(PlTerm arrayValue, Type arrayType)
         {
             if (!arrayType.IsArray)
             {

@@ -37,7 +37,7 @@ using System.Xml.Serialization;
 using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -46,7 +46,7 @@ namespace Swicli.Library
     {
 
         [PrologVisible]
-        static public bool cliCast(CycFort valueIn, CycFort clazzSpec, CycFort valueOut)
+        static public bool cliCast(PlTerm valueIn, PlTerm clazzSpec, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -67,7 +67,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliCastImmediate(CycFort valueIn, CycFort clazzSpec, CycFort valueOut)
+        static public bool cliCastImmediate(PlTerm valueIn, PlTerm clazzSpec, PlTerm valueOut)
         {
             if (valueIn.IsVar)
             {
@@ -83,7 +83,7 @@ namespace Swicli.Library
             return valueOut.FromObject(retval);
         }
 
-        public static Object CastTerm(CycFort o, Type pt)
+        public static Object CastTerm(PlTerm o, Type pt)
         {
             if (pt == typeof(object)) pt = null;
             object r = CastTerm0(o, pt);
@@ -419,7 +419,7 @@ namespace Swicli.Library
         }
 
   
-        public static Object CastTerm0(CycFort o, Type pt)
+        public static Object CastTerm0(PlTerm o, Type pt)
         {
             if (pt == typeof(PlTerm)) return o;
             if (pt == typeof(string))
@@ -533,7 +533,7 @@ namespace Swicli.Library
             }
         }
 
-        private static int ToVMNumber(object o, CycFort term)
+        private static int ToVMNumber(object o, PlTerm term)
         {
             if (o is int)
                 return libpl.PL_unify_integer(term.TermRef, (int)Convert.ToInt32(o));
@@ -584,7 +584,7 @@ namespace Swicli.Library
 	Y \== true.     % not a ref
          
          */
-        private static object CastCompoundTerm(string name, int arity, CycFort arg1, CycFort orig, Type pt)
+        private static object CastCompoundTerm(string name, int arity, PlTerm arg1, PlTerm orig, Type pt)
         {
             string key = name + "/" + arity;
             lock (FunctorToLayout)
@@ -772,7 +772,7 @@ namespace Swicli.Library
             {
                 if (pt != null && pt.IsArray)
                 {
-                    return CreateArrayOfTypeRankOne(orig, pt);
+                    return CreateArrayOfTypeRankOneFilled(orig, pt);
                 }
                 if (arg1.IsInteger || arg1.IsAtom)
                 {
@@ -792,7 +792,7 @@ namespace Swicli.Library
                             if (found) return res;
                         }
                         Warn("Return as array of object[]?", orig);
-                        return CreateArrayOfTypeRankOne(orig, typeof (object[]));
+                        return CreateArrayOfTypeRankOneFilled(orig, typeof(object[]));
                     }
                     else
                     {
@@ -806,7 +806,7 @@ namespace Swicli.Library
             }
             if (pt != null && pt.IsArray)
             {
-                return CreateArrayOfTypeRankOne(orig, pt);
+                return CreateArrayOfTypeRankOneFilled(orig, pt);
             }
             Type t = ResolveType(name);
             if (t == null)
@@ -847,7 +847,7 @@ namespace Swicli.Library
         {
             return "" + from;
         }
-        static public Type ToType(CycFort typeSpec)
+        static public Type ToType(PlTerm typeSpec)
         {
             return PrologClient.GetType(typeSpec);
         }

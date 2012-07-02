@@ -28,7 +28,7 @@ using System.IO;
 using System.Reflection;
 using System.Xml.Serialization;
 using SbsSW.SwiPlCs;
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using XElement = System.Xml.XmlNode;
 using XDocument = System.Xml.XmlDocument;
 
@@ -44,7 +44,7 @@ namespace Swicli.Library
         /// <param name="memberSpecs"></param>
         /// <returns></returns>
         [PrologVisible]
-        static public bool cliPropsForType(CycFort clazzSpec, CycFort memberSpecList)
+        static public bool cliPropsForType(PlTerm clazzSpec, PlTerm memberSpecList)
         {
             Type type = GetType(clazzSpec);
             var props = GetPropsForTypes(type);
@@ -135,7 +135,7 @@ namespace Swicli.Library
         /// <param name="membersSpecListOut"></param>
         /// <returns></returns>
         [PrologVisible]
-        static public bool cliMembers(CycFort clazzOrInstance, CycFort membersSpecListOut)
+        static public bool cliMembers(PlTerm clazzOrInstance, PlTerm membersSpecListOut)
         {
             object getInstance;
             Type c;
@@ -194,14 +194,14 @@ namespace Swicli.Library
             return membersSpecListOut.Unify(ToPlList(list.ToArray()));
         }
 
-        private static void AddMemberToList(MemberInfo info, List<CycFort> list, string cname, int ordinal)
+        private static void AddMemberToList(MemberInfo info, List<PlTerm> list, string cname, int ordinal)
         {
 
             PlTerm memb = MemberTerm(info, cname, ordinal);
             if (memb.TermRef != 0) list.Add(memb);
         }
 
-        private static CycFort MemberTerm(MemberInfo info, string cname, int ordinal)
+        private static PlTerm MemberTerm(MemberInfo info, string cname, int ordinal)
         {
             string mn = info.Name;
             switch (info.MemberType)
@@ -322,11 +322,11 @@ namespace Swicli.Library
             return default(PlTerm);
         }
 
-        public static CycFort PlC(string decl, params CycFort[] plTerms)
+        public static PlTerm PlC(string decl, params PlTerm[] plTerms)
         {
             return PlTerm.PlCompound(decl, plTerms);
         }
-        public static CycFort PlC(string decl, PlTermV termV)
+        public static PlTerm PlC(string decl, PlTermV termV)
         {
             return PlTerm.PlCompound(decl, termV);
         }

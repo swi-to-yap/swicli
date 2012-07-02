@@ -37,7 +37,7 @@ using System.Xml.Serialization;
 using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
-using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
@@ -58,7 +58,7 @@ namespace Swicli.Library
             return UnifyTagged(rc.Invoke(null, ZERO_OBJECTS), valueOut);
         }
 
-        public static object GetInstance(CycFort classOrInstance)
+        public static object GetInstance(PlTerm classOrInstance)
         {
             if (classOrInstance.IsVar)
             {
@@ -103,7 +103,7 @@ namespace Swicli.Library
         /// <param name="instanceMaybe"></param>
         /// <param name="classOrInstance"></param>
         /// <returns></returns>
-        private static Type GetTypeFromInstance(object instanceMaybe, CycFort classOrInstance)
+        private static Type GetTypeFromInstance(object instanceMaybe, PlTerm classOrInstance)
         {
             if (classOrInstance.IsAtom)
             {
@@ -132,7 +132,7 @@ namespace Swicli.Library
             return val.GetType();
         }
 
-        private static bool SpecialUnify(CycFort valueOut, CycFort plvar)
+        private static bool SpecialUnify(PlTerm valueOut, PlTerm plvar)
         {
             bool b = valueOut.Unify(plvar);
             if (b) return true;
@@ -180,7 +180,7 @@ namespace Swicli.Library
         }
 
         public static Object ToFromConvertLock = new object();
-        public static int UnifyToProlog(object o, CycFort term)
+        public static int UnifyToProlog(object o, PlTerm term)
         {
             if (!term.IsVar)
             {
@@ -376,7 +376,7 @@ namespace Swicli.Library
             return PlObject(TermRef, o);
         }
 
-        public static CycFort C(string collection)
+        public static PlTerm C(string collection)
         {
             return PlTerm.PlAtom(collection);
         }
