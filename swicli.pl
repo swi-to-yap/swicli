@@ -71,6 +71,8 @@ loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_librar
 :- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
 
 
+cli_lib_type('Swicli.Library.PrologCLR').
+
 %% link_swiplcs(+PathName).
 %  TODO
 
@@ -87,6 +89,12 @@ loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_librar
 % The uncaught version allows exception to come from .NET
 :- cli_load_assembly('Swicli.Library').
 
+
+%% cli_load_assembly_methods(+AssemblyPartialNameOrPath, +OnlyPrologVisible, +StringPrefixOrNull).
+% Loads foriegn predicates from Assembly 
+% ==
+% ?- cli_load_assembly_methods('Swicli.Library', @false, "cli_").
+% ==
 
 %=========================================
 % Assembly Searchpath
@@ -398,7 +406,7 @@ to_string(Object,String):-cli_to_str(Object,String).
 %% cli_halt(+Obj).
 % 
 cli_halt:-cli_halt(0).
-cli_halt(_Status):-cli_call('Swicli.Library.PrologClient','ManagedHalt',_).
+cli_halt(_Status):-cli_lib_type(LibType),cli_call(LibType,'ManagedHalt',_).
 
 
 %% cli_throw(+Ex).
@@ -570,10 +578,11 @@ cli_map_size(Map,Count):-cli_call(Map,'Count',Count).
 %% cli_preserve(TF,:Call)
 % make Call with PreserveObjectType set to TF
 cli_preserve(TF,Calls):-
-   cli_get('Swicli.Library.PrologClient','PreserveObjectType',O),
+   cli_lib_type(LibType),
+   cli_get(LibType,'PreserveObjectType',O),
    call_cleanup(
-     (cli_set('Swicli.Library.PrologClient','PreserveObjectType',TF),Calls),
-         cli_set('Swicli.Library.PrologClient','PreserveObjectType',O)).
+     (cli_set(LibType,'PreserveObjectType',TF),Calls),
+         cli_set(LibType,'PreserveObjectType',O)).
 
 
 member_elipse(NV,{NVs}):-!,member_elipse(NV,NVs).
@@ -772,7 +781,7 @@ cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,Meth
 %       (may involve dynamic overload resolution based on inferred types of params)
 %
 %   finally, an attempt will be made to unify Result with the returned result
-cli_lib_call(CallTerm,Out):-cli_call('Swicli.Library.PrologClient',CallTerm,Out).
+cli_lib_call(CallTerm,Out):-cli_lib_type(LibType),cli_call(LibType,CallTerm,Out).
 
 %=========================================
 % Object GET
