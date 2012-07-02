@@ -98,6 +98,9 @@
     </Compile>
     <Compile Include="ClassBuilder.cs">
     </Compile>
+    <Compile Include="PrologCLRInvoke.cs" />
+    <Compile Include="ObjectInstance.cs" />
+    <Compile Include="ObjectCoercionLayout.cs" />
     <Compile Include="ObjectCollections.cs" />
     <Compile Include="CycTypeInfo.cs">
     </Compile>

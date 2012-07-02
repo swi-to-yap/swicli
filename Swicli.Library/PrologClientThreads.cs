@@ -362,12 +362,12 @@ namespace Swicli.Library
                 {
                     if (self < 1)
                     {
-                        Debug("self < 1: " + thread);
+                        Debug("self < 1: {0}", thread);
                         return; //maybe mnot fine                       
                     }
                     if (plThreadHasDifferntThread)
                     {
-                        Debug("plThreadHasDifferntThread " + thread);
+                        Debug("plThreadHasDifferntThread {0}", thread);
                         return; //maybe mnot fine       
                     }
                     if (thread == CreatorThread) return;
@@ -445,12 +445,12 @@ namespace Swicli.Library
                 {
                     if (self < 1)
                     {
-                        Debug("self < 1: " + thread);
+                        Debug("self < 1: {0}", thread);
                         return; //maybe mnot fine                       
                     }
                     if (plThreadHasDifferntThread)
                     {
-                        Debug("plThreadHasDifferntThread " + thread);
+                        Debug("plThreadHasDifferntThread {0}", thread);
                         return; //maybe mnot fine       
                     }
                     //return; // all was fine;

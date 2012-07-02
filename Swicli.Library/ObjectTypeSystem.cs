@@ -62,6 +62,12 @@ namespace Swicli.Library
                 TypesLoaded.Add(t);
             }
         }
+        
+        [PrologVisible]
+        static public bool cliTypespec(CycFort clazzSpec, CycFort valueOut)
+        {
+            return valueOut.Unify(typeToSpec(GetType(clazzSpec)));
+        }
 
         public static Class GetTypeThrowIfMissing(CycFort clazzSpec)
         {
@@ -335,7 +341,7 @@ namespace Swicli.Library
                 }
                 else
                 {
-                    Debug("cant chop arity " + gtpLength + " off string '" + typeName + "' ");
+                    Debug("cant chop arity {0} off string '{1}' ", gtpLength, typeName);
                 }
                 return PlC(typeName, vt);
             }

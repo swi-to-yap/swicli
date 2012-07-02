@@ -143,7 +143,7 @@ namespace Swicli.Library
             Type t = o.GetType();
             if (IsStructRecomposable(t) || t.IsPrimitive)
             {
-                if (DebugRefs) Debug(string.Format("object_to_tag:{0} from {1}", t, o));
+                if (DebugRefs) Debug("object_to_tag:{0} from {1}", t, o);
             }
 
             lock (ObjToTag)
@@ -671,7 +671,7 @@ namespace Swicli.Library
             {
                 if (PrologClient.DebugRefs)
                 {
-                    PrologClient.Debug("Removing wierd frame" + frame);
+                    PrologClient.Debug("Removing wierd frame{0}", frame);
                 }
                 frame.RemoveRefs();
                 return false;

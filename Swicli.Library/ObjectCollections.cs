@@ -357,6 +357,7 @@ namespace Swicli.Library
             }
             return Error("No append method on {0}", enumerable);
         }
+
     }
 
 }

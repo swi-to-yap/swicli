@@ -44,43 +44,6 @@ namespace Swicli.Library
 {
     public partial class PrologClient
     {
-        [PrologVisible]
-        static public bool cliGetterm(CycFort valueCol, CycFort valueIn, CycFort valueOut)
-        {
-            List<object> objs;
-            if (valueCol.IsVar)
-            {
-                objs = new List<object>();
-                valueCol.FromObject(objs);
-            }
-            else
-            {
-                objs = (List<object>)CastTerm(valueCol, typeof(ICollection));
-            }
-            if (!valueOut.IsVar)
-            {
-                var plvar = CycFort.PlVar();
-                return cliGetterm(valueCol, valueIn, plvar) && SpecialUnify(valueOut, plvar);
-            }
-            if (IsTaggedObject(valueIn))
-            {
-                object val = GetInstance(valueIn);
-                int index = objs.IndexOf(val);
-                if (index < 0)
-                {
-                    index = objs.Count;
-                    objs.Add(val);
-                    var type = val.GetType();
-                    if (type.IsArray)
-                    {
-                        return valueIn.Unify(valueOut);
-                    }
-                    return ToFieldLayout("object", typeToName(type), val, type, valueOut, false, false) != libpl.PL_fail;
-                }
-            }
-            return valueIn.Unify(valueOut);
-        }
-
 
         [PrologVisible]
         static public bool cliCast(CycFort valueIn, CycFort clazzSpec, CycFort valueOut)
@@ -120,145 +83,6 @@ namespace Swicli.Library
             return valueOut.FromObject(retval);
         }
 
-        private static object[] PlListToCastedArray(IEnumerable<CycFort> term, ParameterInfo[] paramInfos, out Action todo)
-        {
-            return PlListToCastedArray(0, term, paramInfos, out todo);
-        }
-        private static object[] PlListToCastedArray(int skip, IEnumerable<CycFort> term, ParameterInfo[] paramInfos, out Action todo)
-        {
-            todo = Do_NOTHING;
-            int len = paramInfos.Length;
-            if (len == 0) return ARRAY_OBJECT0;
-            MethodInfo methodInfo = paramInfos[0].Member as MethodInfo;
-            bool isVarArg = methodInfo != null && (methodInfo.CallingConvention & CallingConventions.VarArgs) != 0;
-            object[] ret = new object[len];
-            PlTerm[] ta = ToTermArray(term);
-            int termLen = ta.Length;
-            int lenNeeded = len;
-            int termN = skip;
-            for (int idx = 0; idx < len; idx++)
-            {
-                ParameterInfo paramInfo = paramInfos[idx];
-                PlTerm arg = ta[termN];
-                Type type = GetParameterType(paramInfo);
-                bool isByRef = IsByRef(paramInfo);
-                bool lastArg = (idx + 1 == len);
-                if (lastArg && isVarArg)
-                {
-                    if (arg.IsList)
-                    {
-                        ret[idx] = CastTerm(arg, type);
-                        termN++;
-                        continue;
-                    }
-                    Type arrayElementType = type.GetElementType();
-                    if (termN < termLen)
-                    {
-                        int slack = termLen - termN;
-                        var sa = (object[])Array.CreateInstance(arrayElementType, slack);
-                        ret[idx] = sa;
-                        for (int i = 0; i < slack; i++)
-                        {
-                            sa[i] = CastTerm(ta[termN++], arrayElementType);
-                        }
-                        continue;
-                    }
-                    ret[idx] = Array.CreateInstance(arrayElementType, 0);
-                }
-                if (IsOptionalParam(paramInfo))
-                {
-                    if (termLen < lenNeeded)
-                    {
-                        lenNeeded--;
-                        object paramInfoDefaultValue = paramInfo.DefaultValue;
-                        if (type.IsInstanceOfType(paramInfoDefaultValue))
-                        {
-                            ret[idx] = paramInfoDefaultValue;
-                        }
-                        else
-                        {
-                            //paramInfo.ParameterType.IsValueType
-                            //default()
-                        }
-                        //termN stays the same!
-                        continue;
-                    }
-                }
-                bool wasOut = paramInfo.IsOut || paramInfo.IsRetval;
-                if (wasOut) isByRef = false;
-                if (isByRef && !wasOut)
-                {
-                    var ooo = CastTerm(arg, type);
-                    if (ooo == null)
-                    {
-                        Debug("idx " + idx + " (" + type + ") for " + arg + " is null");
-                    }
-                    ret[idx] = ooo;
-                    wasOut = true;
-                }
-                if (wasOut)
-                {
-                    var sofar = todo;
-                    int index0 = idx;
-                    int termM = termN;
-                    PlTerm plTerm = arg;
-                    todo = () =>
-                    {
-                        object ret1 = ret[index0];
-                        int ii = termM;
-                        UnifySpecialObject(plTerm, ret1);
-                        sofar();
-                    };
-                    if (isByRef)
-                    {
-                        termN++;
-                        continue;
-                    }
-                }
-                if (paramInfo.IsIn)
-                {
-                    var ooo1 = CastTerm(arg, type);
-                    if (ooo1 == null)
-                    {
-                        Debug("idx " + idx + " (" + type + ") for " + arg + " is null");
-                    }
-                    ret[idx] = ooo1;
-                }
-                else
-                {
-                    if (!wasOut)
-                    {
-                        var ooo1 = CastTerm(arg, type);
-                        if (ooo1 == null)
-                        {
-                            Debug("idx " + idx + " (" + type + ") for " + arg + " is null");
-                        }
-                        ret[idx] = ooo1;                        
-                    }
-                    else
-                    {
-                        ret[idx] = null;// CastTerm(arg, paramInfo.ParameterType);                        
-                    }
-                }
-                termN++;
-            }
-            return ret;
-        }
-        public static Type GetParameterType(ParameterInfo paramInfo)
-        {
-            Type paramType = paramInfo.ParameterType;
-            return paramType.IsByRef ? paramType.GetElementType() : paramType;
-        }
-        public static bool IsByRef(ParameterInfo paramInfo)
-        {
-            Type paramType = paramInfo.ParameterType;
-            return paramType.IsByRef;
-        }
-
-
-        private static void Do_NOTHING()
-        {
-        }
         public static Object CastTerm(CycFort o, Type pt)
         {
             if (pt == typeof(object)) pt = null;
@@ -270,8 +94,11 @@ namespace Swicli.Library
             return RecastObject(pt, r, fr);
         }
 
+        public static readonly Dictionary<string, List<Func<object, object>>> convertCache =
+            new Dictionary<string, List<Func<object, object>>>();
         private static object RecastObject(Type pt, object r, Type fr)
         {
+            Exception ce = null;
             try
             {
                 if (r is double && pt == typeof(float))
@@ -279,56 +106,85 @@ namespace Swicli.Library
                     double d = (double)r;
                     return Convert.ToSingle(d);
                 }
-                //                if (PrologBinder.CanConvertFrom(r.GetType(), pt))
-                {
-                    var value = Convert.ChangeType(r, pt);
-                    if (pt.IsInstanceOfType(value)) return value;
-                }
             }
             catch (InvalidCastException e)
             {
-                Debug("conversion " + fr + " to " + pt + " resulted in " + e);
+                Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
+                ce = e;
             }
             catch (Exception e)
             {
-                Debug("conversion " + fr + " to " + pt + " resulted in " + e);
+                Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
+                ce = e;
             }
-
             try
             {
-                ICollection<Func<object, object>> tryAll = new List<Func<object, object>>();
-                var fc = findCast(fr, pt, tryAll);
-                if (fc != null)
+                var tryAll = GetConvertCache(fr, pt);
+                if (tryAll != null && tryAll.Count > 0)
                 {
-                    try
+                    ce = null;
+                    int wn = 0;
+                    bool somethingWorked = false;
+                    object retVal = null;
+                    foreach (var ti in tryAll)
                     {
-                        var value = fc(r);
-                        if (pt.IsInstanceOfType(value)) return value;
+                        try
+                        {
+                            retVal = ti(r);
+                            somethingWorked = true;
+                            if (pt.IsInstanceOfType(retVal))
+                            {
+                                if (wn != 0)
+                                {
+                                    // put this conversion method first in list
+                                    tryAll.RemoveAt(wn);
+                                    tryAll.Insert(0, ti);
+                                }
+                                return retVal;
+                            }
+                        }
+                        catch (Exception ee)
+                        {
+                            ce = ce ?? ee;
+                        }
+                        wn++;
                     }
-                    catch (Exception)
+                    if (somethingWorked)
                     {
-                    }
-                }
-                foreach (var ti in tryAll)
-                {
-                    try
-                    {
-                        var value = ti(r);
-                        if (pt.IsInstanceOfType(value)) return value;
-                    }
-                    catch (Exception)
-                    {
+                        // probly was a null->null conversion
+                        return retVal;
                     }
                 }
             }
             catch (Exception e)
             {
-                Debug("conversion " + fr + " to " + pt + " resulted in " + e);
+                Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
+                ce = ce ?? e;
             }
-            Warn("Having time of it convcerting {0} to {1}", r, pt);
+            Warn("Having time of it convcerting {0} to {1} why {2}", r, pt, ce);
 
 
             return r;
+        }
+
+        private static List<Func<object, object>> GetConvertCache(Type from, Type to)
+        {
+            string key = "" + from + "->" + to;
+            List<Func<object, object>> found;
+            bool wasNew = true;
+            lock (convertCache)
+            {
+                wasNew = !convertCache.TryGetValue(key, out found);
+                if (wasNew)
+                {
+                    found = convertCache[key] = new List<Func<object, object>>();
+                }
+            }
+            if (wasNew)
+            {
+                findConversions(from, to, found);
+            }
+            return found;
         }
 
         private static readonly List<Type> ConvertorClasses = new List<Type>();
@@ -344,14 +200,6 @@ namespace Swicli.Library
             return t;
         }
 
-        [PrologVisible]
-        public static bool cliMakeDefault(PlTerm typeSpec, PlTerm valueOut)
-        {
-            CheckMI();
-            MethodInfo rc = MakeDefaultViaReflectionInfo.MakeGenericMethod(GetType(typeSpec));
-            return UnifyTagged(rc.Invoke(null, ZERO_OBJECTS), valueOut);
-        }
-
         private static void CheckMI()
         {
             if (MissingMI == null)
@@ -364,33 +212,36 @@ namespace Swicli.Library
             }
         }
 
-        private static Func<object, object> findCast(Type from, Type to, ICollection<Func<object, object>> allMethods)
+        private static Func<object, object> findConversions(Type from, Type to, ICollection<Func<object, object>> allMethods)
         {
             Func<object, object> meth;
             if (to.IsAssignableFrom(from))
             {
                 meth = (r) => r;
-                if (allMethods != null) allMethods.Add(meth); else return meth;
+                if (allMethods != null) allMethods.Add(meth);
+                else return meth;
             }
             Func<object, object> sysmeth = (r) =>
-            {
-                CheckMI();
-                if (r == null)
-                {
-                    MethodInfo rc = MakeDefaultViaReflectionInfo.MakeGenericMethod(to);
-                    return rc.Invoke(null, ZERO_OBJECTS);
-                }
-                else
-                {
-                    MethodInfo rc = MissingMI.MakeGenericMethod(to);
-                    return rc.Invoke(null, new [] {r});
-                }
-            };
+                                               {
+                                                   CheckMI();
+                                                   if (r == null)
+                                                   {
+                                                       MethodInfo rc = MakeDefaultViaReflectionInfo.MakeGenericMethod(to);
+                                                       return rc.Invoke(null, ZERO_OBJECTS);
+                                                   }
+                                                   else
+                                                   {
+                                                       MethodInfo rc = MissingMI.MakeGenericMethod(to);
+                                                       return rc.Invoke(null, new[] { r });
+                                                   }
+                                               };
             if (to.IsValueType)
             {
-                if (allMethods != null) allMethods.Add(sysmeth); else
+                if (allMethods != null) allMethods.Add(sysmeth);
+                else
                 {
-                    return sysmeth;
+                    // dont return .. this is the fallthru at bottem anyhow
+                    // return sysmeth;
                 }
             }
             if (to.IsEnum)
@@ -403,12 +254,14 @@ namespace Swicli.Library
                                }
                                return Enum.Parse(to, r.ToString());
                            };
-                if (allMethods != null) allMethods.Add(meth); else return meth;
+                if (allMethods != null) allMethods.Add(meth);
+                else return meth;
             }
             if (to.IsPrimitive)
             {
                 meth = ((r) => Convert.ChangeType(r, to));
-                if (allMethods != null) allMethods.Add(meth); else return meth;
+                if (allMethods != null) allMethods.Add(meth);
+                else return meth;
             }
             if (to.IsArray && from.IsArray)
             {
@@ -425,13 +278,15 @@ namespace Swicli.Library
                                 }
                                 return ret;
                             });
-                if (allMethods != null) allMethods.Add(meth); else return meth;
+                if (allMethods != null) allMethods.Add(meth);
+                else return meth;
             }
             ConstructorInfo ci = to.GetConstructor(new Type[] { from });
             if (ci != null)
             {
                 meth = (r) => ci.Invoke(new object[] { r });
-                if (allMethods != null) allMethods.Add(meth); else return meth;
+                if (allMethods != null) allMethods.Add(meth);
+                else return meth;
             }
             ConstructorInfo pc = null;
             foreach (ConstructorInfo mi in to.GetConstructors(BindingFlagsALL))
@@ -449,46 +304,18 @@ namespace Swicli.Library
                     {
                         ConstructorInfo info = mi;
                         meth = (r) => info.Invoke(new object[] { r });
-                        if (allMethods != null) allMethods.Add(meth); else return meth;
+                        if (allMethods != null) allMethods.Add(meth);
+                        else return meth;
                     }
                 }
             }
+            // search for op_Implicit/Explicit
             var someStatic = SomeConversionStaticMethod(to, to, from, allMethods, false);
             if (someStatic != null) return someStatic;
+            // search for op_Implicit/Explicit
             someStatic = SomeConversionStaticMethod(to, from, from, allMethods, false);
             if (someStatic != null) return someStatic;
-            foreach (MethodInfo mi in from.GetMethods(BindingFlagsInstance))
-            {
-                if (!mi.IsStatic)
-                {
-                    var ps = mi.GetParameters();
-                    if (ps.Length == 0)
-                    {
-                        if (!to.IsAssignableFrom(mi.ReturnType)) continue;
-                        Type pt = ps[0].ParameterType;
-                        if (pt.IsAssignableFrom(from))
-                        {
-                            MethodInfo info = mi;
-                            meth = (r) => info.Invoke(null, new object[] { r });
-                            if (allMethods != null) allMethods.Add(meth); else return meth;
-                        }
-                    }
-                }
-            }
-            if (pc != null)
-            {
-                foreach (var f in to.GetFields(BindingFlagsInstance))
-                {
-                    FieldInfo info = f;
-                    meth = (r) =>
-                               {
-                                   var ret = pc.Invoke(null);
-                                   info.SetValue(ret, r);
-                                   return ret;
-                               };
-                    if (allMethods != null) allMethods.Add(meth); else return meth;
-                }
-            }
+
             if (ConvertorClasses.Count == 0)
             {
                 ConvertorClasses.Add(typeof(Convert));
@@ -500,8 +327,73 @@ namespace Swicli.Library
                 var someStaticM = SomeConversionStaticMethod(to, convertorClasse, from, allMethods, false);
                 if (someStaticM != null) return someStatic;
             }
+            //if (PrologBinder.CanConvertFrom(from, to))
+            {
+                meth = (r) => Convert.ChangeType(r, to);
+                if (allMethods != null) allMethods.Add(meth);
+                else return meth;
+            }
+            // search for toWhatnot (very bad should be done last)
+            foreach (MethodInfo mi in from.GetMethods(BindingFlagsInstance))
+            {
+                if (!mi.IsStatic)
+                {
+                    var ps = mi.GetParameters();
+                    if (ps.Length == 0)
+                    {
+                        if (!to.IsAssignableFrom(mi.ReturnType)) continue;
+                        //Type pt = ps[0].ParameterType;
+                        //if (pt.IsAssignableFrom(from))
+                        {
+                            MethodInfo info = mi;
+                            meth = (r) => info.Invoke(r, ZERO_OBJECTS);
+                            if (allMethods != null) allMethods.Add(meth);
+                            else return meth;
+                        }
+                    }
+                }
+            }
+            // search for to.Whatnot (very very bad should be done last)
+            if (pc != null)
+            {
+                meth = null;
+                int fieldCount = 0;
+                foreach (var f in to.GetFields(BindingFlagsInstance))
+                {
+                    fieldCount++;
+                    if (fieldCount > 1)
+                    {
+                        // too many fields
+                        break;
+                    }
+                    FieldInfo info = f;
+                    meth = (r) =>
+                               {
+                                   var ret = pc.Invoke(null);
+                                   info.SetValue(ret, r);
+                                   return ret;
+                               };
+                }
+                if (fieldCount == 1 && meth != null)
+                {
+                    if (allMethods != null) allMethods.Add(meth);
+                    else return meth;
+                }
+            }
+
             return sysmeth;
         }
+
+
+        /// <summary>
+        /// This finds things like op_Implicit/op_Explicition to
+        /// </summary>
+        /// <param name="to"></param>
+        /// <param name="srch"></param>
+        /// <param name="from"></param>
+        /// <param name="allMethods"></param>
+        /// <param name="onlyConverionAttribute"></param>
+        /// <returns></returns>
         private static Func<object, object> SomeConversionStaticMethod(Type to, Type srch, Type from, ICollection<Func<object, object>> allMethods, bool onlyConverionAttribute)
         {
             Func<object, object> meth;
@@ -526,87 +418,7 @@ namespace Swicli.Library
             return null;
         }
 
-        private static readonly Type[] arrayOfStringType = new Type[] { typeof(string) };
-        private static uint _enum2;
-        private static uint _obj1;
-        private static readonly object[] ARRAY_OBJECT0 = new object[0];
-
-        static object ToBigInteger(string value)
-        {
-            Type t;
-            // Just Mono
-            t = Type.GetType("Mono.Math.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] {value});
-            }
-            // .net 4.0 and Mono
-            t = ResolveType("System.Numerics.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // Just Mono Android
-            t = ResolveType("Java.Math.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-
-            // IKVM         
-            t = ResolveType("java.math.BigInteger");
-            if (t != null)
-            {
-                var m = t.GetConstructor(arrayOfStringType);
-                if (m != null) return m.Invoke(new object[] { value });
-            }             
-#if USE_IKVM
-            return new java.math.BigInteger(value);
-#else
-            if (!value.StartsWith("-")) return ulong.Parse(value);
-            return long.Parse(value);
-#endif
-        }
-        static object ToBigDecimal(string value)
-        {
-            Type t;
-            // Just Mono
-            t = Type.GetType("Mono.Math.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // .net 4.0 and Mono
-            t = ResolveType("System.Numerics.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // Just Mono Android
-            t = ResolveType("Java.Math.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetMethod("Parse", arrayOfStringType);
-                if (m != null) return m.Invoke(null, new object[] { value });
-            }
-            // IKVM   
-            t = ResolveType("java.math.BigDecimal");
-            if (t != null)
-            {
-                var m = t.GetConstructor(arrayOfStringType);
-                if (m != null) return m.Invoke(new object[] {value});
-            }
-#if USE_IKVM
-            return new java.math.BigDecimal(value);
-#else
-            return double.Parse(value);
-#endif        
-        }
+  
         public static Object CastTerm0(CycFort o, Type pt)
         {
             if (pt == typeof(PlTerm)) return o;
@@ -732,110 +544,6 @@ namespace Swicli.Library
                 return true;
             }
             return info.IsOptional || (info.Name != null && info.Name.ToLower().StartsWith("optional"));
-        }
-
-        private static MemberInfo[] GetStructFormat(Type t)
-        {
-            if (false)
-            {
-                lock (FunctorToLayout)
-                {
-                    PrologTermLayout layout;
-                    if (TypeToLayout.TryGetValue(t, out layout))
-                    {
-                        return layout.FieldInfos;
-                    }
-                }
-            }
-            bool specialXMLType = false;
-            if (!t.IsEnum)
-            {
-                var ta = t.GetCustomAttributes(typeof(XmlTypeAttribute), false);
-                if (ta != null && ta.Length > 0)
-                {
-                    XmlTypeAttribute xta = (XmlTypeAttribute)ta[0];
-                    specialXMLType = true;
-                }
-            }
-            MemberInfo[] tGetFields = null;
-            if (specialXMLType)
-            {
-                List<MemberInfo> fis = new List<MemberInfo>();
-                foreach (var e in t.GetFields(InstanceFields))
-                {
-                    var use = e.GetCustomAttributes(typeof(XmlArrayItemAttribute), false);
-                    if (use == null || use.Length < 1)
-                    {
-                        continue;
-                    }
-                    fis.Add(e);
-                }
-                foreach (var e in t.GetProperties(InstanceFields))
-                {
-                    var use = e.GetCustomAttributes(typeof(XmlArrayItemAttribute), false);
-                    if (use == null || use.Length < 1)
-                    {
-                        continue;
-                    }
-                    fis.Add(e);
-                }
-                tGetFields = fis.ToArray();
-            }
-            else
-            {
-                // look for [StructLayout(LayoutKind.Sequential)]
-
-                var ta = t.GetCustomAttributes(typeof(StructLayoutAttribute), false);
-                if (ta != null && ta.Length > 0)
-                {
-                    StructLayoutAttribute xta = (StructLayoutAttribute)ta[0];
-                    // ReSharper disable ConditionIsAlwaysTrueOrFalse
-                    if (xta.Value == LayoutKind.Sequential || true /* all sequential layouts*/)
-                    // ReSharper restore ConditionIsAlwaysTrueOrFalse
-                    {
-                        tGetFields = t.GetFields(InstanceFields);
-                    }
-                }
-                if (tGetFields == null)
-                    tGetFields = t.GetFields(InstanceFields);
-            }
-            if (tGetFields.Length == 0)
-            {
-                Warn("No fields in {0}", t);
-            }
-            return tGetFields;
-        }
-
-
-        public static int ToFieldLayout(string named, string arg1, object o, Type t, CycFort term, bool childs, bool addNames)
-        {
-
-            MemberInfo[] tGetFields = GetStructFormat(t);
-
-            int len = tGetFields.Length;
-            PlTermV tv = NewPlTermV(len + 1);
-            tv[0].UnifyAtom(arg1);
-            int tvi = 1;
-            for (int i = 0; i < len; i++)
-            {
-                object v = GetMemberValue(tGetFields[i], o);
-                if (v is IList)
-                {
-                    v.GetType();
-                }
-                tv[tvi++].FromObject((v));
-            }
-            if (true)
-            {
-                return PlSucceedOrFail(term.Unify(PlC(named, tv)));
-            }
-            uint termTermRef = term.TermRef;
-
-            uint temp = libpl.PL_new_term_ref();
-            libpl.PL_cons_functor_v(temp,
-                                    libpl.PL_new_functor(libpl.PL_new_atom(named), tv.Size),
-                                    tv.A0);
-            return libpl.PL_unify(termTermRef, temp);
         }
 
         private static int ToVMNumber(object o, CycFort term)
@@ -1076,7 +784,7 @@ namespace Swicli.Library
                 }
                 if (arg1.IsInteger || arg1.IsAtom)
                 {
-                    Debug("maybe this is a string " + orig);
+                    Debug("maybe this is a string {0}", orig);
                 }
                 else
                 {
@@ -1222,106 +930,6 @@ namespace Swicli.Library
             return newStruct;
         }
 
-        private static object GetMemberValue(MemberInfo field, object o)
-        {
-            if (field is FieldInfo)
-            {
-                return ((FieldInfo)field).GetValue(o);
-            }
-            if (field is PropertyInfo)
-            {
-                return ((PropertyInfo)field).GetGetMethod(true).Invoke(o, null);
-            }
-            if (field is MethodInfo)
-            {
-                MethodInfo mi = (MethodInfo)field;
-                if (mi.IsStatic) return mi.Invoke(null, new object[] { o });
-                return ((MethodInfo)field).Invoke(o, null);
-            }
-            if (field is ConstructorInfo)
-            {
-                return ((ConstructorInfo)field).Invoke(new object[] { o });
-            }
-            throw new IndexOutOfRangeException("" + field);
-        }
-
-        public static void SetMemberValue(MemberInfo field, object o, object value)
-        {
-            if (field is FieldInfo)
-            {
-                ((FieldInfo)field).SetValue(o, value);
-                return;
-            }
-            if (field is PropertyInfo)
-            {
-                MethodInfo setterMethod = ((PropertyInfo)field).GetSetMethod(true);
-                if (setterMethod == null)
-                {
-                    Warn("No setter method on {0}", field);
-                    return;
-                }
-                setterMethod.Invoke(o, new object[] { value });
-                return;
-            }
-            if (field is MethodInfo)
-            {
-                MethodInfo mi = (MethodInfo)field;
-                ParameterInfo[] pms = mi.GetParameters();
-                if (mi.IsStatic)
-                {
-                    if (pms.Length == 1)
-                    {
-                        mi.Invoke(null, new object[] {value});
-                    }
-                    mi.Invoke(null, new object[] { o, value });
-                    return;
-                }
-                if (pms.Length == 1)
-                {
-                    mi.Invoke(o, new object[] { value });
-                }
-                else
-                {
-                    
-                }
-                return;
-            }
-            throw new IndexOutOfRangeException("" + field);
-            if (field is ConstructorInfo)
-            {
-                ((ConstructorInfo)field).Invoke(new object[] { o, value });
-                return;
-            }
-        }
-
-        private static Type FieldType(MemberInfo field, bool asSetter)
-        {
-            if (field is FieldInfo)
-            {
-                return ((FieldInfo)field).FieldType;
-            }
-            if (field is PropertyInfo)
-            {
-                return ((PropertyInfo)field).PropertyType;
-            }
-            if (field is MethodInfo)
-            {
-                MethodInfo mi = (MethodInfo)field;
-                if (asSetter)
-                {
-                    var pms = mi.GetParameters();
-                    if (pms.Length == 0) return mi.ReturnType;
-                    return pms[pms.Length - 1].ParameterType;
-                }
-                return mi.ReturnType;
-            }
-            if (field is ConstructorInfo)
-            {
-                return ((ConstructorInfo)field).DeclaringType;
-            }
-            throw new IndexOutOfRangeException("" + field);
-        }
-
         private static int FillArray(IList fis, Type elementType, CycFort orig, int plarg)
         {
             int elements = 0;
@@ -1332,170 +940,6 @@ namespace Swicli.Library
                 elements++;
             }
             return elements;
-        }
-        [PrologVisible]
-        static public bool cliTypespec(CycFort clazzSpec, CycFort valueOut)
-        {
-            return valueOut.Unify(typeToSpec(GetType(clazzSpec)));
-        }
-
-        [PrologVisible]
-        static public bool cliToFromLayout(CycFort clazzSpec, CycFort memberSpec, CycFort toSpec)
-        {
-            Type type = GetType(clazzSpec);
-            string name = memberSpec.Name;
-            int arity = memberSpec.Arity;
-            MemberInfo[] fieldInfos = new MemberInfo[arity];
-            for (int i = 0; i < arity; i++)
-            {
-                var arg = memberSpec.Arg(i);
-                fieldInfos[i] = findMember(arg, type);
-            }
-            var toMemb = findMember(toSpec, type);
-            AddPrologTermLayout(type, name, fieldInfos, toMemb);
-            return true;
-        }
-
-        [PrologVisible]
-        static public bool cliAddLayout(CycFort clazzSpec, CycFort memberSpec)
-        {
-            Type type = GetType(clazzSpec);
-            string name = memberSpec.Name;
-            int arity = memberSpec.Arity;
-            MemberInfo[] fieldInfos = new MemberInfo[arity];
-            for (int i = 0; i < arity; i++)
-            {
-                var arg = memberSpec.Arg(i);
-                fieldInfos[i] = findMember(arg, type);
-            }
-            AddPrologTermLayout(type, name, fieldInfos, null);
-            return true;
-        }
-
-        readonly private static Dictionary<string, PrologTermLayout> FunctorToLayout = new Dictionary<string, PrologTermLayout>();
-        readonly private static Dictionary<Type, PrologTermLayout> TypeToLayout = new Dictionary<Type, PrologTermLayout>();
-
-        static public void AddPrologTermLayout(Type type, string name, MemberInfo[] fieldInfos, MemberInfo toType)
-        {
-            PrologTermLayout layout = new PrologTermLayout();
-            layout.FieldInfos = fieldInfos;
-            layout.Name = name;
-            layout.ObjectType = type;
-            layout.ToType = toType;
-            int arity = fieldInfos.Length;
-            if (toType != null)
-            {
-                arity = 1;
-            }
-            layout.Arity = arity;
-            lock (FunctorToLayout)
-            {
-                FunctorToLayout[name + "/" + arity] = layout;
-                TypeToLayout[type] = layout;
-            }
-        }
-
-        [PrologVisible]
-        static public bool cliToFromRecomposer(CycFort clazzSpec, CycFort memberSpec, CycFort obj2r, CycFort r2obj)
-        {
-            Type type = GetType(clazzSpec);
-            string name = memberSpec.Name;
-            int arity = memberSpec.Arity;
-            AddPrologTermRecomposer(type, "user", obj2r.Name, r2obj.Name, name, arity);
-            return true;
-        }
-
-        readonly private static Dictionary<string, PrologTermRecomposer> FunctorToRecomposer = new Dictionary<string, PrologTermRecomposer>();
-        readonly private static Dictionary<Type, PrologTermRecomposer> TypeToRecomposer = new Dictionary<Type, PrologTermRecomposer>();
-
-        static public void AddPrologTermRecomposer(Type type, string module, string obj2r, string r2obj, string functorWrapper, int arityWrapper)
-        {
-            PrologTermRecomposer layout = new PrologTermRecomposer();
-            layout.obj2r = obj2r;
-            layout.module = module;
-            layout.r2obj = r2obj;
-            layout.Name = functorWrapper;
-            layout.Arity = arityWrapper;
-            layout.ToType = type;
-            lock (FunctorToRecomposer)
-            {
-                FunctorToRecomposer[functorWrapper + "/" + arityWrapper] = layout;
-                TypeToRecomposer[type] = layout;
-            }
-        }
-
-        public static object GetInstance(CycFort classOrInstance)
-        {
-            if (classOrInstance.IsVar)
-            {
-                Warn("GetInstance(PlVar) {0}", classOrInstance);
-                return null;
-            }
-            if (!classOrInstance.IsCompound)
-            {
-                if (classOrInstance.IsAtom)
-                {
-                    Type t = GetType(classOrInstance);
-                    // we do this for static invokations like: cliGet('java.lang.Integer','MAX_VALUE',...)
-                    // the arg1 denotes a type, then return null!
-                    if (t != null) return null;
-                    Warn("GetInstance(atom) {0}", classOrInstance);
-                    // possibly should always return null?!
-                }
-                else if (classOrInstance.IsString)
-                {
-                    Debug("GetInstance(string) " + classOrInstance);
-                    return (string)classOrInstance;
-                }
-                else
-                {
-                    return CastTerm(classOrInstance, null);
-                }
-                return CastTerm(classOrInstance, null);
-            }
-            string name = classOrInstance.Name;
-            int arity = classOrInstance.Arity;
-            return CastCompoundTerm(name, arity, classOrInstance[1], classOrInstance, null);
-        }
-
-        /// <summary>
-        /// Returns the Type when denoated by a 'namespace.type' (usefull for static instance specification)
-        ///    if a @C#234234  the type of the object unless its a a class
-        ///    c(a) => System.Char   "sdfsdf" =>  System.String   uint(5) => System.UInt32
-        /// 
-        ///    instanceMaybe maybe Null.. it is passed in so the method code doesn't have to call GetInstance again
-        ///       on classOrInstance
-        /// </summary>
-        /// <param name="instanceMaybe"></param>
-        /// <param name="classOrInstance"></param>
-        /// <returns></returns>
-        private static Type GetTypeFromInstance(object instanceMaybe, CycFort classOrInstance)
-        {
-            if (classOrInstance.IsAtom)
-            {
-                return GetType(classOrInstance);
-            }
-            if (classOrInstance.IsString)
-            {
-                if (instanceMaybe != null) return instanceMaybe.GetType();
-                return typeof(string);
-            }
-            if (classOrInstance.IsCompound)
-            {
-                if (classOrInstance.Name == "static")
-                {
-                    return GetType(classOrInstance[1]);
-                }
-            }
-
-            object val = instanceMaybe ?? GetInstance(classOrInstance);
-            //if (val is Type) return (Type)val;
-            if (val == null)
-            {
-                Warn("GetTypeFromInstance: {0}", classOrInstance);
-                return null;
-            }
-            return val.GetType();
         }
 
         static System.Collections.IEnumerable Unfold(object value, out bool unFolded)
@@ -1581,290 +1025,6 @@ namespace Swicli.Library
                 throw new NotSupportedException();
             }
             return results;
-        }
-
-        private static bool SpecialUnify(CycFort valueOut, CycFort plvar)
-        {
-            bool b = valueOut.Unify(plvar);
-            if (b) return true;
-            object obj1 = GetInstance(plvar);
-            if (ReferenceEquals(obj1, null))
-            {
-                return false;
-            }
-            Type t1 = obj1.GetType();
-            object obj2 = CastTerm(valueOut, t1);
-            if (ReferenceEquals(obj2, null))
-            {
-                return false;
-            }
-            Type t2 = obj2.GetType();
-            if (obj1.Equals(obj2))
-            {
-                return true;
-            }
-            if (t1 == t2)
-            {
-                return false;
-            }
-            return false;
-        }
-
-        public static Object ToFromConvertLock = new object();
-        public static int UnifyToProlog(object o, CycFort term)
-        {
-            if (!term.IsVar)
-            {
-                Warn("Not a free var {0}", term);
-                return libpl.PL_fail;
-            }
-            uint TermRef = term.TermRef;
-            if (TermRef == 0)
-            {
-                Warn("Not a allocated term {0}", o);
-                return libpl.PL_fail;
-            }
-            if (o is PlTerm)
-            {
-                return libpl.PL_unify(TermRef, ((PlTerm)o).TermRef);
-            }
-#if USE_IKVM
-            if (o is Term) return UnifyToProlog(ToPLCS((Term)o), term);
-#endif
-            if (PreserveObjectType)
-            {
-                return PlSucceedOrFail(UnifyTagged(o, term));
-            }
-            if (o is string)
-            {
-                string s = (string)o;
-                switch (VMStringsAsAtoms)
-                {
-                    case libpl.CVT_STRING:
-                        {
-                            try
-                            {
-                                return libpl.PL_unify_string_chars(TermRef, (string)o);
-                            }
-                            catch (Exception)
-                            {
-
-                                return UnifyAtom(TermRef, s);
-                            }
-                        }
-                    case libpl.CVT_ATOM:
-                        try
-                        {
-                            return libpl.PL_unify_atom_chars(TermRef, (string)o);
-                        }
-                        catch (Exception)
-                        {
-
-                            return UnifyAtom(TermRef, s);
-                        }
-                    case libpl.CVT_LIST:
-                        return libpl.PL_unify_list_chars(TermRef, (string)o);
-                    default:
-                        Warn("UNKNOWN VMStringsAsAtoms {0}", VMStringsAsAtoms);
-                        return libpl.PL_fail;
-                }
-            }
-            if (o == null)
-            {
-                return AddTagged(TermRef, "null");
-            }
-
-            if (o is Type || o is Type)
-            {
-                if (true)
-                {
-                    //lock (ToFromConvertLock)
-                    {
-                        var tag = object_to_tag(o);
-                        AddTagged(TermRef, tag);
-                        return libpl.PL_succeed;
-                    }
-                }
-                return PlSucceedOrFail(term.Unify(typeToSpec((Type)o)));
-            }
-
-            Type t = o.GetType();
-            if (t == typeof(void))
-            {
-                return AddTagged(TermRef, "void");
-            }
-            if (o is ValueType)
-            {
-                if (o is bool)
-                {
-                    bool tf = (bool)o;
-                    return AddTagged(TermRef, tf ? "true" : "false");
-                }
-                if (o is char)
-                {
-                    try
-                    {
-                        char ch = (char)o;
-                        string cs = new string(ch, 1);
-                        switch (VMStringsAsAtoms)
-                        {
-                            case libpl.CVT_STRING:
-                                return libpl.PL_unify_atom_chars(TermRef, cs);
-                            case libpl.CVT_ATOM:
-                                return libpl.PL_unify_atom_chars(TermRef, cs);
-                            case libpl.CVT_LIST:
-                                return libpl.PL_unify_integer(TermRef, (int)ch);
-                            default:
-                                Warn("UNKNOWN VMStringsAsAtoms {0}", VMStringsAsAtoms);
-                                return libpl.PL_fail;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Warn("@TODO unmappable errors? {0} type {1}", o, t);
-                        //
-                    }
-                }
-                if (t.IsEnum)
-                {
-                    int res = FromEnum(TermRef, o, t);
-                    term.ToString();
-                    return res;
-                }
-                if (t.IsPrimitive)
-                {
-                    try
-                    {
-                        int res = ToVMNumber(o, term);
-                        if (res == libpl.PL_succeed) return res;
-                        if (res == libpl.PL_fail) return res;
-                        if (res != -1)
-                        {
-                            // Warn("@TODO Missing code for ToVmNumber? " + o + " type " + t);
-                            return res;
-                        }
-                        if (t.IsPrimitive)
-                        {
-                            Warn("@TODO Missing code for primitive? {0} type {1}", o, t);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Warn("@TODO unmappable errors? {0} type {1}", o, t);
-                    }
-                }
-            }
-            lock (FunctorToLayout)
-            {
-                PrologTermLayout layout;
-                if (TypeToLayout.TryGetValue(t, out layout))
-                {
-                    MemberInfo[] tGetFields = layout.FieldInfos;// GetStructFormat(t);
-                    int len = tGetFields.Length;
-                    PlTermV tv = NewPlTermV(len);
-                    for (int i = 0; i < len; i++)
-                    {
-                        object v = GetMemberValue(tGetFields[i], o);
-                        tv[i].FromObject((v));
-                    }
-                    return PlSucceedOrFail(term.Unify(PlC(layout.Name, tv)));
-                }
-            }
-            lock (FunctorToRecomposer)
-            {
-                PrologTermRecomposer layout = GetTypeMap(t, TypeToRecomposer);
-                if (layout != null)
-                {
-                    lock (ToFromConvertLock)
-                    {
-                        var tag = object_to_tag(o);
-                        uint newref = libpl.PL_new_term_refs(2);
-                        AddTagged(newref, tag);
-                        PlTerm into = new PlTerm(newref);
-                        PlTerm outto = new PlTerm(newref + 1);
-                        var ret = PlQuery.PlCall(layout.module, layout.obj2r, new PlTermV(into, outto));
-                        if (ret)
-                        {
-                            return term.Unify(outto) ? libpl.PL_succeed
-                                   : libpl.PL_fail;
-
-                        }
-                    }
-                }
-            }
-            if (o is IList)
-            {
-
-            }
-            if (IsStructRecomposable(t))
-            {
-                return ToFieldLayout("struct", typeToName(t), o, t, term, false, false);
-            }
-            if (o is EventArgs)
-            {
-                return ToFieldLayout("event", typeToName(t), o, t, term, false, false);
-            }
-            return PlObject(TermRef, o);
-        }
-
-        public static T GetTypeMap<T>(Type t, IDictionary<Type, T> mapped)
-        {
-            T layout;
-            if (mapped.TryGetValue(t, out layout))
-            {
-                return layout;
-            }
-
-            Type bestType = null;
-            foreach (KeyValuePair<Type, T> map in mapped)
-            {
-                Type mapKey = map.Key;
-                if (mapKey.IsAssignableFrom(t))
-                {
-                    if (bestType == null || mapKey.IsAssignableFrom(bestType))
-                    {
-                        bestType = mapKey;
-                        layout = map.Value;
-                    }
-                }
-            }
-            return layout;// default(T);
-        }
-
-        public static CycFort C(string collection)
-        {
-            return PlTerm.PlAtom(collection);
-        }
-
-        private static int FromEnum(uint TermRef, object o, Type t)
-        {
-            uint temp = libpl.PL_new_term_ref();
-            libpl.PL_cons_functor_v(temp,
-                                    ENUM_2,
-                                    new PlTermV(typeToSpec(t), PlTerm.PlAtom(o.ToString())).A0);
-            return libpl.PL_unify(TermRef, temp);
-        }
-
-        protected static uint ENUM_2
-        {
-            get
-            {
-                if (_enum2 == 0)
-                {
-                    _enum2 = libpl.PL_new_functor(libpl.PL_new_atom("enum"), 2);
-                }
-                return _enum2;
-            }
-        }
-
-        private static bool IsStructRecomposable(Type t)
-        {
-            return t.IsValueType && !t.IsEnum && !t.IsPrimitive &&
-                   (!t.Namespace.StartsWith("System") || t == typeof(DateTime)) &&
-                   !typeof(IEnumerator).IsAssignableFrom(t) &&
-                   !typeof(ICloneable).IsAssignableFrom(t) &&
-                   !typeof(IEnumerable).IsAssignableFrom(t) &&
-                   !typeof(ICollection).IsAssignableFrom(t);
         }
 
         private delegate void WithEnum(CycFort p);
@@ -2080,24 +1240,5 @@ namespace Swicli.Library
         }
     }
 
-    internal class PrologTermLayout
-    {
-        public string Name;
-        public int Arity;
-        public Type ObjectType;
-        public MemberInfo[] FieldInfos;
-        public MemberInfo ToType;
-    }
-
-    internal class PrologTermRecomposer
-    {
-        public string module;
-        public string Name;
-        public int Arity;
-        public String obj2r;
-        public String r2obj;
-        //public MemberInfo[] FieldInfos;
-        public Type ToType;
-    }
 
 }

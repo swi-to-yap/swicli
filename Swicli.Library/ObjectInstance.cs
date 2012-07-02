@@ -1,0 +1,483 @@
+/*  $Id$
+*  
+*  Project: Swicli.Library - Two Way Interface for .NET and MONO to SWI-Prolog
+*  Author:        Douglas R. Miles
+*  E-mail:        logicmoo@gmail.com
+*  WWW:           http://www.logicmoo.com
+*  Copyright (C):  2010-2012 LogicMOO Developement
+*
+*  This library is free software; you can redistribute it and/or
+*  modify it under the terms of the GNU Lesser General Public
+*  License as published by the Free Software Foundation; either
+*  version 2.1 of the License, or (at your option) any later version.
+*
+*  This library is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+*  Lesser General Public License for more details.
+*
+*  You should have received a copy of the GNU Lesser General Public
+*  License along with this library; if not, write to the Free Software
+*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*
+*********************************************************/
+#if USE_MUSHDLR
+using MushDLR223.Utilities;
+#endif
+#if USE_IKVM
+using jpl;
+using Class = java.lang.Class;
+#else
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Xml.Serialization;
+using SbsSW.SwiPlCs;
+using Class = System.Type;
+#endif
+using CycFort = SbsSW.SwiPlCs.PlTerm;
+using PrologCli = Swicli.Library.PrologClient;
+
+namespace Swicli.Library
+{
+    public partial class PrologClient
+    {
+
+        [PrologVisible]
+        public static bool cliMakeDefault(PlTerm typeSpec, PlTerm valueOut)
+        {
+            CheckMI();
+            MethodInfo rc = MakeDefaultViaReflectionInfo.MakeGenericMethod(GetType(typeSpec));
+            return UnifyTagged(rc.Invoke(null, ZERO_OBJECTS), valueOut);
+        }
+        private static readonly Type[] arrayOfStringType = new Type[] { typeof(string) };
+        private static uint _enum2;
+        private static uint _obj1;
+        private static readonly object[] ARRAY_OBJECT0 = new object[0];
+
+        static object ToBigInteger(string value)
+        {
+            Type t;
+            // Just Mono
+            t = Type.GetType("Mono.Math.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // .net 4.0 and Mono
+            t = ResolveType("System.Numerics.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // Just Mono Android
+            t = ResolveType("Java.Math.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+
+            // IKVM         
+            t = ResolveType("java.math.BigInteger");
+            if (t != null)
+            {
+                var m = t.GetConstructor(arrayOfStringType);
+                if (m != null) return m.Invoke(new object[] { value });
+            }
+#if USE_IKVM
+            return new java.math.BigInteger(value);
+#else
+            if (!value.StartsWith("-")) return ulong.Parse(value);
+            return long.Parse(value);
+#endif
+        }
+        static object ToBigDecimal(string value)
+        {
+            Type t;
+            // Just Mono
+            t = Type.GetType("Mono.Math.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // .net 4.0 and Mono
+            t = ResolveType("System.Numerics.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // Just Mono Android
+            t = ResolveType("Java.Math.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetMethod("Parse", arrayOfStringType);
+                if (m != null) return m.Invoke(null, new object[] { value });
+            }
+            // IKVM   
+            t = ResolveType("java.math.BigDecimal");
+            if (t != null)
+            {
+                var m = t.GetConstructor(arrayOfStringType);
+                if (m != null) return m.Invoke(new object[] { value });
+            }
+#if USE_IKVM
+            return new java.math.BigDecimal(value);
+#else
+            return double.Parse(value);
+#endif
+        }
+
+        public static object GetInstance(CycFort classOrInstance)
+        {
+            if (classOrInstance.IsVar)
+            {
+                Warn("GetInstance(PlVar) {0}", classOrInstance);
+                return null;
+            }
+            if (!classOrInstance.IsCompound)
+            {
+                if (classOrInstance.IsAtom)
+                {
+                    Type t = GetType(classOrInstance);
+                    // we do this for static invokations like: cliGet('java.lang.Integer','MAX_VALUE',...)
+                    // the arg1 denotes a type, then return null!
+                    if (t != null) return null;
+                    Warn("GetInstance(atom) {0}", classOrInstance);
+                    // possibly should always return null?!
+                }
+                else if (classOrInstance.IsString)
+                {
+                    Debug("GetInstance(string) {0}", classOrInstance);
+                    return (string)classOrInstance;
+                }
+                else
+                {
+                    return CastTerm(classOrInstance, null);
+                }
+                return CastTerm(classOrInstance, null);
+            }
+            string name = classOrInstance.Name;
+            int arity = classOrInstance.Arity;
+            return CastCompoundTerm(name, arity, classOrInstance[1], classOrInstance, null);
+        }
+
+        /// <summary>
+        /// Returns the Type when denoated by a 'namespace.type' (usefull for static instance specification)
+        ///    if a @C#234234  the type of the object unless its a a class
+        ///    c(a) => System.Char   "sdfsdf" =>  System.String   uint(5) => System.UInt32
+        /// 
+        ///    instanceMaybe maybe Null.. it is passed in so the method code doesn't have to call GetInstance again
+        ///       on classOrInstance
+        /// </summary>
+        /// <param name="instanceMaybe"></param>
+        /// <param name="classOrInstance"></param>
+        /// <returns></returns>
+        private static Type GetTypeFromInstance(object instanceMaybe, CycFort classOrInstance)
+        {
+            if (classOrInstance.IsAtom)
+            {
+                return GetType(classOrInstance);
+            }
+            if (classOrInstance.IsString)
+            {
+                if (instanceMaybe != null) return instanceMaybe.GetType();
+                return typeof(string);
+            }
+            if (classOrInstance.IsCompound)
+            {
+                if (classOrInstance.Name == "static")
+                {
+                    return GetType(classOrInstance[1]);
+                }
+            }
+
+            object val = instanceMaybe ?? GetInstance(classOrInstance);
+            //if (val is Type) return (Type)val;
+            if (val == null)
+            {
+                Warn("GetTypeFromInstance: {0}", classOrInstance);
+                return null;
+            }
+            return val.GetType();
+        }
+
+        private static bool SpecialUnify(CycFort valueOut, CycFort plvar)
+        {
+            bool b = valueOut.Unify(plvar);
+            if (b) return true;
+            object obj1 = GetInstance(plvar);
+            if (ReferenceEquals(obj1, null))
+            {
+                return false;
+            }
+            Type t1 = obj1.GetType();
+            object obj2 = CastTerm(valueOut, t1);
+            if (ReferenceEquals(obj2, null))
+            {
+                return false;
+            }
+            Type t2 = obj2.GetType();
+            if (obj1.Equals(obj2))
+            {
+                return true;
+            }
+            if (t1 == t2)
+            {
+                return false;
+            }
+            return false;
+        }
+
+        public static int UnifyAtom(uint TermRef, string s)
+        {
+            uint temp = libpl.PL_new_term_ref();
+            libpl.PL_put_atom(temp, libpl.PL_new_atom_wchars(s.Length, s));
+            return libpl.PL_unify(temp, TermRef);
+        }
+
+        private static bool UnifySpecialObject(PlTerm plTerm, object ret1)
+        {
+            if (plTerm.IsVar)
+            {
+                return plTerm.FromObject(ret1);
+            }
+            else
+            {
+                var plvar = PlTerm.PlVar();
+                return plvar.FromObject(ret1) && SpecialUnify(plTerm, plvar);
+            }
+        }
+
+        public static Object ToFromConvertLock = new object();
+        public static int UnifyToProlog(object o, CycFort term)
+        {
+            if (!term.IsVar)
+            {
+                Warn("Not a free var {0}", term);
+                return libpl.PL_fail;
+            }
+            uint TermRef = term.TermRef;
+            if (TermRef == 0)
+            {
+                Warn("Not a allocated term {0}", o);
+                return libpl.PL_fail;
+            }
+            if (o is PlTerm)
+            {
+                return libpl.PL_unify(TermRef, ((PlTerm)o).TermRef);
+            }
+#if USE_IKVM
+            if (o is Term) return UnifyToProlog(ToPLCS((Term)o), term);
+#endif
+            if (PreserveObjectType)
+            {
+                return PlSucceedOrFail(UnifyTagged(o, term));
+            }
+            if (o is string)
+            {
+                string s = (string)o;
+                switch (VMStringsAsAtoms)
+                {
+                    case libpl.CVT_STRING:
+                        {
+                            try
+                            {
+                                return libpl.PL_unify_string_chars(TermRef, (string)o);
+                            }
+                            catch (Exception)
+                            {
+
+                                return UnifyAtom(TermRef, s);
+                            }
+                        }
+                    case libpl.CVT_ATOM:
+                        try
+                        {
+                            return libpl.PL_unify_atom_chars(TermRef, (string)o);
+                        }
+                        catch (Exception)
+                        {
+
+                            return UnifyAtom(TermRef, s);
+                        }
+                    case libpl.CVT_LIST:
+                        return libpl.PL_unify_list_chars(TermRef, (string)o);
+                    default:
+                        Warn("UNKNOWN VMStringsAsAtoms {0}", VMStringsAsAtoms);
+                        return libpl.PL_fail;
+                }
+            }
+            if (o == null)
+            {
+                return AddTagged(TermRef, "null");
+            }
+
+            if (o is Type || o is Type)
+            {
+                if (true)
+                {
+                    //lock (ToFromConvertLock)
+                    {
+                        var tag = object_to_tag(o);
+                        AddTagged(TermRef, tag);
+                        return libpl.PL_succeed;
+                    }
+                }
+                return PlSucceedOrFail(term.Unify(typeToSpec((Type)o)));
+            }
+
+            Type t = o.GetType();
+            if (t == typeof(void))
+            {
+                return AddTagged(TermRef, "void");
+            }
+            if (o is ValueType)
+            {
+                if (o is bool)
+                {
+                    bool tf = (bool)o;
+                    return AddTagged(TermRef, tf ? "true" : "false");
+                }
+                if (o is char)
+                {
+                    try
+                    {
+                        char ch = (char)o;
+                        string cs = new string(ch, 1);
+                        switch (VMStringsAsAtoms)
+                        {
+                            case libpl.CVT_STRING:
+                                return libpl.PL_unify_atom_chars(TermRef, cs);
+                            case libpl.CVT_ATOM:
+                                return libpl.PL_unify_atom_chars(TermRef, cs);
+                            case libpl.CVT_LIST:
+                                return libpl.PL_unify_integer(TermRef, (int)ch);
+                            default:
+                                Warn("UNKNOWN VMStringsAsAtoms {0}", VMStringsAsAtoms);
+                                return libpl.PL_fail;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Warn("@TODO unmappable errors? {0} type {1}", o, t);
+                        //
+                    }
+                }
+                if (t.IsEnum)
+                {
+                    int res = FromEnum(TermRef, o, t);
+                    term.ToString();
+                    return res;
+                }
+                if (t.IsPrimitive)
+                {
+                    try
+                    {
+                        int res = ToVMNumber(o, term);
+                        if (res == libpl.PL_succeed) return res;
+                        if (res == libpl.PL_fail) return res;
+                        if (res != -1)
+                        {
+                            // Warn("@TODO Missing code for ToVmNumber? " + o + " type " + t);
+                            return res;
+                        }
+                        if (t.IsPrimitive)
+                        {
+                            Warn("@TODO Missing code for primitive? {0} type {1}", o, t);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Warn("@TODO unmappable errors? {0} type {1}", o, t);
+                    }
+                }
+            }
+            lock (FunctorToLayout)
+            {
+                PrologTermLayout layout;
+                if (TypeToLayout.TryGetValue(t, out layout))
+                {
+                    MemberInfo[] tGetFields = layout.FieldInfos;// GetStructFormat(t);
+                    int len = tGetFields.Length;
+                    PlTermV tv = NewPlTermV(len);
+                    for (int i = 0; i < len; i++)
+                    {
+                        object v = GetMemberValue(tGetFields[i], o);
+                        tv[i].FromObject((v));
+                    }
+                    return PlSucceedOrFail(term.Unify(PlC(layout.Name, tv)));
+                }
+            }
+            lock (FunctorToRecomposer)
+            {
+                PrologTermRecomposer layout = GetTypeMap(t, TypeToRecomposer);
+                if (layout != null)
+                {
+                    lock (ToFromConvertLock)
+                    {
+                        var tag = object_to_tag(o);
+                        uint newref = libpl.PL_new_term_refs(2);
+                        AddTagged(newref, tag);
+                        PlTerm into = new PlTerm(newref);
+                        PlTerm outto = new PlTerm(newref + 1);
+                        var ret = PlQuery.PlCall(layout.module, layout.obj2r, new PlTermV(into, outto));
+                        if (ret)
+                        {
+                            return term.Unify(outto) ? libpl.PL_succeed
+                                   : libpl.PL_fail;
+
+                        }
+                    }
+                }
+            }
+            if (o is IList)
+            {
+
+            }
+            if (IsStructRecomposable(t))
+            {
+                return ToFieldLayout("struct", typeToName(t), o, t, term, false, false);
+            }
+            if (o is EventArgs)
+            {
+                return ToFieldLayout("event", typeToName(t), o, t, term, false, false);
+            }
+            return PlObject(TermRef, o);
+        }
+
+        public static CycFort C(string collection)
+        {
+            return PlTerm.PlAtom(collection);
+        }
+
+        private static int FromEnum(uint TermRef, object o, Type t)
+        {
+            uint temp = libpl.PL_new_term_ref();
+            libpl.PL_cons_functor_v(temp,
+                                    ENUM_2,
+                                    new PlTermV(typeToSpec(t), PlTerm.PlAtom(o.ToString())).A0);
+            return libpl.PL_unify(TermRef, temp);
+        }
+
+        protected static uint ENUM_2
+        {
+            get
+            {
+                if (_enum2 == 0)
+                {
+                    _enum2 = libpl.PL_new_functor(libpl.PL_new_atom("enum"), 2);
+                }
+                return _enum2;
+            }
+        }
+
+    }
+
+}

@@ -105,9 +105,10 @@ namespace Swicli.Library
             }
             return Warn(text);
         }
-        public static void Debug(object plthreadhasdifferntthread)
+        public static void Debug(string text, params object[] ps)
         {
-
+            text = PlStringFormat(text, ps);
+            text.ToString();
         }
 
         [PrologVisible]
@@ -119,6 +120,20 @@ namespace Swicli.Library
         public static bool cliBreak(PlTerm ex)
         {
             return WarnMissing(ToString(ex)) || true;
+        }
+        private void Trace()
+        {
+            //throw new NotImplementedException();
+        }
+
+        private object ToFort(object o)
+        {
+            return ToProlog(o);
+        }
+
+        public static int PlSucceedOrFail(bool p)
+        {
+            return p ? libpl.PL_succeed : libpl.PL_fail;
         }
 
         private static string PlStringFormat(string text, params object[] ps)
@@ -150,77 +165,91 @@ namespace Swicli.Library
             return text;
         }
 
-        private static CycFort ToPlList(CycFort[] terms)
+        private static string ToString(object o)
         {
-            int termLen = terms.Length;
-            if (termLen == 0) return ATOM_NIL;
-            termLen--;
-            PlTerm ret = listOfOne(terms[termLen]);
-            while (--termLen >= 0)
+            try
             {
-                ret = PlTerm.PlCompound(".", terms[termLen], ret);
+                return ToString0(o);
             }
-            return ret;
-        }
-
-        private static PlTermV ToPlTermV(PlTerm[] terms)
-        {
-            var tv = NewPlTermV(terms.Length);
-            for (int i = 0; i < terms.Length; i++)
+            catch (Exception)
             {
-                tv[i] = terms[i];
+                return "" + o;
             }
-            return tv;
         }
-
-        private static PlTermV NewPlTermV(int length)
+        private static string ToString0(object o)
         {
-            return new PlTermV(length);
-        }
-
-        private static PlTermV ToPlTermVParams(ParameterInfo[] terms)
-        {
-            var tv = NewPlTermV(terms.Length);
-            for (int i = 0; i < terms.Length; i++)
+            if (o == null) return "null";
+            if (o is IConvertible) return o.ToString();
+            if (o is System.Collections.IEnumerable)
             {
-                tv[i] = typeToSpec(terms[i].ParameterType);
+                var oc = (System.Collections.IEnumerable)o;
+                int count = 0;
+                string ret = "[";
+                foreach (var o1 in (System.Collections.IEnumerable)o)
+                {
+                    if (count > 1) ret += ",";
+                    count++;
+                    ret += ToString0(o1);
+                }
+                return ret + "]";
             }
-            return tv;
+            return o.ToString();
         }
-        private static PlTerm ToPlListParams(ParameterInfo[] terms)
+        /// <summary>
+        /// 1 ?- cliToString(-1,X).
+        /// X = "4294967295".
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        [PrologVisible]
+        public static bool cliToStrRaw(PlTerm obj, PlTerm str)
         {
-            PlTerm listOf = ATOM_NIL;
-            for (int i = terms.Length - 1; i >= 0; i--)
+            try
             {
-                PlTerm term = typeToSpec(terms[i].ParameterType);
-                listOf = PlTerm.PlCompound(".", term, listOf);
+                if (!str.IsVar)
+                {
+                    var plvar = PlTerm.PlVar();
+                    return cliToStrRaw(obj, plvar) && SpecialUnify(str, plvar);
+                }
+                if (obj.IsString) return str.Unify(obj);
+                if (obj.IsVar) return str.Unify((string)obj);
+                object o = GetInstance(obj);
+                if (o == null) return str.FromObject("" + obj);
+                return str.FromObject(ToString(o));
             }
-            return listOf;
-        }
-        private static PlTerm ToPlListTypes(Type[] terms)
-        {
-            PlTerm listOf = ATOM_NIL;
-            for (int i = terms.Length - 1; i >= 0; i--)
+            catch (Exception e)
             {
-                PlTerm term = typeToSpec(terms[i]);
-                listOf = PlTerm.PlCompound(".", term, listOf);
+                Warn("cliToString: {0}", e);
+                object o = GetInstance(obj);
+                if (o == null) return str.FromObject("" + obj);
+                return str.FromObject(ToString(o));
             }
-            return listOf;
         }
-        private static PlTermV ToPlTermVSpecs(Type[] terms)
+        [IKVMBased]
+        [PrologVisible]
+        static public bool cliJavaToString(PlTerm paramIn, PlTerm valueOut)
         {
-            var tv = NewPlTermV(terms.Length);
-            for (int i = 0; i < terms.Length; i++)
+            if (!valueOut.IsVar)
             {
-                tv[i] = typeToSpec(terms[i]);
+                var plvar = PlTerm.PlVar();
+                return cliJavaToString(paramIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            return tv;
-        }
-
-
-        private static PlTerm listOfOne(PlTerm term)
-        {
-            return PlTerm.PlCompound(".", term, ATOM_NIL);
+            object getInstance = GetInstance(paramIn);
+            if (getInstance == null) return valueOut.Unify(PlTerm.PlString("null"));
+#if USE_IKVM
+            object val = getInstance as java.lang.Object;
+            if (val == null)
+            {
+                Class c = ikvm.runtime.Util.getClassFromObject(getInstance);
+                string s = (string)c.getMethod("toString", new Class[0]).invoke(getInstance, ZERO_OBJECTS);
+                return valueOut.Unify(PlTerm.PlString(s));
+            }
+            return valueOut.Unify(PlTerm.PlString(val.toString()));
+#else
+            object val = getInstance;
+            return valueOut.Unify(PlTerm.PlString(val.ToString()));
+#endif
         }
 
         protected static PlTerm ATOM_NIL
@@ -233,155 +262,6 @@ namespace Swicli.Library
         public static PlTerm PLTRUE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("true")); } }
         public static PlTerm PLFALSE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("false")); } }
 
-        public static object CallProlog(object target, string module, string name, int arity, object origin, object[] paramz, Type returnType, bool discard)
-        {
-			if (!ClientReady) {
-				return null;
-			}
-            return InvokeFromC(() =>
-            {
-
-                PlTermV args = NewPlTermV(arity);
-                int fillAt = 0;
-                if (origin != null)
-                {
-                    args[fillAt++].FromObject(origin);
-                }
-                for (int i = 0; i < paramz.Length; i++)
-                {
-                    args[fillAt++].FromObject(paramz[i]);
-                }
-                bool IsVoid = returnType == typeof (void);
-                if (!IsVoid)
-                {
-                    //args[fillAt] = PlTerm.PlVar();
-                }
-                if (!PlQuery.PlCall(module, name, args))
-                {
-                    if (!IsVoid) Warn("Failed Event Handler {0} failed", target);
-                }
-                if (IsVoid) return null;
-                object ret = PrologClient.CastTerm(args[fillAt], returnType);
-                return ret;
-            }, discard);
-        }
-
-        public static int UnifyAtom(uint TermRef, string s)
-        {
-            uint temp = libpl.PL_new_term_ref();
-            libpl.PL_put_atom(temp, libpl.PL_new_atom_wchars(s.Length, s));
-            return libpl.PL_unify(temp, TermRef);
-        }
-
-        private static bool UnifySpecialObject(PlTerm plTerm, object ret1)
-        {
-            if (plTerm.IsVar)
-            {
-                return plTerm.FromObject(ret1);
-            }
-            else
-            {
-                var plvar = PlTerm.PlVar();
-                return plvar.FromObject(ret1) && SpecialUnify(plTerm, plvar);
-            }
-        }
-        private static Type[] GetParamSpec(PlTerm memberSpec)
-        {
-            return memberSpec.IsCompound ? GetParamSpec(ToTermArray(memberSpec), false) : null;
-        }
-        private static Type[] GetParamSpec(PlTerm[] memberSpec, bool isObjects)
-        {
-            return GetParamSpec(memberSpec, isObjects, 0, -1);
-        }
-        private static Type[] GetParamSpec(PlTerm[] memberSpec, bool isObjects, int start, int length)
-        {
-            var specArray = memberSpec;
-            int arity = specArray.Length - start;
-            if (length > -1)
-            {
-                arity = length - start;
-            }
-            int end = start + arity;
-            Type[] paramz = new Type[arity];
-            for (int i = start; i < end; i++)
-            {
-                PlTerm info = specArray[i];
-                if (!info.IsVar)
-                {
-                    var t = GetType(info, isObjects);
-                    if (t == null)
-                    {
-                        t = typeof (object);
-                    }
-                    paramz[i] = t;
-                }
-            }
-            return paramz;
-        }
-
-        private static EventInfo findEventInfo(PlTerm memberSpec, Type c, ref Type[] paramz)
-        {
-            if (memberSpec.IsVar)
-            {
-                WarnMissing("findEventInfo IsVar {0} on type {1}", memberSpec, c);
-                return null;
-            }
-            if (memberSpec.IsInteger)
-            {
-                int ordinal = memberSpec.intValue();
-                var mis = c.GetEvents(BindingFlagsALL);
-                if (ordinal < 0 || ordinal >= mis.Length) return null;
-                return mis[ordinal];
-            }
-            if (IsTaggedObject(memberSpec))
-            {
-                var r = tag_to_object(memberSpec[1].Name) as EventInfo;
-                if (r != null) return r;
-            }
-            if (memberSpec.IsCompound)
-            {
-                if (memberSpec.Name == "e")
-                {
-                    var arg1 = memberSpec.Arg(0);
-                    if (arg1.IsInteger)
-                    {
-                        Type[] paramzN = null;
-                        return findEventInfo(arg1, c, ref paramzN);
-                    }
-                }
-            }
-            if (c == null) return null;
-            EventInfo ei = c.GetEvent(memberSpec.Name, BindingFlagsALL);
-            if (ei != null) return ei;
-            var members = c.GetEvents(BindingFlagsALL);
-            if (members.Length == 0) return null;
-            int arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
-            EventInfo candidate = null;
-            foreach (var info in members)
-            {
-                var infos = info.GetRaiseMethod();
-                ParameterInfo[] paramTypes = infos.GetParameters();
-                if (paramTypes.Length == arity)
-                {
-                    if (ParamsMatch(paramz, paramTypes)) return info;
-                    if (infos.IsStatic)
-                    {
-                        if (candidate == null)
-                        {
-                            candidate = info;
-                        }
-                    }
-                    else
-                    {
-                        if (candidate == null)
-                        {
-                            candidate = info;
-                        }
-                    }
-                }
-            }
-            return candidate ?? members[0];
-        }
         private static MemberInfo findMember(PlTerm memberSpec, Type c)
         {
             if (IsTaggedObject(memberSpec))
@@ -397,6 +277,7 @@ namespace Swicli.Library
                    findPropertyInfo(memberSpec, c, false, false, ref paramz);
             //findConstructor(memberSpec, c));
         }
+
         private static FieldInfo findField(PlTerm memberSpec, Type c)
         {
             if (c == null)
@@ -435,12 +316,6 @@ namespace Swicli.Library
             return fi;
         }
 
-        readonly static Dictionary<int, string> indexTest = new Dictionary<int, string>() { { 1, "one" }, { 2, "two" }, };
-        public string this[int v]
-        {
-            get { return indexTest[v]; }
-            set { indexTest[v] = value; }
-        }
 
         private static PropertyInfo findPropertyInfo(PlTerm memberSpec, Type c, bool mustHaveP, bool assumeParamTypes, ref Type[] paramz)
         {
@@ -538,398 +413,6 @@ namespace Swicli.Library
             return false;
         }
 
-        private static MethodInfo findMethodInfo(PlTerm memberSpec, int arity, Type c, ref Type[] paramz)
-        {
-            var mi = findMethodInfo0(memberSpec, arity, c, ref paramz);
-            if (mi == null)
-            {
-                return null;
-            }
-            if (!mi.IsGenericMethodDefinition) return mi;
-            var typeparams = mi.GetGenericArguments() ?? new Type[0];
-            if (typeparams.Length == 0) return mi;
-            if (memberSpec.IsAtom)
-            {
-                {
-                    var ps = mi.GetParameters();
-                    bool missingTypePAramInArgs = false;
-                    foreach (Type type in typeparams)
-                    {
-                        Type type1 = type;
-                        var pi = Array.Find(ps, p => p.ParameterType == type1);
-                        if (pi != null)
-                        {
-                            continue;
-                        }
-                        Warn("Trying to find a generic methods without type specifiers {0}",
-                             ToString(typeparams));
-                    }
-                }
-                return mi;
-            }
-            else
-            {
-                if (memberSpec.IsCompound)
-                {
-
-                    Type[] t = GetParamSpec(ToTermArray(memberSpec), false, 0, typeparams.Length);
-                    if (t.Length == typeparams.Length)
-                    {
-                        mi = mi.MakeGenericMethod(t);
-                    }
-                }
-                return mi;
-            }
-        }
-        private static string ToString(object o)
-        {
-            try
-            {
-                return ToString0(o);
-            }
-            catch (Exception)
-            {
-                return "" + o;
-            }
-        }
-        private static string ToString0(object o)
-        {
-            if (o == null) return "null";
-            if (o is IConvertible) return o.ToString();
-            if (o is System.Collections.IEnumerable)
-            {
-                var oc = (System.Collections.IEnumerable) o;
-                int count = 0;
-                string ret = "[";
-                foreach (var o1 in (System.Collections.IEnumerable)o)
-                {
-                    if (count>1) ret += ",";
-                    count++;
-                    ret += ToString0(o1);
-                }
-                return ret + "]";
-            }
-            return o.ToString();
-        }
-        private static MethodInfo findMethodInfo0(PlTerm memberSpec, int arity, Type c, ref Type[] paramz)
-        {
-            if (c == null)
-            {
-                Warn("findMethod no class for {0}", memberSpec);
-                return null;
-            }
-            if (memberSpec.IsVar)
-            {
-                Warn("findMethod IsVar {0} on type {1}", memberSpec, c);
-                return null;
-            }
-            if (memberSpec.IsInteger)
-            {
-                var mis = c.GetMethods(BindingFlagsALL);
-                return mis[memberSpec.intValue()];
-            }
-            if (IsTaggedObject(memberSpec))
-            {
-                object o = tag_to_object(memberSpec[1].Name);
-                var r = o as MethodInfo;
-                if (r != null) return r;
-                var d = o as Delegate;
-                if (d != null) return d.Method ?? d.GetType().GetMethod("Invoke");
-            }
-            string fn = memberSpec.Name;
-            MethodInfo mi = null;
-            if (arity < 1)
-            {
-                mi = GetMethod(c, fn, BindingFlagsALL);
-                if (mi != null) return mi;
-            }
-            if (paramz == null)
-            {
-                Warn("using paramSpec {0}", ToString(memberSpec));
-                paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
-            }
-            try
-            {
-                bool hasNull = false;
-                foreach (var s in paramz)
-                {
-                    if (s == null)
-                    {
-                        hasNull = true;
-                        break;                       
-                    }
-                }
-                if (!hasNull)
-                {
-                    mi = c.GetMethod(fn, BindingFlagsALL, null, CallingConventions.Any, paramz, null);
-                }
-                if (mi != null)
-                {
-                    return mi;
-                }
-            }
-            catch ( /*AmbiguousMatch*/ Exception e)
-            {
-                Debug("AME: " + e + " fn = " + fn);
-            }
-            MethodInfo[] members = c.GetMethods(BindingFlagsALL);
-            if (arity < 0) arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
-
-            string fnLower = fn.ToLower();
-            var candidates = new MethodInfo[2];
-            foreach (var infos in members)
-            {
-                var methodParams = infos.GetParameters();
-                if (methodParams.Length == arity)
-                {
-                    if (infos.Name == fn)
-                    {
-                        candidates[0] = infos;
-                    }
-                    else if (infos.Name.ToLower() == fnLower)
-                    {
-                        candidates[1] = infos;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                    if (ParamsMatch(paramz, methodParams)) return infos;
-                }
-            }
-            return candidates[0] ?? candidates[1];
-        }
-
-
-        private static ConstructorInfo findConstructorInfo(PlTerm memberSpec, Type c, ref Type[] paramz)
-        {
-            if (c == null)
-            {
-                Warn("findConstructor no class for {0}", memberSpec);
-                return null;
-            }
-            if (IsTaggedObject(memberSpec))
-            {
-                var r = tag_to_object(memberSpec[1].Name) as ConstructorInfo;
-                if (r != null) return r;
-            }
-            if (memberSpec.IsInteger)
-            {
-                var mis = c.GetConstructors(BindingFlagsALL);
-                return mis[memberSpec.intValue()];
-            }
-            if (paramz == null)
-            {
-                Warn("using paramSpec {0}", ToString(memberSpec));
-                paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
-            }
-            if (paramz != null)
-            {
-                var mi = c.GetConstructor(paramz);
-                if (mi != null) return mi;
-            }
-            ConstructorInfo[] members = c.GetConstructors(BindingFlagsALL);
-            if (members.Length==0 ) return null;
-            int arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
-            ConstructorInfo candidate = null;
-            foreach (var info in members)
-            {
-                var infos = info;
-                ParameterInfo[] paramTypes = infos.GetParameters();
-                if (paramTypes.Length == arity)
-                {
-                    if (ParamsMatch(paramz, paramTypes)) return info;
-                    if (infos.IsStatic)
-                    {
-                        if (candidate == null)
-                        {
-                            candidate = info;
-                        }
-                    }
-                    else
-                    {
-                        if (candidate == null)
-                        {
-                            candidate = info;
-                        }
-                    }
-                }
-            }
-            return candidate ?? members[0];
-        }
-
-        private static ParameterInfo[] GetParmeters(EventInfo ei)
-        {
-            ParameterInfo[] parme = null;
-            var rm = ei.GetRaiseMethod();
-            var erm = ei.EventHandlerType;
-            if (rm == null && erm != null)
-            {
-                rm = erm.GetMethod("Invoke");
-            }
-            if (rm != null)
-            {
-                parme = rm.GetParameters();
-            }
-            return parme;
-        }
-
-
-
-        [PrologVisible]
-        static public bool cliFindConstructor(PlTerm clazzSpec, PlTerm memberSpec, PlTerm methodOut)
-        {
-            Type c = GetType(clazzSpec);
-            Type[] paramz = null;
-            MethodBase mi = findConstructorInfo(memberSpec, c, ref paramz);
-            if (mi != null)
-            {
-                return methodOut.FromObject((mi));
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// ?- cliNew('java.lang.Long',[long],[44],Out),cliToString(Out,Str).
-        /// </summary>
-        /// <param name="memberSpec"></param>
-        /// <param name="paramIn"></param>
-        /// <param name="valueOut"></param>
-        /// <returns></returns>
-        [PrologVisible]
-        static public bool cliNew(PlTerm clazzSpec, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
-        {
-            if (!valueOut.IsVar)
-            {
-                var plvar = PlTerm.PlVar();
-                return cliNew(clazzSpec, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
-            }
-            Type c = GetType(clazzSpec);
-            if (c == null)
-            {
-                Error("Cant resolve clazzSpec {0}", clazzSpec);
-                return false;
-            }
-            Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
-            PlTerm[] paramIn = ToTermArray(paramsIn);
-            if (paramz.Length==0 && paramIn.Length > paramz.Length)
-            {
-                paramz = GetParamSpec(paramIn, true);
-            }
-            MethodBase mi = null;
-            if (!c.IsAbstract) mi = findConstructorInfo(memberSpec, c, ref paramz);           
-            object target = null;
-            if (mi == null)
-            {
-                int arity = paramz.Length;
-                if (arity == 1)
-                {
-                    mi = c.GetMethod("op_Implicit", (BindingFlags.Public | BindingFlags.Static), null, paramz,
-                                     new ParameterModifier[0]);
-                    if (mi == null)
-                    {
-                        mi = c.GetMethod("op_Explicit", (BindingFlags.Public | BindingFlags.Static), null, paramz,
-                                         new ParameterModifier[0]);
-                    }
-                    if (mi == null)
-                    {
-                        if (c.IsPrimitive)
-                        {
-                            //Warn("Trying to constuct a primitive type");
-                            return valueOut.FromObject(Convert.ChangeType(GetInstance(paramIn[0]), c));
-                        }
-                    }
-                }
-                if (mi == null)
-                {
-                    MethodInfo[] members = c.GetMethods(BindingFlagsJustStatic);
-                    mi = BestMethod(paramz, members, c, true);
-                }
-            }
-            if (mi == null)
-            {
-                Error("Cant find constructor {0} on {1}", memberSpec, c);
-                return false;
-            }
-            Action postCallHook;
-            object[] values = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook);
-            object res;
-
-            // mono doesnt mind..
-            //  typeof(System.Text.StringBuilder).GetConstructor(new[]{typeof(System.String)}).Invoke(null,new object[]{"hi there"}).ToString();
-            // .NET doesnt
-            if (mi is ConstructorInfo)
-            {
-                res = ((ConstructorInfo)mi).Invoke(values);
-            }
-            else
-            {
-                res = mi.Invoke(null, values);
-            }
-            var ret = valueOut.FromObject(res);
-            CommitPostCall(postCallHook);
-            return ret;
-        }
-        public class OpImplTest
-        {
-            private OpImplTest()
-            {
-
-            }
-            //static public operator String
-        }
-
-        private static MethodBase BestMethod(Type[] paramz, MethodInfo[] members, Type returnType, bool mustStatic)
-        {
-            var maybes = new MethodBase[2];
-            foreach (var infos in members)
-            {
-                if (mustStatic && !infos.IsStatic) continue;
-                ParameterInfo[] testParams = infos.GetParameters();
-                if (testParams.Length == paramz.Length)
-                {
-                    if (returnType.IsAssignableFrom(infos.ReturnType))
-                    {
-                        if (ParamsMatch(paramz, testParams))
-                        {
-                            return infos;
-                        }
-                        if (maybes[0] == null) maybes[0] = infos;
-                    }
-                    else
-                    {
-                        if (infos.ReturnType.IsAssignableFrom(returnType))
-                        {
-                            if (ParamsMatch(paramz, testParams))
-                            {
-                                return infos;
-                            }
-                            if (maybes[1] == null) maybes[1] = infos;
-                        } else
-                        {
-                            if (ParamsMatch(paramz, testParams))
-                            {
-                                if (maybes[1] == null) maybes[1] = infos;
-                            }
-                        }
-                    }
-                }
-            }
-            return maybes[0] ?? maybes[1];
-        }
-
-        private static bool ParamsMatch(Type[] paramz, ParameterInfo[] paramInfos)
-        {
-            int i = 0;
-            foreach (ParameterInfo info in paramInfos)
-            {
-                if (paramz[i] == null) continue;
-                if (!info.ParameterType.IsAssignableFrom(paramz[i])) return false;
-                i++;
-            }
-            return true;
-        }
-
         /// <summary>
         /// ?- cliNewArray(long,10,Out),cliToString(Out,Str).
         /// </summary>
@@ -968,146 +451,6 @@ namespace Swicli.Library
             object getInstance = GetInstance(lockObj);
             Monitor.Exit(getInstance);
             return true;
-        }
-        [PrologVisible]
-        static public bool cliFindMethod(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm methodOut)
-        {
-            if (!methodOut.IsVar)
-            {
-                var plvar = PlTerm.PlVar();
-                return cliFindMethod(clazzOrInstance, memberSpec, plvar) && SpecialUnify(methodOut, plvar);
-            }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            Type[] paramz = null;
-            var mi = findMethodInfo(memberSpec, -1, c, ref paramz);
-            if (mi != null)
-            {
-                return methodOut.FromObject((mi));
-            }
-            return false;
-        }
-
-
-
-        [PrologVisible]
-        static public bool cliCallRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
-        {
-            if (!valueOut.IsVar)
-            {
-                var plvar = PlTerm.PlVar();
-                return cliCallRaw(clazzOrInstance, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
-            }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
-            PlTerm[] paramIn = ToTermArray(paramsIn);
-            if (paramz.Length==0 && paramIn.Length > paramz.Length)
-            {
-                paramz = GetParamSpec(paramIn, true);
-            }
-            var mi = findMethodInfo(memberSpec, paramz.Length, c, ref paramz);
-            if (mi == null)
-            {
-                var ei = findEventInfo(memberSpec, c, ref paramz);
-                if (ei != null) return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, ei, c);
-                if (paramsIn.IsAtom && paramsIn.Name == "[]") return cliGetRaw(clazzOrInstance, memberSpec, valueOut);
-                Warn("Cant find method {0} on {1}", memberSpec, c);
-                return false;
-            }
-            Action postCallHook;
-            object[] value = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook);
-            object target = mi.IsStatic ? null : getInstance;
-            object retval = InvokeCaught(mi, target, value, postCallHook);
-            return valueOut.FromObject(retval ?? VoidOrNull(mi));
-        }
-
-        [PrologVisible]
-        static public bool cliRaiseEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
-        {
-            if (!valueOut.IsVar)
-            {
-                var plvar = PlTerm.PlVar();
-                return cliRaiseEventHandler(clazzOrInstance, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
-            }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
-            PlTerm[] paramIn = ToTermArray(paramsIn);
-            if (paramz.Length == 0 && paramIn.Length > paramz.Length)
-            {
-                paramz = GetParamSpec(paramIn, true);
-            }
-            EventInfo evi = findEventInfo(memberSpec, c, ref paramz);
-            return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, evi, c);
-        }
-
-        public static bool RaiseEvent(object getInstance, PlTerm memberSpec, PlTerm[] paramIn, PlTerm valueOut, EventInfo evi, Type c)
-        {
-            if (evi == null)
-            {
-                return Warn("Cant find event {0} on {1}", memberSpec, c);
-            }
-            ParameterInfo[] paramInfos = GetParmeters(evi);
-            MethodInfo mi = evi.GetRaiseMethod();
-            string fn = evi.Name;
-            if (mi == null)
-            {
-                FieldInfo fi = c.GetField(fn, BindingFlagsALL);
-                if (fi != null)
-                {
-                    Delegate del = (Delegate)fi.GetValue(getInstance);
-                    if (del != null)
-                    {
-                        Action postCallHook;
-                        var ret = valueOut.FromObject((del.DynamicInvoke(
-                                                          PlListToCastedArray(paramIn, paramInfos,
-                                                                              out postCallHook))));
-                        CommitPostCall(postCallHook);
-                        return ret;
-                    }
-                }
-                string fn1 = fn.Substring(1);
-                int len = fn.Length;
-                foreach (FieldInfo info in c.GetFields(BindingFlagsALL))
-                {
-                    if (info.Name.EndsWith(fn1))
-                    {
-                        if (info.Name.Length - len < 3)
-                        {
-                            Delegate del = (Delegate)info.GetValue(info.IsStatic ? null : getInstance);
-                            if (del != null)
-                            {
-                                Action postCallHook;
-                                var ret = valueOut.FromObject((del.DynamicInvoke(
-                                                                  PlListToCastedArray(paramIn, paramInfos,
-                                                                                      out postCallHook))));
-                                CommitPostCall(postCallHook);
-                                return ret;
-                            }
-                        }
-                    }
-                }
-            }
-            if (mi == null)
-            {
-                Type eviEventHandlerType = evi.EventHandlerType;
-                if (eviEventHandlerType != null) mi = eviEventHandlerType.GetMethod("Invoke");
-            }
-            if (mi == null)
-            {
-                Warn("Cant find event raising for  {0} on {1}", evi, c);
-                return false;
-            }
-            Action postCallHook0;
-            object[] value = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook0);
-            object target = mi.IsStatic ? null : getInstance;
-            return valueOut.FromObject(InvokeCaught(mi, target, value, postCallHook0) ?? VoidOrNull(mi));
-        }
-
-        private static object VoidOrNull(MethodInfo info)
-        {
-            return info.ReturnType == typeof(void) ? (object)PLVOID : PLNULL;
         }
 
         [PrologVisible]
@@ -1335,77 +678,5 @@ namespace Swicli.Library
             return false;
         }
 
-
-        /// <summary>
-        /// 1 ?- cliToString(-1,X).
-        /// X = "4294967295".
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <param name="str"></param>
-        /// <returns></returns>
-        [PrologVisible]
-        public static bool cliToStrRaw(PlTerm obj, PlTerm str)
-        {
-            try
-            {
-                if (!str.IsVar)
-                {
-                    var plvar = PlTerm.PlVar();
-                    return cliToStrRaw(obj, plvar) && SpecialUnify(str, plvar);
-                }
-                if (obj.IsString) return str.Unify(obj);
-                if (obj.IsVar) return str.Unify((string)obj);
-                object o = GetInstance(obj);
-                if (o == null) return str.FromObject("" + obj);
-                return str.FromObject(ToString(o));
-            }
-            catch (Exception e)
-            {
-                Warn("cliToString: {0}", e);
-                object o = GetInstance(obj);
-                if (o == null) return str.FromObject("" + obj);
-                return str.FromObject(ToString(o));
-            }
-        }
-        [IKVMBased]
-        [PrologVisible]
-        static public bool cliJavaToString(PlTerm paramIn, PlTerm valueOut)
-        {
-            if (!valueOut.IsVar)
-            {
-                var plvar = PlTerm.PlVar();
-                return cliJavaToString(paramIn, plvar) && SpecialUnify(valueOut, plvar);
-            }
-            object getInstance = GetInstance(paramIn);
-            if (getInstance == null) return valueOut.Unify(PlTerm.PlString("null"));
-#if USE_IKVM
-            object val = getInstance as java.lang.Object;
-            if (val == null)
-            {
-                Class c = ikvm.runtime.Util.getClassFromObject(getInstance);
-                string s = (string)c.getMethod("toString", new Class[0]).invoke(getInstance, ZERO_OBJECTS);
-                return valueOut.Unify(PlTerm.PlString(s));
-            }
-            return valueOut.Unify(PlTerm.PlString(val.toString()));
-#else
-            object val = getInstance;
-            return valueOut.Unify(PlTerm.PlString(val.ToString()));
-#endif
-        }
-
-        private void Trace()
-        {
-            //throw new NotImplementedException();
-        }
-
-        private object ToFort(object o)
-        {
-            return ToProlog(o);
-        }
-
-        public static int PlSucceedOrFail(bool p)
-        {
-            return p ? libpl.PL_succeed : libpl.PL_fail;
-        }
     }
 }

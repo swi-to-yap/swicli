@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
 using SbsSW.SwiPlCs.Exceptions;
@@ -17,6 +18,12 @@ namespace Swicli.Library.Examples
 
     public partial class NonDetExample
     {
+        readonly static Dictionary<int, string> indexTest = new Dictionary<int, string>() { { 1, "one" }, { 2, "two" }, };
+        public string this[int v]
+        {
+            get { return indexTest[v]; }
+            set { indexTest[v] = value; }
+        }
 
         public static void LoadExmaples()
         {

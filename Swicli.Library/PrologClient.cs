@@ -247,6 +247,111 @@ namespace Swicli.Library
             t.FromObject(value);
             return t;
         }
+        private static CycFort ToPlList(CycFort[] terms)
+        {
+            int termLen = terms.Length;
+            if (termLen == 0) return ATOM_NIL;
+            termLen--;
+            PlTerm ret = listOfOne(terms[termLen]);
+            while (--termLen >= 0)
+            {
+                ret = PlTerm.PlCompound(".", terms[termLen], ret);
+            }
+            return ret;
+        }
+
+        private static PlTermV ToPlTermV(PlTerm[] terms)
+        {
+            var tv = NewPlTermV(terms.Length);
+            for (int i = 0; i < terms.Length; i++)
+            {
+                tv[i] = terms[i];
+            }
+            return tv;
+        }
+
+        private static PlTermV NewPlTermV(int length)
+        {
+            return new PlTermV(length);
+        }
+
+        private static PlTermV ToPlTermVParams(ParameterInfo[] terms)
+        {
+            var tv = NewPlTermV(terms.Length);
+            for (int i = 0; i < terms.Length; i++)
+            {
+                tv[i] = typeToSpec(terms[i].ParameterType);
+            }
+            return tv;
+        }
+        private static PlTerm ToPlListParams(ParameterInfo[] terms)
+        {
+            PlTerm listOf = ATOM_NIL;
+            for (int i = terms.Length - 1; i >= 0; i--)
+            {
+                PlTerm term = typeToSpec(terms[i].ParameterType);
+                listOf = PlTerm.PlCompound(".", term, listOf);
+            }
+            return listOf;
+        }
+        private static PlTerm ToPlListTypes(Type[] terms)
+        {
+            PlTerm listOf = ATOM_NIL;
+            for (int i = terms.Length - 1; i >= 0; i--)
+            {
+                PlTerm term = typeToSpec(terms[i]);
+                listOf = PlTerm.PlCompound(".", term, listOf);
+            }
+            return listOf;
+        }
+        private static PlTermV ToPlTermVSpecs(Type[] terms)
+        {
+            var tv = NewPlTermV(terms.Length);
+            for (int i = 0; i < terms.Length; i++)
+            {
+                tv[i] = typeToSpec(terms[i]);
+            }
+            return tv;
+        }
+
+        private static PlTerm listOfOne(PlTerm term)
+        {
+            return PlTerm.PlCompound(".", term, ATOM_NIL);
+        }
+
+        public static object CallProlog(object target, string module, string name, int arity, object origin, object[] paramz, Type returnType, bool discard)
+        {
+            if (!ClientReady)
+            {
+                return null;
+            }
+            return InvokeFromC(() =>
+            {
+
+                PlTermV args = NewPlTermV(arity);
+                int fillAt = 0;
+                if (origin != null)
+                {
+                    args[fillAt++].FromObject(origin);
+                }
+                for (int i = 0; i < paramz.Length; i++)
+                {
+                    args[fillAt++].FromObject(paramz[i]);
+                }
+                bool IsVoid = returnType == typeof(void);
+                if (!IsVoid)
+                {
+                    //args[fillAt] = PlTerm.PlVar();
+                }
+                if (!PlQuery.PlCall(module, name, args))
+                {
+                    if (!IsVoid) Warn("Failed Event Handler {0} failed", target);
+                }
+                if (IsVoid) return null;
+                object ret = PrologClient.CastTerm(args[fillAt], returnType);
+                return ret;
+            }, discard);
+        }
 
         private bool ModuleCall0(string s, PlTermV termV)
         {
