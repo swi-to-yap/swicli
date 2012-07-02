@@ -47,21 +47,29 @@ namespace Swicli.Library
     public partial class PrologClient
     {
 
-        private static Type GetColType(object al, out bool isGeneric, out MethodInfo[] reflectCache, out Type elementType)
+        private static Type GetColType(object al, out bool isGeneric, out MethodInfo[] reflectCache, out Type elementType, out Type indexType)
         {
+            CheckMI();
             elementType = typeof(object);
             var colType = al.GetType();
             isGeneric = colType.IsGenericType;
+            indexType = typeof(int);
             if (isGeneric)
             {
-                elementType = colType.GetGenericArguments()[0];
+                Type[] args = colType.GetGenericArguments();
+                int argsLength = args.Length;
+                elementType = args[argsLength - 1];
+                if (argsLength == 2)
+                {
+                    indexType = args[0];
+                }
             }
 
             lock (reflectCachesForTypes)
             {
                 if (!reflectCachesForTypes.TryGetValue(colType, out reflectCache))
                 {
-                    reflectCache = reflectCachesForTypes[colType] = new MethodInfo[6];
+                    reflectCache = reflectCachesForTypes[colType] = new MethodInfo[10];
                 }
             }
             return colType;
@@ -86,7 +94,8 @@ namespace Swicli.Library
             bool isGeneric;
             MethodInfo[] reflectCache;
             Type elementType;
-            colType = GetColType(al, out isGeneric, out reflectCache, out elementType);
+            Type indexType;
+            colType = GetColType(al, out isGeneric, out reflectCache, out elementType, out indexType);
             if (!isGeneric)
             {
                 for (int i = 0; i < termsLength; i++)
@@ -109,13 +118,15 @@ namespace Swicli.Library
             }
             return al;
         }
+        [PrologVisible]
         public static bool cliAddElement(PlTerm enumerable, PlTerm tvalue)
         {
             IEnumerable al = (IEnumerable)CastTerm(enumerable, typeof (IEnumerable));
             bool isGeneric;
             MethodInfo[] reflectCache;
             Type elementType;
-            Type colType = GetColType(al, out isGeneric, out reflectCache, out elementType);
+            Type indexType;
+            Type colType = GetColType(al, out isGeneric, out reflectCache, out elementType, out indexType);
             object value = CastTerm(tvalue, elementType);
             if (!isGeneric)
             {
@@ -145,6 +156,7 @@ namespace Swicli.Library
         /// this is just stuffed with a random MethodInfo
         /// </summary>
         private static MethodInfo MissingMI = null;
+        private static MethodInfo MakeDefaultViaReflectionInfo = null;
 
 
         /// <summary>
@@ -155,6 +167,7 @@ namespace Swicli.Library
         /// 4 = removeValue
         /// 5 = removeAll
         /// 6 = cliAddElementGeneric
+        /// 7 = cliSetElementGeneric
         /// </summary>
 
         private static readonly Dictionary<Type, MethodInfo[]> reflectCachesForTypes = new Dictionary<Type, MethodInfo[]>();
@@ -179,91 +192,101 @@ namespace Swicli.Library
             return AppendReflectively(enumerable.GetType(), enumerable, value, reflectCache);
         }
 
+        [PrologVisible]
         public static bool cliSetElement(PlTerm enumerable, PlTerm indexes, PlTerm tvalue)
         {
-            IEnumerable al = (IEnumerable) CastTerm(enumerable, typeof (IEnumerable));
+            CheckMI();
+            IEnumerable al = (IEnumerable)CastTerm(enumerable, typeof(IEnumerable));
             bool isGeneric;
             MethodInfo[] reflectCache;
             Type elementType;
-            Type colType = GetColType(al, out isGeneric, out reflectCache, out elementType);
+            Type indexType;
+            Type colType = GetColType(al, out isGeneric, out reflectCache, out elementType, out indexType);
             object value = CastTerm(tvalue, elementType);
-            int[] idx = (int[]) CastTerm(indexes, typeof (int[]));
+            object idx = CastTerm(indexes, indexType);
             if (colType.IsArray)
             {
-                Array array = (Array)al;
-                array.SetValue(value, idx);
+                Array array = (Array) al;
+                ArraySet(array, idx, value);
                 return true;
             }
             if (!isGeneric)
             {
                 colSetElementFallback(al, idx, value, reflectCache);
             }
-            MethodInfo gMethod = reflectCache[6];
+            MethodInfo gMethod = reflectCache[7];
             if (gMethod == null)
             {
-                gMethod = reflectCache[6] = typeof (PrologClient).GetMethod("colSetElement", BindingFlagsJustStatic)
+                gMethod = reflectCache[7] = typeof (PrologClient).GetMethod("colSetElement", BindingFlagsJustStatic)
                                                 .MakeGenericMethod(new[] {elementType});
             }
             gMethod.Invoke(null, new object[] {al, idx, value, reflectCache});
             return true;
         }
 
-        public static bool colSetElement<T>(IEnumerable<T> enumerable, int[] i, T value, MethodInfo[] reflectCache)
+        public static bool colSetElement<T>(IEnumerable<T> enumerable, object i, T value, MethodInfo[] reflectCache)
         {
             if (enumerable is IList<T>)
             {
                 var al = (IList<T>)enumerable;
-                al[i[0]] = value;
+                al[AsInt(i)] = value;
                 return true;
             }
             return colSetElementFallback(enumerable, i, value, reflectCache);
         }
 
-        public static bool colSetElementFallback(IEnumerable enumerable, int[] i, object value, MethodInfo[] reflectCache)
+        public static bool colSetElementFallback(IEnumerable enumerable, object i, object value, MethodInfo[] reflectCache)
         {
-
+            Type indexType = i.GetType();
             if (enumerable is Array)
             {
                 var al = enumerable as Array;
-                al.SetValue(value, i);
+                ArraySet(al, i, value);
                 return true;
             }
             if (enumerable is IList)
             {
                 var al = enumerable as IList;
-                al[i[0]] = value;
+                al[AsInt(i)] = value;
                 return true;
             }
             // do it all via bad reflection
             ParameterInfo[] pt = null;
             Type type = null;
-            if (reflectCache[0] == null) foreach (var mname in setItemMethodNames)
+            MethodInfo reflectCache0 = reflectCache[0];
+            if (reflectCache0 == null)
+            {
+                foreach (var mname in setItemMethodNames)
                 {
                     type = type ?? enumerable.GetType();
                     MethodInfo mi = type.GetMethod(mname, BindingFlagsInstance);
                     if (mi == null) continue;
                     pt = mi.GetParameters();
                     if (pt.Length != 2) continue;
-                    reflectCache[0] = mi;
+                    reflectCache0 = reflectCache[0] = mi;
                     break;
                 }
+                if (reflectCache0 == null)
+                {
+                    reflectCache[0] = MissingMI;
+                }
+            }
 
-            MethodInfo reflectCache0 = reflectCache[0];
             if (reflectCache0 != null && reflectCache0 != MissingMI)
             {
                 pt = pt ?? reflectCache0.GetParameters();
                 bool indexIsFirst = false;
-                if (pt[0].ParameterType == typeof(int))
+                if (pt[0].ParameterType == indexType)
                 {
                     indexIsFirst = true;
                 }
                 if (indexIsFirst)
                 {
-                    reflectCache0.Invoke(enumerable, new object[] { i, value });
+                    reflectCache0.Invoke(enumerable, new[] {i, value});
                 }
                 else
                 {
-                    reflectCache0.Invoke(enumerable, new object[] { value, i });
+                    reflectCache0.Invoke(enumerable, new[] {value, i});
                 }
                 return true;
             }
@@ -287,11 +310,18 @@ namespace Swicli.Library
             }
             int size = (int)reflectCache[1].Invoke(enumerable, ZERO_OBJECTS);
             // append elements
-            if (i[0] != size)
+            if (AsInt(i) != size)
             {
                 return Error("wrong size for element {0} on {1} with count of {2}", i, enumerable, size);
             }
             return AppendReflectively(type, enumerable, value, reflectCache);
+        }
+        static int AsInt(object i)
+        {
+            if (i is int) return (int) i;
+            if (i is int[]) return ((int[]) i)[0];
+            Error("not an index " + i);
+            return -1;
         }
 
 

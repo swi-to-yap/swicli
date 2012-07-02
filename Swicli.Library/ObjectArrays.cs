@@ -172,6 +172,20 @@ namespace Swicli.Library
             return valueOut.FromObject((value));
         }
 
+
+        private static void ArraySet(Array array, object idx, object value)
+        {
+            if (idx is int)
+            {
+                array.SetValue(value, (int)idx);
+
+            }
+            else
+            {
+                array.SetValue(value, (int[])idx);
+            }
+        }
+
         private static Array GetArrayValue(object getInstance)
         {
             if (getInstance == null) return null;

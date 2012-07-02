@@ -332,6 +332,37 @@ namespace Swicli.Library
         }
 
         private static readonly List<Type> ConvertorClasses = new List<Type>();
+        public static T ReflectiveCast<T>(object o)
+        {
+            T t =  (T) o;
+            return t;
+        }
+
+        public static T ReflectiveNull<T>()
+        {
+            T t = default(T);
+            return t;
+        }
+
+        [PrologVisible]
+        public static bool cliMakeDefault(PlTerm typeSpec, PlTerm valueOut)
+        {
+            CheckMI();
+            MethodInfo rc = MakeDefaultViaReflectionInfo.MakeGenericMethod(GetType(typeSpec));
+            return UnifyTagged(rc.Invoke(null, ZERO_OBJECTS), valueOut);
+        }
+
+        private static void CheckMI()
+        {
+            if (MissingMI == null)
+            {
+                MissingMI = typeof(PrologClient).GetMethod("ReflectiveCast", BindingFlagsJustStatic);
+            }
+            if (MakeDefaultViaReflectionInfo == null)
+            {
+                MakeDefaultViaReflectionInfo = typeof(PrologClient).GetMethod("ReflectiveNull", BindingFlagsJustStatic);
+            }
+        }
 
         private static Func<object, object> findCast(Type from, Type to, ICollection<Func<object, object>> allMethods)
         {
@@ -340,6 +371,27 @@ namespace Swicli.Library
             {
                 meth = (r) => r;
                 if (allMethods != null) allMethods.Add(meth); else return meth;
+            }
+            Func<object, object> sysmeth = (r) =>
+            {
+                CheckMI();
+                if (r == null)
+                {
+                    MethodInfo rc = MakeDefaultViaReflectionInfo.MakeGenericMethod(to);
+                    return rc.Invoke(null, ZERO_OBJECTS);
+                }
+                else
+                {
+                    MethodInfo rc = MissingMI.MakeGenericMethod(to);
+                    return rc.Invoke(null, new [] {r});
+                }
+            };
+            if (to.IsValueType)
+            {
+                if (allMethods != null) allMethods.Add(sysmeth); else
+                {
+                    return sysmeth;
+                }
             }
             if (to.IsEnum)
             {
@@ -448,7 +500,7 @@ namespace Swicli.Library
                 var someStaticM = SomeConversionStaticMethod(to, convertorClasse, from, allMethods, false);
                 if (someStaticM != null) return someStatic;
             }
-            return null;
+            return sysmeth;
         }
         private static Func<object, object> SomeConversionStaticMethod(Type to, Type srch, Type from, ICollection<Func<object, object>> allMethods, bool onlyConverionAttribute)
         {

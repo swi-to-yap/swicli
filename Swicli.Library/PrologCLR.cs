@@ -118,7 +118,7 @@ namespace Swicli.Library
         [PrologVisible]
         public static bool cliBreak(PlTerm ex)
         {
-            return WarnMissing((string)ex) || true;
+            return WarnMissing(ToString(ex)) || true;
         }
 
         private static string PlStringFormat(string text, params object[] ps)
