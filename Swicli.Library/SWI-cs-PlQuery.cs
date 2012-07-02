@@ -270,7 +270,7 @@ namespace SbsSW.SwiPlCs
             }
             catch (Exception e)
             {
-                PrologClient.Warn("dispose casued {0}", e);                
+                PrologCLR.Warn("dispose casued {0}", e);                
             }
         }
 
@@ -295,7 +295,7 @@ namespace SbsSW.SwiPlCs
                 }
                 catch (Exception e)
                 {
-                    PrologClient.Warn("Free caused: " + PrologClient.ExceptionString(e));
+                    PrologCLR.Warn("Free caused: " + PrologCLR.ExceptionString(e));
                 }
             }
             _qid = 0;
@@ -361,7 +361,7 @@ namespace SbsSW.SwiPlCs
             // redirect read stream
             DelegateStreamReadFunction old_read_function = PlEngine._function_read;
             DelegateStreamReadFunction rf = new DelegateStreamReadFunction(Sread);
-            if (PrologClient.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, rf);
+            if (PrologCLR.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, rf);
 
             try
             {
@@ -378,7 +378,7 @@ namespace SbsSW.SwiPlCs
                     throw new PlLibException("PlCall read_term fails! goal:" + _query_string);
 
                 // restore stream function
-                if (PrologClient.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, old_read_function);
+                if (PrologCLR.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, old_read_function);
 
                 // set list of variables and variable_names into _queryVariables
                 foreach (PlTerm t in variablenames_list.ToList())
@@ -402,7 +402,7 @@ namespace SbsSW.SwiPlCs
 #if _DEBUG
             catch (Exception ex)
             {
-                PrologClient.ConsoleTrace(ex.Message);
+                PrologCLR.ConsoleTrace(ex.Message);
             }
 #endif
             finally

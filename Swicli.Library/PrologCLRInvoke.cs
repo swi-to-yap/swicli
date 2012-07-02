@@ -35,11 +35,10 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using SbsSW.SwiPlCs;
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         private static Type[] GetParamSpec(PlTerm memberSpec)
         {

@@ -61,7 +61,7 @@ namespace SbsSW.SwiPlCs
 
         protected override bool ReleaseHandle()
         {
-            if (PrologClient.IsLinux)
+            if (PrologCLR.IsLinux)
             {
                 return NativeMethodsLinux.FreeLibrary(handle);
             }
@@ -145,17 +145,17 @@ namespace SbsSW.SwiPlCs
         //public const string DllFileName = @"C:\Program Files\pl\bin\swipl.dll";
         static SafeNativeMethods()
         {
-            if (PrologClient.IsLinux) return;
+            if (PrologCLR.IsLinux) return;
             if (!File.Exists(DllFileName))
             {
                 if (!File.Exists(DllFileName1))
                 {
-                    PrologClient.ConsoleTrace("No such file: " + DllFileName1);
+                    PrologCLR.ConsoleTrace("No such file: " + DllFileName1);
                 } else
                 {
                     return;
                 }
-                PrologClient.ConsoleTrace("No such file: " + DllFileName);
+                PrologCLR.ConsoleTrace("No such file: " + DllFileName);
             }
 
         }
@@ -172,7 +172,7 @@ namespace SbsSW.SwiPlCs
 			{
 			    var fileName = DllFileName;
                 if (File.Exists(fileName)) return fileName;
-			    fileName = Path.Combine(Path.Combine(PrologClient.SwiHomeDir ?? PrologClient.AltSwiHomeDir, "bin"), PlLib);
+			    fileName = Path.Combine(Path.Combine(PrologCLR.SwiHomeDir ?? PrologCLR.AltSwiHomeDir, "bin"), PlLib);
                 if (File.Exists(fileName)) return fileName;
                 return DllFileName;
 			}

@@ -34,7 +34,7 @@ using XDocument = System.Xml.XmlDocument;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
 
         /// <summary>
@@ -600,7 +600,7 @@ namespace Swicli.Library
 
         private PlTerm C(string collection)
         {
-            return PrologClient.C(collection);
+            return PrologCLR.C(collection);
         }
     }
 }

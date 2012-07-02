@@ -31,7 +31,7 @@ using SbsSW.SwiPlCs;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         static public IDictionary<TKey, TValue> CreatePrologBackedDictionary<TKey, TValue>(PlTerm pred)
         {
@@ -123,7 +123,7 @@ namespace Swicli.Library
     {
         public void InForiegnFrame(Action action)
         {
-            PrologClient.RegisterCurrentThread();
+            PrologCLR.RegisterCurrentThread();
             uint fid = libpl.PL_open_foreign_frame();
             try
             {
@@ -137,18 +137,18 @@ namespace Swicli.Library
 
         public static bool PlCall(string module, string querypred, PlTermV termV)
         {
-            return PrologClient.PlCall(module, querypred, termV);
+            return PrologCLR.PlCall(module, querypred, termV);
         }
         public static PlTerm KeyToTerm(TKey key)
         {
             if (key.Equals(default(TValue))) return PlTerm.PlVar();
-            return PrologClient.ToProlog(key);
+            return PrologCLR.ToProlog(key);
         }
 
         public static PlTerm ValueToTerm(TValue value)
         {
             if (value.Equals(default(TValue))) return PlTerm.PlVar();
-            return PrologClient.ToProlog(value);
+            return PrologCLR.ToProlog(value);
         }
 
         public static PlTermV TermVOf(KeyValuePair<TKey, TValue> item)
@@ -198,7 +198,7 @@ namespace Swicli.Library
         /// <filterpriority>1</filterpriority>
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            PrologClient.RegisterCurrentThread();
+            PrologCLR.RegisterCurrentThread();
             return new PrologBackedDictionaryEnumerator(this);
         }
 
@@ -285,8 +285,8 @@ namespace Swicli.Library
                 get
                 {
                     return new KeyValuePair<TKey, TValue>(
-                        (TKey)PrologClient.CastTerm(plQuery.Args[0], _dictionary.keyType),
-                        (TValue)PrologClient.CastTerm(plQuery.Args[1], _dictionary.valueType));
+                        (TKey)PrologCLR.CastTerm(plQuery.Args[0], _dictionary.keyType),
+                        (TValue)PrologCLR.CastTerm(plQuery.Args[1], _dictionary.valueType));
                 }
             }
 
@@ -333,7 +333,7 @@ namespace Swicli.Library
             if (_assertPred == null) throw new NotSupportedException("add " + this); 
             InForiegnFrame(() =>
             {
-                PlTerm newPlTermV = PrologClient.PlC(_getvalue, TermVOf(item));
+                PlTerm newPlTermV = PrologCLR.PlC(_getvalue, TermVOf(item));
                 PlCall(_module, _assertPred, new PlTermV(newPlTermV));
             });
 
@@ -349,7 +349,7 @@ namespace Swicli.Library
             if (_retractall == null) throw new NotSupportedException("clear " + this);
             InForiegnFrame(() =>
             {
-                PlTerm newPlTermV = PrologClient.PlC(_getvalue, new PlTermV(2));
+                PlTerm newPlTermV = PrologCLR.PlC(_getvalue, new PlTermV(2));
                 PlCall(_module, _retractall, new PlTermV(newPlTermV));
             });
         }
@@ -406,7 +406,7 @@ namespace Swicli.Library
             bool removed = false;
             InForiegnFrame(() =>
             {
-                PlTerm newPlTermV = PrologClient.PlC(_getvalue, TermVOf(item));
+                PlTerm newPlTermV = PrologCLR.PlC(_getvalue, TermVOf(item));
                 removed = PlCall(_module, _retractPred, new PlTermV(newPlTermV));
             });
             return removed;
@@ -494,7 +494,7 @@ namespace Swicli.Library
             InForiegnFrame(() =>
                                {
 
-                                   PlTerm newPlTermV = PrologClient.PlC(_getvalue, KeyToTerm(key), PlTerm.PlVar());
+                                   PlTerm newPlTermV = PrologCLR.PlC(_getvalue, KeyToTerm(key), PlTerm.PlVar());
                                    removed = PlCall(_module, _retractPred, new PlTermV(newPlTermV));
                                });
             return removed;
@@ -521,7 +521,7 @@ namespace Swicli.Library
                                    res = PlCall(_module, _getvalue, newPlTermV);
                                    if (res)
                                    {
-                                       value0 = (TValue)PrologClient.CastTerm(newPlTermV[1], valueType);
+                                       value0 = (TValue)PrologCLR.CastTerm(newPlTermV[1], valueType);
                                    }
                                    else
                                    {
@@ -550,11 +550,11 @@ namespace Swicli.Library
                 TValue tvalue = default(TValue);
                 InForiegnFrame(() =>
                 {
-                    PlTerm newPlTermV = PrologClient.PlC(_getvalue, KeyToTerm(key), PlTerm.PlVar());
+                    PlTerm newPlTermV = PrologCLR.PlC(_getvalue, KeyToTerm(key), PlTerm.PlVar());
                     bool res = PlCall(_module, _getvalue, new PlTermV(newPlTermV));
                     if (res)
                     {
-                        tvalue = (TValue)PrologClient.CastTerm(newPlTermV.Arg(1), valueType);
+                        tvalue = (TValue)PrologCLR.CastTerm(newPlTermV.Arg(1), valueType);
                     }
                     else
                     {
@@ -638,7 +638,7 @@ namespace Swicli.Library
             if (_assertPred == null) throw new NotSupportedException("add " + this);
             InForiegnFrame(() =>
             {
-                PlTerm newPlTermV = PrologClient.PlC(_querypred, new PlTermV(KeyToTerm(item)));
+                PlTerm newPlTermV = PrologCLR.PlC(_querypred, new PlTermV(KeyToTerm(item)));
                 PlCall(_module, _assertPred, new PlTermV(newPlTermV));
             });
         }
@@ -647,7 +647,7 @@ namespace Swicli.Library
         {
             InForiegnFrame(() =>
                                {
-                                   PlTerm newPlTermV = PrologClient.PlC(_querypred, new PlTermV(1));
+                                   PlTerm newPlTermV = PrologCLR.PlC(_querypred, new PlTermV(1));
                                    PlCall(_module, _retractall, new PlTermV(newPlTermV));
                                });
         }
@@ -764,7 +764,7 @@ namespace Swicli.Library
 
         public IEnumerator<T> GetEnumerator()
         {
-            PrologClient.RegisterCurrentThread(); 
+            PrologCLR.RegisterCurrentThread(); 
             return new PrologBackedCollectionEnumerator(this);
         }
 
@@ -832,7 +832,7 @@ namespace Swicli.Library
                 }
                 nonLeft = false;
                 PlTerm plQueryArgs = plQuery.Args[0];
-                currentValue = PrologClient.CastTerm(plQueryArgs, _dictionary.keyType); ;
+                currentValue = PrologCLR.CastTerm(plQueryArgs, _dictionary.keyType); ;
                 return true;
             }
 

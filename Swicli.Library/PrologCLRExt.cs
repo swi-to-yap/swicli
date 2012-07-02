@@ -61,8 +61,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
-using PrologEngine = Swicli.Library.PrologClient;
-using CONTEXT = Swicli.Library.PrologClient;//SbsSW.SwiPlCs.PrologEngine;
+//SbsSW.SwiPlCs.PrologEngine;
 using Term = SbsSW.SwiPlCs.PlTerm;
 public class A
 {
@@ -133,7 +132,7 @@ namespace Swicli.Library
         [TermConversion]
         static public Type ResolveToType(Term t0)
         {
-            return PrologClient.GetType(t0);
+            return PrologCLR.GetType(t0);
 #if false
             t0 = t0.Value;
             object obj = t0._functor;
@@ -195,13 +194,13 @@ namespace Swicli.Library
                     type = ikvm.runtime.Util.getInstanceTypeFromClass((Class)obj);
 #endif
                 }
-                if (type == null && !PrologClient.IsLinux)
+                if (type == null && !PrologCLR.IsLinux)
                 {
                     type = Type.GetTypeFromProgID(typeName);
                 }
                 if (type == null)
                 {
-                    type = PrologClient.getPrimitiveType(typeName);
+                    type = PrologCLR.getPrimitiveType(typeName);
                 }               
                 if (type == null)
                 {
@@ -250,7 +249,7 @@ namespace Swicli.Library
                                                                      "java.util",
                                                                  };
 
-        public bool JCALL0(Term term, PrologClient engine)
+        public bool JCALL0(Term term, PrologCLR engine)
         {
             throw new NotImplementedException();
             return JCALL0(term.Name, term.Args/*ctx*/);
@@ -546,12 +545,12 @@ namespace Swicli.Library
 
         public bool ObjectUnify(object r, Term t2/*CONTEXT*/)
         {
-            return PrologClient.UnifyToProlog(r, t2) != 0;
+            return PrologCLR.UnifyToProlog(r, t2) != 0;
         }
 
         static public Term ObjectToTerm(object o)
         {
-            return PrologClient.ToProlog(o);
+            return PrologCLR.ToProlog(o);
         }
 
         static public Object GetDefaultIndexedProperty(Object target, Object[] args)
@@ -568,7 +567,7 @@ namespace Swicli.Library
                                                      target, args);
         }
 
-        public bool JPRED0(Term term, PrologClient engine)
+        public bool JPRED0(Term term, PrologCLR engine)
         {
             return true;
         }
@@ -726,7 +725,7 @@ namespace Swicli.Library
             catch (SystemException e)
             {
                 lastException = e;
-                PrologClient.ConsoleTrace("ignoring " + e.ToString());
+                PrologCLR.ConsoleTrace("ignoring " + e.ToString());
             }
             MethodInfo[] methods = type.GetMethods(flags);
             if (false)
@@ -766,7 +765,7 @@ namespace Swicli.Library
                     }
                     catch (Exception e)
                     {
-                        PrologClient.ConsoleTrace("ignoring " + e.ToString());
+                        PrologCLR.ConsoleTrace("ignoring " + e.ToString());
                     }
                 }
 
@@ -782,7 +781,7 @@ namespace Swicli.Library
                 catch (SystemException e)
                 {
                     lastException = e;
-                    PrologClient.ConsoleTrace("ignoring " + e.ToString());
+                    PrologCLR.ConsoleTrace("ignoring " + e.ToString());
                 }
                 object result = null;
                 if (TryInvokeWithBinder(type, name, defaultBinder, argarray, target, isStatic, ref lastException,
@@ -838,7 +837,7 @@ namespace Swicli.Library
 
             if (lastException != null)
             {
-                PrologClient.ConsoleTrace("rethrowing " + lastException.ToString());
+                PrologCLR.ConsoleTrace("rethrowing " + lastException.ToString());
                 throw lastException;
             }
             throw new Exception("Can't find matching method: " + name + " for: " + type.Name +

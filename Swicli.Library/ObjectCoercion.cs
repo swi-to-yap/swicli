@@ -38,11 +38,10 @@ using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
 
         [PrologVisible]
@@ -204,11 +203,11 @@ namespace Swicli.Library
         {
             if (MissingMI == null)
             {
-                MissingMI = typeof(PrologClient).GetMethod("ReflectiveCast", BindingFlagsJustStatic);
+                MissingMI = typeof(PrologCLR).GetMethod("ReflectiveCast", BindingFlagsJustStatic);
             }
             if (MakeDefaultViaReflectionInfo == null)
             {
-                MakeDefaultViaReflectionInfo = typeof(PrologClient).GetMethod("ReflectiveNull", BindingFlagsJustStatic);
+                MakeDefaultViaReflectionInfo = typeof(PrologCLR).GetMethod("ReflectiveNull", BindingFlagsJustStatic);
             }
         }
 
@@ -320,7 +319,7 @@ namespace Swicli.Library
             {
                 ConvertorClasses.Add(typeof(Convert));
                 ConvertorClasses.Add(typeof(PrologConvert));
-                //ConvertorClasses.Add(typeof(PrologClient));
+                //ConvertorClasses.Add(typeof(PrologCLR));
             }
             foreach (Type convertorClasse in ConvertorClasses)
             {
@@ -849,7 +848,7 @@ namespace Swicli.Library
         }
         static public Type ToType(PlTerm typeSpec)
         {
-            return PrologClient.GetType(typeSpec);
+            return PrologCLR.GetType(typeSpec);
         }
     }
 

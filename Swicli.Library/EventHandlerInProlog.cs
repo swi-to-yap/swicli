@@ -41,7 +41,7 @@ namespace Swicli.Library
         }
     }
 
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         public static Dictionary<EventHandlerInPrologKey, EventHandlerInProlog> PrologEventHandlers =
             new Dictionary<EventHandlerInPrologKey, EventHandlerInProlog>();
@@ -151,17 +151,17 @@ namespace Swicli.Library
                 try
                 {
                     PrologEvents++;
-                    return PrologClient.CallProlog(this, Key.Module ?? "user", Key.Name, PrologArity, Key.Origin, paramz,
+                    return PrologCLR.CallProlog(this, Key.Module ?? "user", Key.Name, PrologArity, Key.Origin, paramz,
                                                    ReturnType, true);
                 }
                 catch (AccessViolationException e)
                 {
-                    PrologClient.Warn("CallProlog: {0} ex: {1}", this, e);
+                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
                     return null;
                 }
                 catch (Exception e)
                 {
-                    PrologClient.Warn("CallProlog: {0} ex: {1}", this, e);
+                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
 
                     return null;
                 }

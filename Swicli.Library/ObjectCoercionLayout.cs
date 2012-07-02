@@ -38,7 +38,6 @@ using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
@@ -62,7 +61,7 @@ namespace Swicli.Library
         public Type ToType;
     }
     
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         [PrologVisible]
         static public bool cliGetterm(PlTerm valueCol, PlTerm valueIn, PlTerm valueOut)

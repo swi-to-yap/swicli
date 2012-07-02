@@ -223,7 +223,7 @@ namespace Swicli.Library
         {
             if (ManagedObject == null)
             {
-                if (PrologClient.FailOnMissingInsteadOfError) return true;
+                if (PrologCLR.FailOnMissingInsteadOfError) return true;
                 throw new PlException("not impl");
             }
             return ManagedObject == null;

@@ -44,7 +44,6 @@ using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
@@ -54,17 +53,17 @@ namespace Swicli.Library
         {
             try
             {
-                PrologClient.IsPLWin = Type.GetType("Mono.Runtime") == null;
-                PrologClient.RedirectStreams = false;
-                PrologClient.SetupProlog();
-                PrologClient.ConsoleWriteLine(typeof(Embedded).FullName + ".install suceeded");
-				PrologClient.ClientReady = true;
+                PrologCLR.IsPLWin = Type.GetType("Mono.Runtime") == null;
+                PrologCLR.RedirectStreams = false;
+                PrologCLR.SetupProlog();
+                PrologCLR.ConsoleWriteLine(typeof(Embedded).FullName + ".install suceeded");
+				PrologCLR.ClientReady = true;
                 return libpl.PL_succeed;
             }
             catch (Exception e)
             {
-                PrologClient.WriteException(e);
-                PrologClient.ConsoleWriteLine(typeof(Embedded).FullName + ".install failed");
+                PrologCLR.WriteException(e);
+                PrologCLR.ConsoleWriteLine(typeof(Embedded).FullName + ".install failed");
                 return libpl.PL_fail;
             }
         }
@@ -72,7 +71,7 @@ namespace Swicli.Library
 }
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         static public bool ManagedHalt()
         {
@@ -122,7 +121,7 @@ namespace Swicli.Library
                 }
             }
             IList<string> sp = CopyOf((IEnumerable<string>)AssemblySearchPaths);
-            foreach (var dir in new[] { AppDomain.CurrentDomain.BaseDirectory, new DirectoryInfo(".").FullName, Path.GetDirectoryName(typeof(PrologClient).Assembly.CodeBase),Environment.CurrentDirectory })
+            foreach (var dir in new[] { AppDomain.CurrentDomain.BaseDirectory, new DirectoryInfo(".").FullName, Path.GetDirectoryName(typeof(PrologCLR).Assembly.CodeBase),Environment.CurrentDirectory })
             {
                 if (!sp.Contains(dir)) sp.Add(dir);
             }
@@ -268,7 +267,6 @@ namespace Swicli.Library
                 AssembliesLoaded.Remove(assembly);
                 AssembliesLoaded.Insert(0, assembly);
             }
-            LoadTypesFromAssembly(assembly);
             return true;
         }
 
@@ -309,7 +307,8 @@ namespace Swicli.Library
             }
         }
 
-        private static void LoadTypesFromAssembly(Assembly assembly)
+        [PrologVisible]
+        public static void cliLoadAssemblyMethods(Assembly assembly, bool onlyAttributed, string requiredPrefix)
         {
             string assemblyName = assembly.FullName;
             try
@@ -318,7 +317,7 @@ namespace Swicli.Library
                 {
                     try
                     {
-                        LoadType(t);
+                        AddForeignMethods(t, onlyAttributed, requiredPrefix);
                     }
                     catch (Exception te)
                     {
@@ -332,6 +331,7 @@ namespace Swicli.Library
                 // Warn(e.Message);
             }
         }
+
         /// <summary>
         /// cliLoadAssembly('SwiPlCs.dll').
         /// cliLoadAssembly('Cogbot.exe').

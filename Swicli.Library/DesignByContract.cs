@@ -51,7 +51,7 @@ namespace SbsSW.DesignByContract
     ///		}
     ///		catch (System.Exception ex)
     ///		{
-    ///			PrologClient.ConsoleTrace(ex.ToString());
+    ///			PrologCLR.ConsoleTrace(ex.ToString());
     ///		}
     ///	}
     /// </code>

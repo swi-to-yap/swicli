@@ -34,7 +34,7 @@ using SbsSW.SwiPlCs;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         [ThreadStatic]
         public static bool PreserveObjectType;
@@ -170,7 +170,7 @@ namespace Swicli.Library
                 LocallyTrackedObjects.AddTracking(s);
                 if (DebugRefs && ObjToTag.Count % 10000 == 0)
                 {
-                    PrologClient.ConsoleTrace("ObjToTag=" + ObjToTag);
+                    PrologCLR.ConsoleTrace("ObjToTag=" + ObjToTag);
                 }
 
                 return s.TagName;
@@ -561,7 +561,7 @@ namespace Swicli.Library
             Refs--;
             if (Refs == 0 && !Heaped)
             {
-                PrologClient.RemoveTaggedObject(TagName);
+                PrologCLR.RemoveTaggedObject(TagName);
             }
         }
 
@@ -671,9 +671,9 @@ namespace Swicli.Library
             }
             else
             {
-                if (PrologClient.DebugRefs)
+                if (PrologCLR.DebugRefs)
                 {
-                    PrologClient.Debug("Removing wierd frame{0}", frame);
+                    PrologCLR.Debug("Removing wierd frame{0}", frame);
                 }
                 frame.RemoveRefs();
                 return false;

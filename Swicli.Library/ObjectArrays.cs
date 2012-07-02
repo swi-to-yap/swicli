@@ -40,11 +40,10 @@ using System.Linq;
 using SbsSW.SwiPlCs;
 
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
 
         /// <summary>
@@ -439,7 +438,7 @@ namespace Swicli.Library
                 int low = lowers[i] = value.GetLowerBound(i);
                 if (low != 0)
                 {
-                    PrologClient.Error("LowerBound !=0 in " + arrayType);
+                    PrologCLR.Error("LowerBound !=0 in " + arrayType);
                 }
                 int lenSize = (high - low + 1);
                 len *= lenSize;

@@ -46,15 +46,15 @@ namespace SbsSW.SwiPlCs
         {
             try
             {
-                PrologClient.IsPLWin = true;
-                PrologClient.RedirectStreams = false;
-                PrologClient.SetupProlog();
-                PrologClient.ConsoleWriteLine("swipl_win.install suceeded");
+                PrologCLR.IsPLWin = true;
+                PrologCLR.RedirectStreams = false;
+                PrologCLR.SetupProlog();
+                PrologCLR.ConsoleWriteLine("swipl_win.install suceeded");
                 return libpl.PL_succeed;
             } catch(Exception e)
             {
-                PrologClient.WriteException(e);
-                PrologClient.ConsoleWriteLine("swipl_win.install error");
+                PrologCLR.WriteException(e);
+                PrologCLR.ConsoleWriteLine("swipl_win.install error");
                 return libpl.PL_fail;
             }
         }
@@ -126,7 +126,7 @@ namespace SbsSW.SwiPlCs
             get
             {
 #if USESAFELIB
-                if (PrologClient.IsLinux) return true;
+                if (PrologCLR.IsLinux) return true;
                 return m_hLibrary != null && !m_hLibrary.IsInvalid;
 #else 
                 return true;
@@ -139,13 +139,13 @@ namespace SbsSW.SwiPlCs
 #if USESAFELIB
             if (m_hLibrary == null)
             {
-                if (PrologClient.IsLinux)
+                if (PrologCLR.IsLinux)
                 {
 					return;
                     m_hLibrary = NativeMethodsLinux.LoadLibrary("/lib64/pl-6.0.3/lib/x86_64/libswipl.so");
                     if (m_hLibrary.IsInvalid)
                     {
-                        PrologClient.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
+                        PrologCLR.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
                        // int hr = Marshal.GetHRForLastWin32Error();
                        // Marshal.ThrowExceptionForHR(hr);
                     }
@@ -223,7 +223,7 @@ namespace SbsSW.SwiPlCs
             IntPtr callbackFunctionPtr = Marshal.GetFunctionPointerForDelegate(function);
 
             IntPtr address_std_stream_array;
-            if (PrologClient.IsLinux)
+            if (PrologCLR.IsLinux)
             {
                 address_std_stream_array = NativeMethodsLinux.GetProcAddress(m_hLibrary, "S__iob");
             }
@@ -266,7 +266,7 @@ namespace SbsSW.SwiPlCs
             catch (Exception ex)
             {
                 
-               PrologClient.WriteException(ex);
+               PrologCLR.WriteException(ex);
             }
         }
 
@@ -474,7 +474,7 @@ namespace SbsSW.SwiPlCs
 
         public static void InternalError(string cause, Exception exception)
         {
-            PrologClient.ConsoleTrace(cause+" " + exception);
+            PrologCLR.ConsoleTrace(cause+" " + exception);
             throw exception;
         }
 
@@ -544,7 +544,7 @@ namespace SbsSW.SwiPlCs
         // PlTermV
         public static uint PL_new_term_refs(int n)
         {
-            //PrologClient.RegisterThread(Thread.CurrentThread);
+            //PrologCLR.RegisterThread(Thread.CurrentThread);
             int nn = n;
             {
                 while (nn-->0)
@@ -568,7 +568,7 @@ namespace SbsSW.SwiPlCs
 
         public static void PL_cons_functor_v(uint term, uint functor_t, uint term_a0)
         {
-            //PrologClient.RegisterThread(Thread.CurrentThread);
+            //PrologCLR.RegisterThread(Thread.CurrentThread);
             SafeNativeMethods.PL_cons_functor_v(term, functor_t, term_a0);
         }
 

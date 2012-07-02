@@ -98,6 +98,8 @@
     </Compile>
     <Compile Include="ClassBuilder.cs">
     </Compile>
+    <Compile Include="IKVMClassLoader.cs" />
+    <Compile Include="PrologClientInit.cs" />
     <Compile Include="PrologCLRInvoke.cs" />
     <Compile Include="ObjectInstance.cs" />
     <Compile Include="ObjectCoercionLayout.cs" />
@@ -121,8 +123,6 @@
     <Compile Include="NativeMethods.cs">
     </Compile>
     <Compile Include="NondetContextHandle.cs">
-    </Compile>
-    <Compile Include="NonDetExamples.cs">
     </Compile>
     <Compile Include="ObjectArrays.cs">
     </Compile>

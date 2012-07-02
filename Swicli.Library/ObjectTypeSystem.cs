@@ -44,24 +44,11 @@ using System.Reflection;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Exceptions;
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
-        [PrologVisible(Name = "cli_load_type", Arity = 1, TypeOf = null)]
-        private static void LoadType(Class t)
-        {
-            lock (TypesLoaded)
-            {
-                if (TypesLoaded.Contains(t) || TypesLoading.Contains(t)) return;
-                TypesLoading.Add(t);
-                AddForeignMethods(t, false, t == typeof (PrologClient) ? "cli_" : null);
-                TypesLoading.Remove(t);
-                TypesLoaded.Add(t);
-            }
-        }
         
         [PrologVisible]
         static public bool cliTypespec(PlTerm clazzSpec, PlTerm valueOut)

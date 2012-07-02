@@ -41,7 +41,7 @@ namespace Swicli.Library
         }
     }
 
-    public partial class PrologClient
+    public partial class PrologCLR
     {
 
         public static Dictionary<DelegateObjectInPrologKey, DelegateObjectInProlog> PrologDelegateHandlers =
@@ -150,20 +150,20 @@ namespace Swicli.Library
                     PrologEvents++;
                     if (UseCallN)
                     {
-                        return PrologClient.CallProlog(this, Key.Module, "call", PrologArity, arg1, paramz, ReturnType,
+                        return PrologCLR.CallProlog(this, Key.Module, "call", PrologArity, arg1, paramz, ReturnType,
                                                        false);
                     }
-                    return PrologClient.CallProlog(this, Key.Module ?? "user", Key.Name, PrologArity, arg1, paramz,
+                    return PrologCLR.CallProlog(this, Key.Module ?? "user", Key.Name, PrologArity, arg1, paramz,
                                                    ReturnType, false);
                 }
                 catch (AccessViolationException e)
                 {
-                    PrologClient.Warn("CallProlog: {0} ex: {1}", this, e);
+                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
                     return null;
                 }
                 catch (Exception e)
                 {
-                    PrologClient.Warn("CallProlog: {0} ex: {1}", this, e);
+                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
 
                     return null;
                 }

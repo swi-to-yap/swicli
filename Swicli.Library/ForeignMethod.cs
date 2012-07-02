@@ -32,7 +32,6 @@ using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
 using SbsSW.SwiPlCs.Exceptions;
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
@@ -127,7 +126,7 @@ typedef struct // define a context structure  { ... } context;
 
         }
     }
-    public partial class PrologClient
+    public partial class PrologCLR
     {
 
         private static void CheckRequiredPrefix(MethodInfo m, PrologVisible f1, string requiredPrefix)
@@ -140,28 +139,28 @@ typedef struct // define a context structure  { ... } context;
             }
             f1.Name = proposal;
         }
+
         public static List<MethodInfo> ExportedMethodInfos = new List<MethodInfo>();
+        [PrologVisible]
         private static void AddForeignMethods(Type t, bool onlyAttributed, string requiredPrefix)
+        {
+            lock (TypesLoaded)
+            {
+                if (TypesLoaded.Contains(t) || TypesLoading.Contains(t)) return;
+                TypesLoading.Add(t);
+                AddForeignMethods0(t, onlyAttributed, requiredPrefix);
+                TypesLoading.Remove(t);
+                TypesLoaded.Add(t);
+            }
+        }
+        private static void AddForeignMethods0(Type t, bool onlyAttributed, string requiredPrefix)
         {
             MethodInfo[] methods = t.GetMethods(BindingFlagsJustStatic);
             foreach (var m in methods)
             {
                 object[] f = m.GetCustomAttributes(typeof(PrologVisible), false);
-                if (f != null && f.Length > 0)
-                {
-                    PrologVisible f1 = (PrologVisible)f[0];
-                    f1.Method = m;
-                    try
-                    {
-                        CheckRequiredPrefix(m, f1, requiredPrefix);
-                        LoadMethod(m, f1);
-                        ExportedMethodInfos.Add(m);
-                    }
-                    catch (Exception e)
-                    {
-                        Error("{0} caused {1}", m, e);
-                    }
-                }
+                if (f == null || f.Length == 0) continue;
+                InternMethod(m, requiredPrefix);
             }
             if (onlyAttributed) return;
             foreach (var m in methods)
@@ -173,28 +172,16 @@ typedef struct // define a context structure  { ... } context;
                 bool skip = false;
                 int argNum = 0;
                 if (pm[0].ParameterType != typeof(PlTerm)) continue;
-                var ForeignSwitches = PlForeignSwitches.None;
-                if (pm.Length == 3)
+ 
+                if (pm.Length == 3 && pm[1].ParameterType == typeof(int) && pm[2].ParameterType == typeof(IntPtr) && m.ReturnType == typeof(int))
                 {
-                    if (pm[1].ParameterType == typeof(int) && pm[2].ParameterType == typeof(IntPtr) && m.ReturnType == typeof(int))
-                    {
-                        ForeignSwitches |= PlForeignSwitches.VarArgs | PlForeignSwitches.Nondeterministic;
-                        PrologVisible f1 = new NonDet();
-                        f1.Method = m;
-                        try
-                        {
-                            CheckRequiredPrefix(m, f1, requiredPrefix);
-                            LoadMethod(m, f1);
-                            ExportedMethodInfos.Add(m);
-                        }
-                        catch (Exception e)
-                        {
-                            Error("{0} caused {1}", m, e);
-                        }
-                        continue;
-                    }
+                    InternMethod(m, requiredPrefix);
+                    continue;
                 }
+                var ForeignSwitches = PlForeignSwitches.None;
+
                 if (m.ReturnType != typeof(bool)) continue;
+
                 for (int i = 1; i < pm.Length; i++)
                 {
                     ParameterInfo info = pm[i];
@@ -206,21 +193,71 @@ typedef struct // define a context structure  { ... } context;
                 }
                 if (!skip)
                 {
-                    PrologVisible f1 = (PrologVisible)new PrologVisible();
-                    f1.ForeignSwitches = ForeignSwitches;
-                    f1.Method = m;
                     string mname = m.Name;
                     if (mname.StartsWith("op_")) continue;
+                    InternMethod(m, requiredPrefix);
+                    continue;
+                }
+            }
+        }
+        private static void InternMethod(MethodInfo m, string requiredPrefix)
+        {
+            if (ExportedMethodInfos.Contains(m)) return;
+            if (m.IsAbstract) return;
+            object[] f = m.GetCustomAttributes(typeof(PrologVisible), false);
+            if (f != null && f.Length > 0)
+            {
+                PrologVisible f1 = (PrologVisible)f[0];
+                f1.Method = m;
+                try
+                {
+                    CheckRequiredPrefix(m, f1, requiredPrefix);
+                    InternMethod(m, f1);
+                    ExportedMethodInfos.Add(m);
+                }
+                catch (Exception e)
+                {
+                    Error("{0} caused {1}", m, e);
+                }
+                return;
+            }
+            var ForeignSwitches = PlForeignSwitches.None;
+            var pm = m.GetParameters();
+            if (pm.Length == 3)
+            {
+                if (pm[1].ParameterType == typeof(int) && pm[2].ParameterType == typeof(IntPtr) &&
+                    m.ReturnType == typeof(int))
+                {
+                    ForeignSwitches |= PlForeignSwitches.VarArgs | PlForeignSwitches.Nondeterministic;
+                    PrologVisible f1 = new NonDet();
+                    f1.Method = m;
                     try
                     {
                         CheckRequiredPrefix(m, f1, requiredPrefix);
-                        LoadMethod(m, f1);
+                        InternMethod(m, f1);
                         ExportedMethodInfos.Add(m);
                     }
                     catch (Exception e)
                     {
                         Error("{0} caused {1}", m, e);
                     }
+                    return;
+                }
+            }
+            else
+            {
+                PrologVisible f1 = (PrologVisible)new PrologVisible();
+                f1.ForeignSwitches = ForeignSwitches;
+                f1.Method = m;
+                try
+                {
+                    CheckRequiredPrefix(m, f1, requiredPrefix);
+                    InternMethod(m, f1);
+                    ExportedMethodInfos.Add(m);
+                }
+                catch (Exception e)
+                {
+                    Error("{0} caused {1}", m, e);
                 }
             }
         }
@@ -253,11 +290,12 @@ typedef struct // define a context structure  { ... } context;
             }
             return pm.Name;
         }
-        public static void LoadMethod(MethodInfo m, PrologVisible pm)
+        public static void InternMethod(MethodInfo m, PrologVisible pm)
         {
             pm.Name = ComputeName(pm, m);
             if (pm.DelegateType != null)
             {
+                ExportedMethodInfos.Add(m);
                 PlEngine.RegisterForeign(pm.ModuleName, pm.Name, pm.Arity, pm.Delegate, pm.ForeignSwitches);
                 return;
             }
@@ -268,19 +306,20 @@ typedef struct // define a context structure  { ... } context;
             if (!PlEngine.PinDelegate(module, pn.ToString(), -1, d)) return;
             InternMethod(module, pn, d.Method);
         }
-        public static void InternMethod(string module, string pn, MethodInfo list)
+        public static void InternMethod(string module, string pn, MethodInfo info)
         {
-            InternMethod(module, pn, list, null);
+            InternMethod(module, pn, info, null);
         }
         public static bool ForceJanCase = true;
-        public static void InternMethod(string module, string pn, MethodInfo list, object defaultInstanceWhenMissing)
+        public static void InternMethod(string module, string pn, MethodInfo minfo, object defaultInstanceWhenMissing)
         {
-            if (list == null)
+            if (minfo == null)
             {
                 return;
             }
-            Type type = list.DeclaringType;
-            pn = pn ?? (type.Name + "." + list.Name);
+            ExportedMethodInfos.Add(minfo);
+            Type type = minfo.DeclaringType;
+            pn = pn ?? (type.Name + "." + minfo.Name);
             if (ForceJanCase)
             {
                 var pn2 = ToPrologCase(pn);
@@ -289,13 +328,13 @@ typedef struct // define a context structure  { ... } context;
                     pn = pn2;
                 }
             }
-            ParameterInfo[] ps = list.GetParameters();
-            Type rt = list.ReturnType;
+            ParameterInfo[] ps = minfo.GetParameters();
+            Type rt = minfo.ReturnType;
             int paramlen = ps.Length;
             bool nonvoid = rt != typeof(void);
             bool isbool = rt == typeof(bool);
             bool hasReturnValue = nonvoid && !isbool;
-            bool isStatic = list.IsStatic;
+            bool isStatic = minfo.IsStatic;
             bool isVanilla = true;
             int maxOptionals = 0;
             foreach (ParameterInfo info in ps)
@@ -314,48 +353,48 @@ typedef struct // define a context structure  { ... } context;
             {
                 if (isVanilla)
                 {
-                    RegisterInfo(pn, paramlen, list);
+                    RegisterInfo(pn, paramlen, minfo);
                     Delegate d = null;
                     switch (paramlen)
                     {
                         case 0:
                             {
-                                d = new DelegateParameter0(() => (bool)InvokeCaught(list, null, ZERO_OBJECTS));
+                                d = new DelegateParameter0(() => (bool)InvokeCaught(minfo, null, ZERO_OBJECTS));
                                 PlEngine.RegisterForeign(module, pn, paramlen, d, PlForeignSwitches.None);
                                 return;
                             }
                         case 1:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter1(
-                                                         (p1) => (bool)InvokeCaught(list, null, new object[] { p1 })),
+                                                         (p1) => (bool)InvokeCaught(minfo, null, new object[] { p1 })),
                                                      PlForeignSwitches.None);
                             return;
                         case 2:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter2(
                                                          (p1, p2) =>
-                                                         (bool)InvokeCaught(list, null, new object[] { p1, p2 })),
+                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2 })),
                                                      PlForeignSwitches.None);
                             return;
                         case 3:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter3(
                                                          (p1, p2, p3) =>
-                                                         (bool)InvokeCaught(list, null, new object[] { p1, p2, p3 })),
+                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2, p3 })),
                                                      PlForeignSwitches.None);
                             return;
                         case 4:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter4(
                                                          (p1, p2, p3, p4) =>
-                                                         (bool)InvokeCaught(list, null, new object[] { p1, p2, p3, p4 })),
+                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2, p3, p4 })),
                                                      PlForeignSwitches.None);
                             return;
                         case -5: // use the default please
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter5(
                                                          (p1, p2, p3, p4, p5) =>
-                                                         (bool)InvokeCaught(list, null, new object[] { p1, p2, p3, p4, p5 })),
+                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2, p3, p4, p5 })),
                                                      PlForeignSwitches.None);
                             return;
                         default:
@@ -365,13 +404,13 @@ typedef struct // define a context structure  { ... } context;
             }
             int plarity = paramlen + (hasReturnValue ? 1 : 0) + (isStatic ? 0 : 1);
 
-            RegisterInfo(pn, plarity, list);
-            DelegateParameterVarArgs del = GetDelV(list, type, nonvoid, isbool, isStatic, plarity, defaultInstanceWhenMissing);
+            RegisterInfo(pn, plarity, minfo);
+            DelegateParameterVarArgs del = GetDelV(minfo, type, nonvoid, isbool, isStatic, plarity, defaultInstanceWhenMissing);
             PlEngine.RegisterForeign(module, pn, plarity, del, PlForeignSwitches.VarArgs);
             while (maxOptionals > 0)
             {
-                RegisterInfo(pn, plarity - maxOptionals, list); 
-                del = GetDelV(list, type, nonvoid, isbool, isStatic, plarity - maxOptionals, defaultInstanceWhenMissing);
+                RegisterInfo(pn, plarity - maxOptionals, minfo); 
+                del = GetDelV(minfo, type, nonvoid, isbool, isStatic, plarity - maxOptionals, defaultInstanceWhenMissing);
                 PlEngine.RegisterForeign(module, pn, plarity - maxOptionals, del, PlForeignSwitches.VarArgs);
                 maxOptionals--;
             }

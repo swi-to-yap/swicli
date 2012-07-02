@@ -40,11 +40,10 @@ using System.Linq;
 using SbsSW.SwiPlCs;
 
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
 
         private static Type GetColType(object al, out bool isGeneric, out MethodInfo[] reflectCache, out Type elementType, out Type indexType)
@@ -108,7 +107,7 @@ namespace Swicli.Library
             MethodInfo gMethod = reflectCache[6];
             if (gMethod == null)
             {
-                gMethod = reflectCache[6] = typeof(PrologClient).GetMethod("colAddElement", BindingFlagsJustStatic)
+                gMethod = reflectCache[6] = typeof(PrologCLR).GetMethod("colAddElement", BindingFlagsJustStatic)
                                                 .MakeGenericMethod(new[] { elementType });
             }
             for (int i = 0; i < termsLength; i++)
@@ -135,7 +134,7 @@ namespace Swicli.Library
             MethodInfo gMethod = reflectCache[6];
             if (gMethod == null)
             {
-                gMethod = reflectCache[6] = typeof(PrologClient).GetMethod("colAddElement", BindingFlagsJustStatic)
+                gMethod = reflectCache[6] = typeof(PrologCLR).GetMethod("colAddElement", BindingFlagsJustStatic)
                                                 .MakeGenericMethod(new[] { elementType });
             }
             gMethod.Invoke(null, new object[] { al, value, reflectCache });
@@ -217,7 +216,7 @@ namespace Swicli.Library
             MethodInfo gMethod = reflectCache[7];
             if (gMethod == null)
             {
-                gMethod = reflectCache[7] = typeof (PrologClient).GetMethod("colSetElement", BindingFlagsJustStatic)
+                gMethod = reflectCache[7] = typeof (PrologCLR).GetMethod("colSetElement", BindingFlagsJustStatic)
                                                 .MakeGenericMethod(new[] {elementType});
             }
             gMethod.Invoke(null, new object[] {al, idx, value, reflectCache});

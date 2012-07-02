@@ -35,11 +35,10 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using SbsSW.SwiPlCs;
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         protected string ClientPrefix { get; set; }
         private string _clientModule = null;
@@ -49,17 +48,17 @@ namespace Swicli.Library
             set { if (value != "user") _clientModule = value; }
         }
 
-        private static PrologClient _singleInstance;
-        public static PrologClient SingleInstance
+        private static PrologCLR _singleInstance;
+        public static PrologCLR SingleInstance
         {
             get
             {
-                if (_singleInstance == null) _singleInstance = new PrologClient();
+                if (_singleInstance == null) _singleInstance = new PrologCLR();
                 return _singleInstance;
             }
         }
 
-        public PrologClient()
+        public PrologCLR()
         {
             _singleInstance = this;
             ClientModule = null;
@@ -177,7 +176,7 @@ namespace Swicli.Library
                         }
                         else if (o is Exception)
                         {
-                            ps[i] = PrologClient.ExceptionString((Exception)o);
+                            ps[i] = PrologCLR.ExceptionString((Exception)o);
                         }
                     }
                     text = String.Format(text, ps);

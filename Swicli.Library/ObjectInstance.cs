@@ -38,11 +38,10 @@ using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-using PrologCli = Swicli.Library.PrologClient;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         public static PlTerm ATOM_NIL { get { return PlTerm.PlAtom("[]"); } }
         public static PlTerm PLNULL { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("null")); } }

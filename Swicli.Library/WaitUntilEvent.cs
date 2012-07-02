@@ -29,7 +29,7 @@ using SbsSW.SwiPlCs;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         /// <summary>
         /// Create a Event Handler with a ResetEvent

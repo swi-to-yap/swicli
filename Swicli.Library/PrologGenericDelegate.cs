@@ -32,7 +32,7 @@ using SbsSW.SwiPlCs.Exceptions;
 
 namespace Swicli.Library
 {
-    public partial class PrologClient
+    public partial class PrologCLR
     {
         /// <summary>
         /// ?- current_bot(Obj),cli_add_event_handler(Obj,'EachSimEvent',c(A,format(user_error,'EV = ~q.~n',[A])),Out).
@@ -130,7 +130,7 @@ namespace Swicli.Library
             Instance = instance;
             SetInstanceOfDelegateType(info.EventHandlerType);
             PlTerm plC = PlTerm.PlVar();
-            PrologClient.PlCall("system", "copy_term", new PlTermV(clousreTerm, plC));
+            PrologCLR.PlCall("system", "copy_term", new PlTermV(clousreTerm, plC));
             this.closureTerm = libpl.PL_record(clousreTerm.TermRef);
             Event.AddEventHandler(instance, Delegate);
         }
@@ -146,20 +146,20 @@ namespace Swicli.Library
 
         public override object CallPrologFast(object[] paramz)
         {
-            PrologClient.RegisterCurrentThread();
+            PrologCLR.RegisterCurrentThread();
             var results = paramz;
             PlTerm plC = PlTerm.PlVar();
             libpl.PL_recorded(closureTerm, plC.TermRef);
             PlTerm ctestVars = plC.Arg(0);
             PlTerm ctestCode = plC.Arg(1);
-            PlTerm[] terms = PrologClient.ToTermArray(ctestVars);
+            PlTerm[] terms = PrologCLR.ToTermArray(ctestVars);
             int idx = terms.Length - 1;
             int resdex = results.Length - 1;;
             while (idx >= 0 && resdex >= 0)
             {
                 terms[idx--].FromObject(results[resdex--]);
             }
-            PrologClient.PlCall("user", "call", new PlTermV(ctestCode, 1));
+            PrologCLR.PlCall("user", "call", new PlTermV(ctestCode, 1));
             return null;
         }
 
@@ -422,7 +422,7 @@ namespace Swicli.Library
                 PrologGenericDelegateThread.Name = "PrologEventSerializer";
                 PrologGenericDelegateThread.TrySetApartmentState(ApartmentState.STA);
                 PrologGenericDelegateThread.IsBackground = true;
-                PrologClient.RegisterThread(PrologGenericDelegateThread);
+                PrologCLR.RegisterThread(PrologGenericDelegateThread);
                 PrologGenericDelegateThread.Start();
             }
         }

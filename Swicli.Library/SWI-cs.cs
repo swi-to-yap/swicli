@@ -356,26 +356,26 @@ namespace SbsSW.SwiPlCs
     /// <code>
     ///     PlQuery q = new PlQuery("member", new PlTermV(new PlTerm("A"), new PlTerm("[a,b,c]")));
     ///     while (q.NextSolution())
-    ///         PrologClient.ConsoleTrace(s[0].ToString());
+    ///         PrologCLR.ConsoleTrace(s[0].ToString());
     /// </code>
     /// <para>There is an other constructor of <see cref="PlQuery"/> which simplify the sample above.</para>
     /// <code>
     ///     PlQuery q = new PlQuery("member(A, [a,b,c])");
     ///     foreach (PlTermV s in q.Solutions)
-    ///         PrologClient.ConsoleTrace(s[0].ToString());
+    ///         PrologCLR.ConsoleTrace(s[0].ToString());
     /// </code>
     /// <para>An other way to get the results is to use <see cref="PlQuery.SolutionVariables"/> to iterate over <see cref="PlQueryVariables"/>.</para>
     /// <code>
     ///     PlQuery q = new PlQuery("member(A, [a,b,c])");
     ///     foreach (PlQueryVariables vars in q.SolutionVariables)
-    ///         PrologClient.ConsoleTrace(vars["A"].ToString());
+    ///         PrologCLR.ConsoleTrace(vars["A"].ToString());
     /// </code>
     /// <para>It is also possible to get all solutions in a list by <see cref="PlQuery.ToList()"/>. 
     /// This could be used to work with LinQ to objects which is really nice. <see cref="PlQuery"/> and <see cref="PlQuery.ToList()"/> for further samples.</para>
     /// <code>
     ///     var results = from n in new PlQuery("member(A, [a,b,c])").ToList() select new {A = n["A"].ToString()};
     ///     foreach (var s in results)
-    ///         PrologClient.ConsoleTrace(s.A);
+    ///         PrologCLR.ConsoleTrace(s.A);
     /// </code>
     /// </example>
     [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -432,7 +432,7 @@ namespace SbsSW.SwiPlCs
         /// <param name="plTerm">how ?</param>
         public static void DoIt(this PlTerm plTerm)
         {
-            PrologClient.ConsoleTrace(plTerm.ToString());
+            PrologCLR.ConsoleTrace(plTerm.ToString());
         }
     }
     */
@@ -1628,7 +1628,7 @@ namespace SbsSW.SwiPlCs
         public static string CastToString(uint TermRef)
         {
             return CastToString0(TermRef);
-            return PrologClient.InvokeFromC(() => CastToString0(TermRef), true);
+            return PrologCLR.InvokeFromC(() => CastToString0(TermRef), true);
         }
         public static string CastToString0(uint TermRef)
         {
@@ -1931,12 +1931,12 @@ namespace SbsSW.SwiPlCs
         {
             if (!IsVar)
             {
-                PrologClient.Warn("Not a free object! {0}", this);
+                PrologCLR.Warn("Not a free object! {0}", this);
             }
-            var v = PrologClient.UnifyToProlog(o, this);
+            var v = PrologCLR.UnifyToProlog(o, this);
             if (IsVar || v == 0)
             {
-                PrologClient.Warn("Unify failed! {0}", this);
+                PrologCLR.Warn("Unify failed! {0}", this);
                 return false;
             }
             return v != 0;
@@ -2415,18 +2415,18 @@ namespace SbsSW.SwiPlCs
         {
             Delegate prev;
             string key = (module ?? "user") + ":" + (name ?? "_NONAME_") + "/" + arity;
-            PrologClient.RegisterInfo(name, arity, method.Method);
+            PrologCLR.RegisterInfo(name, arity, method.Method);
             lock (SavedRegisterForeign)
             {
                 if (!SavedRegisterForeign.TryGetValue(key, out prev))
                 {
-                    PrologClient.PinObject(method);
+                    PrologCLR.PinObject(method);
                     SavedRegisterForeign[key] = method;
                     return true;
                 }
             }
-            PrologClient.PinObject(method);
-            PrologClient.ConsoleWriteLine("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
+            PrologCLR.PinObject(method);
+            PrologCLR.ConsoleWriteLine("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
                                     " as " + method.GetType().Name);
             return false;
         }
@@ -2559,7 +2559,7 @@ namespace SbsSW.SwiPlCs
                 DelegateStreamWriteFunction wf = new DelegateStreamWriteFunction(Swrite_function);
                 if (!IsStreamFunctionWriteModified)
                 {
-                    if (PrologClient.RedirectStreams) PlEngine.SetStreamFunctionWrite(PlStreamType.Output, wf);
+                    if (PrologCLR.RedirectStreams) PlEngine.SetStreamFunctionWrite(PlStreamType.Output, wf);
                     IsStreamFunctionWriteModified = false;
                 }
                 String[] local_argv = new String[argv.Length+1];
@@ -2571,7 +2571,7 @@ namespace SbsSW.SwiPlCs
                     throw new PlLibException("failed to initialize");
                 else
                 {
-                    PrologClient.ConsoleWriteLine("PL_initialised");
+                    PrologCLR.ConsoleWriteLine("PL_initialised");
                     SetStreamReader(Sread_function);
                 }
             }
@@ -2580,7 +2580,7 @@ namespace SbsSW.SwiPlCs
 
         public static void SetStreamReader(DelegateStreamReadFunction rf)
         {
-            if (PrologClient.RedirectStreams)
+            if (PrologCLR.RedirectStreams)
             {
                // if (!IsStreamFunctionReadModified)
                 {
@@ -2606,7 +2606,7 @@ namespace SbsSW.SwiPlCs
                 }
                 catch (Exception e)
                 {
-                    PrologClient.ConsoleTrace(e);
+                    PrologCLR.ConsoleTrace(e);
                     if (e is Exception) throw (Exception)e;
                     throw new Exception("SPECIAL: " + e);
                 }

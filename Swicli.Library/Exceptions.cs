@@ -81,7 +81,7 @@ namespace SbsSW.SwiPlCs.Exceptions
 	    static private void BP()
 	    {
             libpl.PL_open_foreign_frame();
-            PrologClient.BP();
+            PrologCLR.BP();
             return;
 	    }
 
@@ -213,7 +213,7 @@ namespace SbsSW.SwiPlCs.Exceptions
         private void EnsureExFrame()
         {
             libpl.PL_open_foreign_frame();
-            PrologClient.BP();
+            PrologCLR.BP();
         }
 
         /// <summary>
