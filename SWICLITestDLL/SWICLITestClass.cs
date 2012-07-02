@@ -1,13 +1,18 @@
 using System;
-
-public static class SWICLITestClass
+namespace SWICLITestDLL
 {
-    static SWICLITestClass()
+    public static class SWICLITestClass
     {
-        Console.WriteLine("SWICLITestClass::SWICLITestClass");
+        static SWICLITestClass()
+        {
+            Console.WriteLine("SWICLITestDLL::SWICLITestClass.<clinit>()");
+        }
+        public static void install()
+        {
+            Console.WriteLine("SWICLITestDLL::SWICLITestClass.install()");
+            NonDetExample.LoadNonDetExamples();
+            //Console.WriteLine("SWICLITestClass::install press ctrol-D to leave CSharp");
+            //System.Reflection.Assembly.Load("csharp").EntryPoint.DeclaringType.GetMethod("Main", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { new String[0] });
+        }
     }
-    public static void install()
-    {
-        Console.WriteLine("SWICLITestClass::install press ctrol-D to leave CSharp");
-        //System.Reflection.Assembly.Load("csharp").EntryPoint.DeclaringType.GetMethod("Main", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { new String[0] });
-    }}
+}
