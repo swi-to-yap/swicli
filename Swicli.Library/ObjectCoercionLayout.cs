@@ -101,7 +101,17 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliToFromLayout(PlTerm clazzSpec, PlTerm memberSpec, PlTerm toSpec)
+        static public bool cliIsLayout(PlTerm predIndic)
+        {
+            string key = PredicateName(predIndic) + "/" + PredicateArity(predIndic);
+            lock (FunctorToLayout)
+            {
+                return FunctorToLayout.ContainsKey(key);
+            }
+        }
+
+        [PrologVisible]
+        static public bool cliAddLayout(PlTerm clazzSpec, PlTerm memberSpec, PlTerm toSpec)
         {
             Type type = GetType(clazzSpec);
             string name = memberSpec.Name;
@@ -157,7 +167,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliToFromRecomposer(PlTerm clazzSpec, PlTerm memberSpec, PlTerm obj2r, PlTerm r2obj)
+        static public bool cliAddRecomposer(PlTerm clazzSpec, PlTerm memberSpec, PlTerm obj2r, PlTerm r2obj)
         {
             Type type = GetType(clazzSpec);
             string name = memberSpec.Name;

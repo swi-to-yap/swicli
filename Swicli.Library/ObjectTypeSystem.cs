@@ -422,7 +422,7 @@ namespace Swicli.Library
 #endif
         }
         [PrologVisible]
-        static public bool cliShorttype(PlTerm valueName, PlTerm valueIn)
+        static public bool cliAddShorttype(PlTerm valueName, PlTerm valueIn)
         {
             if (!valueName.IsString && !valueName.IsAtom) return Warn("valueName must be string or atom {0}", valueName);
             string name = valueName.Name;

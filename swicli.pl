@@ -70,7 +70,8 @@ loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_librar
 
 :- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
 
-
+%% cli_lib_type(-LibTypeName).
+% LibTypeName is an atom that denotes the implementation class SWICLI uses
 cli_lib_type('Swicli.Library.PrologCLR').
 
 %% link_swiplcs(+PathName).
@@ -176,6 +177,9 @@ cli_is_object(O):-functor(O,CLRF,_),hcli_clr_functor(CLRF).
 
 hcli_clr_functor(F):-memberchk(F,[struct,enum,object,event,'{}']).
 
+%% cli_is_tagged_object(+Obj)
+% is Object a ref object (maybe null or void) (excludes struct,enum,object/N,event refernces)
+
 %% cli_is_ref(+Obj) 
 % is Object a ref object and not null or void (excludes struct,enum,object/N,event refernces)
 
@@ -197,10 +201,8 @@ cli_memb(O,X):-cli_members(O,Y),member(X,Y).
 cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
 
 
-:-dynamic(shortTypeName/2).
 :-dynamic(cli_subproperty/2).
 :-module_transparent(cli_subproperty/2).
-:-module_transparent(shortTypeName/2).
 
 
 /*
@@ -436,16 +438,11 @@ cli_enumerator_element(I, _E) :- cli_call_raw(I, 'MoveNext', [], @(false)),!,fai
 cli_enumerator_element(I, E) :- cli_get(I, 'Current', E).
 cli_enumerator_element(I, E) :- cli_enumerator_element(I, E).
 
-old_cli_enumerator_element(I, E) :- %%cli_is_type('System.Collections.IEnumerator',I),!,
-	(   cli_call_raw(I, 'MoveNext', [], @(true))
-	->  (   cli_get(I, 'Current', E)        % surely it's steadfast...
-	;   cli_enumerator_element(I, E)
-	)
-	).
 
-
-%% cli_col(+Col,-Elem) 
-% iterates out Elems for Col
+%% cli_col(+Col,-Elem).
+%% cli_enumerator_element(+Enumer,-Elem).
+%% cli_iterator_element(+Iter,-Elem).
+% Iterates out Elem for Col/Iter/Enumer
 % ==
 %
 %    ?- cli_new('System.Collections.Generic.List'('System.String'),[int],[10],Obj).
@@ -473,19 +470,18 @@ old_cli_enumerator_element(I, E) :- %%cli_is_type('System.Collections.IEnumerato
 %    E = "bar" ;
 %    false.
 % ==
+cli_col(X,Y):-hcli_col(X,Y).
 
-% old version:s cli_collection(Obj,Ele):-cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
-cli_collection(Error,_Ele):-cli_is_null(Error),!,fail.
-cli_collection([S|Obj],Ele):-!,member(Ele,[S|Obj]).
-cli_collection(Obj,Ele):-
+% old version:s hcli_col(Obj,Ele):-cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
+hcli_col(Error,_Ele):-cli_is_null(Error),!,fail.
+hcli_col([S|Obj],Ele):-!,member(Ele,[S|Obj]).
+hcli_col(Obj,Ele):-
       cli_memb(Obj,m(_, 'GetEnumerator', _, [], [], _, _)),!,
       cli_call(Obj,'GetEnumerator',[],Enum),!,
       call_cleanup(cli_enumerator_element(Enum,Ele),cli_free(Enum)).
-cli_collection(Obj,Ele):-cli_array_to_term_args(Obj,Vect),!,arg(_,Vect,Ele).
-cli_collection(Obj,Ele):-cli_memb(Obj,m(_, 'ToArray', _, [], [], _, _)),cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
-cli_collection(Obj,Ele):-cli_array_to_termlist(Obj,Vect),!,member(Ele,Vect).
-
-cli_col(X,Y):-cli_collection(X,Y).
+hcli_col(Obj,Ele):-cli_array_to_term_args(Obj,Vect),!,arg(_,Vect,Ele).
+hcli_col(Obj,Ele):-cli_memb(Obj,m(_, 'ToArray', _, [], [], _, _)),cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
+hcli_col(Obj,Ele):-cli_array_to_termlist(Obj,Vect),!,member(Ele,Vect).
 
 %% cli_col_add(+Col,+Item)
 % add an Item to Col
@@ -584,8 +580,14 @@ cli_preserve(TF,Calls):-
      (cli_set(LibType,'PreserveObjectType',TF),Calls),
          cli_set(LibType,'PreserveObjectType',O)).
 
-
-member_elipse(NV,{NVs}):-!,member_elipse(NV,NVs).
+%% member_elipse(Ele,Elipse).
+% ==
+% ?- member_elipse(E,{a,b,c}).
+% E = a ;
+% E = b ;
+% E = c.
+% ==
+member_elipse(NV,{NVs}):-!,nonvar(NVs),member_elipse(NV,NVs).
 member_elipse(NV,(A,B)):-!,(member_elipse(NV,A);member_elipse(NV,B)).
 member_elipse(NV,NV).
 
@@ -872,19 +874,18 @@ hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
 % Object EVENT
 %=========================================
 
-%% cli_new_event_waiter(+ClazzOrInstance,+MemberSpec,-BlockOn).
-%
+%% cli_new_event_waiter(+ClazzOrInstance,+MemberSpec,-WaitOn).
+% Creates a new ManualResetEvent (WaitOn) that when an Event is called WaitOn in pulsed so that cli_block_until_event/3 will unblock 
 
-%% cli_add_event_waiter(+BlockOn,+ClazzOrInstance,+MemberSpec,-NewBlockOn).
-%
-
-%% cli_block_until_event(+BlockOn,+MaxTime,+TestVarsCode,-ExitCode).
-%
-% cli_block_until_event/3 use Foriegnly defined cli_block_until_event/4 and Dispose.
+%% cli_add_event_waiter(+WaitOn,+ClazzOrInstance,+MemberSpec,-NewWaitOn).
+% Adds a new Event to the ManualResetEvent (WaitOn) created by cli_new_event_waiter/3
 
 %% cli_block_until_event(+WaitOn,+Time,+Lambda).
-%
+% Calls (foriegnly defined) cli_block_until_event/4 and then cleansup the .NET objects.
 cli_block_until_event(WaitOn,Time,Lambda):-setup_call_cleanup(true,cli_block_until_event(WaitOn,Time,Lambda,_),cli_call(WaitOn,'Dispose',_)).
+
+%% cli_block_until_event(+WaitOn,+MaxTime,+TestVarsCode,-ExitCode).
+% foriegnly defined tododocs
 
 
 %% cli_add_event_handler(+Term1,+Arity,+IntPtrControl,Pred).
@@ -1101,11 +1102,6 @@ cli_hide(PIn):-to_pi(PIn,Pred),
 cli_notrace(Call):-tracing,notrace,!,call_cleanup(call(Call),trace).
 cli_notrace(Call):-call(Call).
 
-:-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
-
-
-
-
 %% cli_class_from_type(+Value,-Value).
 %% cli_find_class(+ClazzName,-ClazzObject).
 %% cli_find_type(+ClazzSpec,+ClassRef).
@@ -1116,27 +1112,58 @@ cli_notrace(Call):-call(Call).
 %% cli_type_from_class(+Value,-Value).
 % todo
 
-%% cli_delegate_term(+TypeFi,+PrologPred,+BooleanSaveKey).
+%% cli_new_delegate_term(+TypeFi,+PrologPred,+BooleanSaveKey,-Delegate).
 %% cli_getterm(+ValueCol,+Value,-Value).
 %% cli_new_array(+ClazzSpec,+Rank,-Value).
 %% cli_new_delegate(+DelegateClass,+PrologPred,-Value).
 % todo
 
-%% cli_load_type(+TypeT).
-%% cli_shorttype(+ValueName,+Value).
+%% cli_is_layout(+MemberSpec).
 %% cli_add_layout(+ClazzSpec,+MemberSpec).
-%% cli_to_from_layout(+ClazzSpec,+MemberSpec,+ToSpec).
-%% cli_to_from_recomposer(+ClazzSpec,+MemberSpec,+Obj2r,+R2obj).
+%% cli_add_layout(+ClazzSpec,+MemberSpec,+ToSpec).
+%% cli_add_recomposer(+ClazzSpec,+MemberSpec,+Obj2r,+R2obj).
 % need doc!
 
 %% cli_find_constructor(+ClazzSpec,+MemberSpec,-Method).
 %% cli_find_method(+ClazzOrInstance,+MemberSpec,-Method).
 %% cli_member_doc(+Memb,+Doc,+Xml).
 %% cli_members(+ClazzOrInstance,-Members).
+%% cli_add_shorttype(+Short,+Long).
 %% cli_props_for_type(+ClazzSpec,+MemberSpecs).
-% need doc!
+% need doc
 
+%% cli_new_array(Arg1, Arg2, Arg3).
+%% cli_array_fill(Arg1, Arg2).
+%% cli_array_fill_values(Arg1, Arg2).
+% need docs
 
+%% cli_special_unify(Arg1, Arg2).
+%% cli_fmt(Arg1, Arg2, Arg3).
+%% cli_intern(Arg1, Arg2, Arg3).
+%% cli_memb(Arg1, Arg2).
+%% cli_to_data(Arg1, Arg2, Arg3).
+%% cli_new_prolog_dictionary(Arg1, Arg2, Arg3, Arg4).
+%% cli_set_element(Arg1, Arg2, Arg3).
+%% cli_add_foreign_methods(Arg1, Arg2, Arg3).
+%% cli_array_to_length(Arg1, Arg2).
+%% cli_get_symbol(Arg1, Arg2, Arg3).
+%% cli_add_element(Arg1, Arg2).
+%% cli_debug(Arg1).
+%% cli_expanded(Arg1, Arg2).
+%% module_functor(Arg1, Arg2, Arg3, Arg4).
+%% cli_link_swiplcs(Arg1).
+%% cli_make_default(Arg1, Arg2).
+%% cli_subproperty(Arg1, Arg2).
+%% cli_demo(Arg1, Arg2).
+%% cli_expand(Arg1, Arg2).
+%% cli_set_hook(Arg1, Arg2, Arg3).
+%% cli_get_hook(Arg1, Arg2, Arg3).
+%% cli_fmt(Arg1, Arg2).
+%% cli_is_defined(Arg1, Arg2).
+%% cli_eval(Arg1, Arg2, Arg3).
+%% cli_eval_hook(Arg1, Arg2, Arg3).
+%% cli_interned(Arg1, Arg2, Arg3).
+% need docs!
 
 % ===================================================
 % test preds
@@ -1155,6 +1182,24 @@ cli_notrace(Call):-call(Call).
 %% cli_test_ref(+Incoming,?REFStringOptionalstr,?REFInt32Outbound).
 %% cli_test_var_arg(?REFInt32Outbound,+ArrayOfInt32Incoming).
 % Assembly definition test preds for Examples
+
+
+:-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
+
+% cli_docs:- predicate_property(swicli:P,file(_)),P=P,!.
+cli_docs:- cli_find_type('Swicli.Library.PrologCLR',T),
+   cli_get(static(T),'AutoDocInfos',SRF),cli_map(SRF,K,V),P=V,cli_get(P,'GetParameters',PPs),
+   bot_params_to_list(PPs,PP),cli_member_doc(P,_Doc,_XML),
+    concat_atom([FC,AC],"/",K),atom_number(AC,A),string_to_atom(FC,F),
+    ppList2Args(PP,Args),PRED=..[F|Args],A=A,
+    cli_to_str(V,VS),
+   %% cli_to_str(F/A=eval(cli_get(V,name)):PRED:Doc,TSTR),
+    %%term_to_atom(TSTR,ASTR),string_to_atom(STR,ASTR),
+    'format'('~n%% ~w',[PRED]),
+    %%'format'('% ~w~n',[Doc]),
+    VS==VS, %%'format'('%       Foreign call to ~w~n',[VS]),
+    fail.
+
 
 /** <module> SWI-Prolog 2-Way interface to .NET/Mono
 
@@ -1205,6 +1250,12 @@ Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/Swi
 
 */
 
+:-use_module(library(pldoc)).
+:-doc_server(57007,[workers(5)]).
+:-portray_text(true). 
+
+
+end_of_file.
 
 %
 %    ?- cli_get_type($Obj,Type),cli_get_typename(Type,Name).
@@ -1217,7 +1268,7 @@ Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/Swi
 %    Name = 'System.Collections.Generic.List'('String').
 %
 %
-%    ?- cli_shorttype(stringl,'System.Collections.Generic.List'('String')).
+%    ?- cli_add_shorttype(stringl,'System.Collections.Generic.List'('String')).
 %    true.
 %
 %
@@ -1350,7 +1401,7 @@ Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/Swi
 %    ERROR: findProperty IsVar _g929 on type System.Collections.Generic.Dictionary`2[System.String,System.String]
 %       Call: (9) message_to_string('Only possible for compound or atoms', _g1079) ? leap
 %    
-%    cli_ShortType(dict,'System.Collections.Generic.Dictionary`2').
+%    cli_add_shorttype(dict,'System.Collections.Generic.Dictionary`2').
 %    
 %    cli_find_type(dict(string,string),Found).
 %    

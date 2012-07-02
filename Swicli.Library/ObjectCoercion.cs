@@ -431,7 +431,7 @@ namespace Swicli.Library
             }
             if (pt != null && pt.IsSubclassOf(typeof(Delegate)))
             {
-                return cliDelegateTerm(pt, o, false);
+                return cliNewDelegateTerm(pt, o, false);
             }
             if (pt == typeof(Type))
             {
@@ -644,7 +644,7 @@ namespace Swicli.Library
             }
             if (key == "delegate/2")
             {
-                return cliDelegateTerm(pt, orig, false);
+                return cliNewDelegateTerm(pt, orig, false);
             }
             if (key == "{}/1")
             {

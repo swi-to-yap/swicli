@@ -62,11 +62,11 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliNewDelegate(delegateClass, prologPred, plvar) && SpecialUnify(valueOut, plvar);
             }
-            object retval = cliDelegateTerm(GetTypeThrowIfMissing(delegateClass), prologPred, true);
+            object retval = cliNewDelegateTerm(GetTypeThrowIfMissing(delegateClass), prologPred, true);
             return valueOut.FromObject(retval);
         }
         [PrologVisible]
-        static public Delegate cliDelegateTerm(Type fi, PlTerm prologPred, bool saveKey)
+        static public Delegate cliNewDelegateTerm(Type fi, PlTerm prologPred, bool saveKey)
         {
             if (prologPred.IsCompound)
             {
@@ -74,10 +74,10 @@ namespace Swicli.Library
                 {
                     if (prologPred.Arity == 1)
                     {
-                        return cliDelegateTerm(fi, prologPred.Arg(0), saveKey);
+                        return cliNewDelegateTerm(fi, prologPred.Arg(0), saveKey);
                     }
                     Type dt = GetTypeThrowIfMissing(prologPred.Arg(0));
-                    var obj = cliDelegateTerm(dt, prologPred.Arg(1), saveKey);
+                    var obj = cliNewDelegateTerm(dt, prologPred.Arg(1), saveKey);
                     return (Delegate)RecastObject(fi, obj, dt);
                 }
                 if (prologPred.Name == "@")

@@ -159,6 +159,10 @@ namespace Swicli.Library
         {
             return p ? libpl.PL_succeed : libpl.PL_fail;
         }
+        public static bool PlSucceedOrFailOrError(int p)
+        {
+            return p != libpl.PL_fail;
+        }
 
         private static string PlStringFormat(string text, params object[] ps)
         {

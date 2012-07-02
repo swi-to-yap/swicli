@@ -46,8 +46,8 @@ namespace Swicli.Library
         public static PlTerm ATOM_NIL { get { return PlTerm.PlAtom("[]"); } }
         public static PlTerm PLNULL { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("null")); } }
         public static PlTerm PLVOID { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("void")); } }
-        public static PlTerm PLTRUE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("true")); } }
-        public static PlTerm PLFALSE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom("false")); } }
+        public static PlTerm PLTRUE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom(PreserveObjectType ? object_to_tag(true) : "true")); } }
+        public static PlTerm PLFALSE { get { return PlTerm.PlCompound("@", PlTerm.PlAtom(PreserveObjectType ? object_to_tag(false) : "false")); } }
 
         [PrologVisible]
         public static bool cliMakeDefault(PlTerm typeSpec, PlTerm valueOut)
@@ -177,8 +177,6 @@ namespace Swicli.Library
                 return plvar.FromObject(ret1) && SpecialUnify(plTerm, plvar);
             }
         }
-
-        public static Object ToFromConvertLock = new object();
         public static int UnifyToProlog(object o, PlTerm term)
         {
             if (!term.IsVar)
@@ -192,10 +190,7 @@ namespace Swicli.Library
                 Warn("Not a allocated term {0}", o);
                 return libpl.PL_fail;
             }
-            if (o is PlTerm)
-            {
-                return libpl.PL_unify(TermRef, ((PlTerm)o).TermRef);
-            }
+
 #if USE_IKVM
             if (o is Term) return UnifyToProlog(ToPLCS((Term)o), term);
 #endif
@@ -203,6 +198,17 @@ namespace Swicli.Library
             {
                 return PlSucceedOrFail(UnifyTagged(o, term));
             }
+            return UnifyToPrologImmediate(o, term);
+        }
+
+        public static Object ToFromConvertLock = new object();
+        public static int UnifyToPrologImmediate(object o, PlTerm term)
+        {
+            uint TermRef = term.TermRef;
+            if (o is PlTerm)
+            {
+                return libpl.PL_unify(TermRef, ((PlTerm)o).TermRef);
+            } 
             if (o is string)
             {
                 string s = (string)o;

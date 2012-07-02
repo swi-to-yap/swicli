@@ -336,11 +336,18 @@
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{44645676-D8D5-4A1F-9F8C-4105912CFE68}"
-			RelativePathToProject=".\Swicli.Library\Swicli.Library.csproj"
+			RelativePathToProject=".\sources\main\swicli\Swicli.Library\Swicli.Library.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{E8ED0021-C042-40EB-AFA6-19E1577820A1}"
-			RelativePathToProject=".\SWICLITestDLL\SWICLITestDLL.csproj"
+			RelativePathToProject=".\sources\main\swicli\SWICLITestDLL\SWICLITestDLL.csproj"
+		/>
+		<ProjectReference
+			ReferencedProjectIdentifier="{469C62AF-2C8B-4B5B-846C-7C2460E53DA7}"
+			CopyLocal="false"
+			CopyLocalDependencies="false"
+			CopyLocalSatelliteAssemblies="false"
+			RelativePathToProject=".\sources\chatbot\AIMLBotModule\AIMLBotModule.csproj"
 		/>
 	</References>
 	<Files>
