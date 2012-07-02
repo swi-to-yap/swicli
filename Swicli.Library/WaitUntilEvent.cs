@@ -41,10 +41,12 @@ namespace Swicli.Library
         [PrologVisible]
         public static bool cliNewEventWaiter(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm blockOn)
         {
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             Type[] paramz = null;
-            EventInfo fi = findEventInfo(memberSpec, c, ref paramz);
+            if (!CheckBound(memberSpec)) return false;
+            EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
                 return Error("Cant find event {0} on {1}", memberSpec, (object) c ?? clazzOrInstance);
@@ -76,10 +78,12 @@ namespace Swicli.Library
             {
                 list = wud.parent;
             }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             Type[] paramz = null;
-            EventInfo fi = findEventInfo(memberSpec, c, ref paramz);
+            if (!CheckBound(memberSpec, blockOn)) return false;
+            EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
                 return Error("Cant find event {0} on {1}", memberSpec, (object)c ?? clazzOrInstance);

@@ -77,11 +77,35 @@ namespace Swicli.Library
                                                             BindingFlags.Static | BindingFlags.FlattenHierarchy;
         public static BindingFlags BindingFlagsInstance = BindingFlags.Public | BindingFlags.NonPublic |
                                                             BindingFlags.Instance | BindingFlags.FlattenHierarchy;
-        public static BindingFlags BindingFlagsALL = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                                                     BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.IgnoreReturn 
-                                                     | BindingFlags.FlattenHierarchy;
-        public static BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy;
 
+        public static BindingFlags BindingFlagsALL = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                                                     BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.IgnoreReturn
+                                                     | BindingFlags.FlattenHierarchy;
+       
+        public static BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                                                    BindingFlags.FlattenHierarchy;
+
+        public static BindingFlags BindingFlagsALLNC = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                                                     BindingFlags.Instance | BindingFlags.IgnoreReturn
+                                                     | BindingFlags.FlattenHierarchy;
+
+        public static BindingFlags BindingFlagsALL3 = BindingFlags.InvokeMethod | BindingFlags.GetField |
+                                                      BindingFlags.GetProperty | BindingFlags.SetField |
+                                                      BindingFlags.SetProperty;
+        public static BindingFlags ICASE = BindingFlags.IgnoreCase;
+
+        private static readonly BindingFlags[] BindingFlags_SEARCHIS = new[]
+                                                                {
+                                                                    BindingFlagsALL3 | BindingFlagsInstance,
+                                                                    BindingFlagsALL3 | BindingFlagsJustStatic,
+                                                                    BindingFlagsALL3 | BindingFlagsInstance | ICASE,
+                                                                    BindingFlagsALL3 | BindingFlagsJustStatic | ICASE,
+                                                                };
+        private static readonly BindingFlags[] BindingFlags_SEARCHS = new[]
+                                                                {
+                                                                    BindingFlagsALL3 | BindingFlagsJustStatic,
+                                                                    BindingFlagsALL3 | BindingFlagsJustStatic | ICASE,
+                                                                };
 
         const string ExportModule = "swicli";
 
@@ -253,7 +277,24 @@ namespace Swicli.Library
 #endif
         }
 
+        private static bool CheckBound(params PlTerm[] terms)
+        {
+            foreach (PlTerm term in terms)
+            {
+                if (term.IsVar)
+                {
+                    return Error("Is var {0}", term);
+                }
+            }
+            return true;
+        }
+
         private static MemberInfo findMember(PlTerm memberSpec, Type c)
+        {
+            return findMember(memberSpec, c, InstanceFields) ??
+                   findMember(memberSpec, c, InstanceFields | BindingFlags.IgnoreCase);
+        }
+        private static MemberInfo findMember(PlTerm memberSpec, Type c, BindingFlags searchFlags)
         {
             if (IsTaggedObject(memberSpec))
             {
@@ -261,15 +302,14 @@ namespace Swicli.Library
                 if (r != null) return r;
             }
             Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
-            return findField(memberSpec, c) ??
-                   (MemberInfo)
-                   findPropertyInfo(memberSpec, c, true, true, ref paramz) ??
-                   (MemberInfo) findMethodInfo(memberSpec, -1, c, ref paramz) ??
-                   findPropertyInfo(memberSpec, c, false, false, ref paramz);
+            return findField(memberSpec, c, searchFlags) ??
+                   findPropertyInfo(memberSpec, c, true, true, ref paramz, searchFlags) ??
+                   findMethodInfo(memberSpec, -1, c, ref paramz, searchFlags) ??
+                   (MemberInfo)findPropertyInfo(memberSpec, c, false, false, ref paramz, searchFlags);
             //findConstructor(memberSpec, c));
         }
 
-        private static FieldInfo findField(PlTerm memberSpec, Type c)
+        private static FieldInfo findField(PlTerm memberSpec, Type c, BindingFlags searchFlags)
         {
             if (c == null)
             {
@@ -299,16 +339,16 @@ namespace Swicli.Library
                 {
                     return null;
                 }
-                return findField(memberSpec.Arg(0), c);
+                return findField(memberSpec.Arg(0), c, searchFlags);
             }
             string fn = memberSpec.Name;
             if (fn == "[]") fn = "Get";
-            FieldInfo fi = c.GetField(fn, BindingFlagsALL);
+            FieldInfo fi = c.GetField(fn, searchFlags);
             return fi;
         }
 
 
-        private static PropertyInfo findPropertyInfo(PlTerm memberSpec, Type c, bool mustHaveP, bool assumeParamTypes, ref Type[] paramz)
+        private static PropertyInfo findPropertyInfo(PlTerm memberSpec, Type c, bool mustHaveP, bool assumeParamTypes, ref Type[] paramz, BindingFlags searchFlags)
         {
             if (c == null)
             {
@@ -337,25 +377,30 @@ namespace Swicli.Library
                 if (memberSpec.Name == "p")
                 {
                     Type[] paramzN = null;
-                    return findPropertyInfo(memberSpec.Arg(0), c, false, assumeParamTypes, ref paramzN);
+                    return findPropertyInfo(memberSpec.Arg(0), c, false, assumeParamTypes, ref paramzN, searchFlags);
                 }
                 if (mustHaveP) return null;
             }
             if (paramz == null)
             {
-                Warn("using paramSpec {0}", ToString(memberSpec));
+              //  Warn("using paramSpec {0}", ToString(memberSpec));
                 paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             }
             string fn = memberSpec.Name;
             if (fn == "[]") fn = "Item";
             if (paramz == null || paramz.Length == 0)
-                return c.GetProperty(fn, BindingFlagsALL) ?? c.GetProperty("Is" + fn, BindingFlagsALL);
-            var ps = c.GetProperties(BindingFlagsALL);
+                return c.GetProperty(fn, searchFlags) ?? c.GetProperty("Is" + fn, searchFlags);
+            var ps = c.GetProperties(searchFlags);
             int len = paramz.Length;
             PropertyInfo nameMatched = null;
+            bool ignoreCase0 = (BindingFlags.IgnoreCase & searchFlags) != 0;
+            if (ignoreCase0)
+            {
+                fn = fn.ToLower();   
+            }
             foreach (PropertyInfo info in ps)
             {
-                if (info.Name.ToLower() == fn.ToLower())
+                if (info.Name == fn || (ignoreCase0 && info.Name.ToLower() == fn))
                 {
                     nameMatched = nameMatched ?? info;
                     ParameterInfo[] indexParameters = info.GetIndexParameters();
@@ -373,7 +418,7 @@ namespace Swicli.Library
                     }
                 }
             }
-            return c.GetProperty(fn, BindingFlagsALL) ?? c.GetProperty("Is" + fn, BindingFlagsALL) ?? nameMatched;
+            return c.GetProperty(fn, searchFlags) ?? c.GetProperty("Is" + fn, searchFlags) ?? nameMatched;
         }
 
         private static bool IsCompatTypes(Type[] supplied, Type[] required)
@@ -444,55 +489,79 @@ namespace Swicli.Library
             return true;
         }
 
-        [PrologVisible]
-        static public bool cliGetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueOut)
+        private static bool GetInstanceAndType(PlTerm clazzOrInstance, out object getInstance, out Type c)
         {
             if (clazzOrInstance.IsVar)
             {
+                c = null;
+                getInstance = null;
                 return Error("Cant find instance {0}", clazzOrInstance);
             }
+            getInstance = GetInstance(clazzOrInstance);
+            c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            if (getInstance == null && c == null)
+            {
+                return Error("Cant find instance or type {0}", clazzOrInstance);
+            }
+            return true;
+        }
+
+        [PrologVisible]
+        static public bool cliGetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueOut)
+        {
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
                 return cliGetRaw(clazzOrInstance, memberSpec, plvar) && SpecialUnify(valueOut, plvar);
             }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            if (getInstance == null && c == null)
-            {
-                Error("Cant find instance {0}", clazzOrInstance);
-                return false;
-            }
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
+            if (!CheckBound(memberSpec)) return false;
             bool found;
-            object cliGet01 = cliGet0(getInstance, memberSpec, c, out found);
-            if (!found) return false;
-            return valueOut.FromObject(cliGet01);
+            foreach (var searchFlags in getInstance == null ? BindingFlags_SEARCHS : BindingFlags_SEARCHIS)
+            {
+                object cliGet01 = cliGet0(getInstance, memberSpec, c, out found, searchFlags);
+
+                if (found)
+                {
+                    return valueOut.FromObject(cliGet01);
+                }
+            }
+            return false;
         }
-        static public object cliGet0(object getInstance, PlTerm memberSpec, Type c, out bool found)
+
+        static public object cliGet0(object getInstance, PlTerm memberSpec, Type c, out bool found, BindingFlags icbf)
         {
             Type[] paramz = null;
-            FieldInfo fi = findField(memberSpec, c);
-            if (fi != null)
-            {
-                object fiGetValue = fi.GetValue(fi.IsStatic ? null : getInstance);
-                found = true;
-                return (fiGetValue);
-            }
             paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
-            var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz);
-            if (pi != null)
+            if ((icbf & BindingFlags.GetProperty) != 0)
             {
-                var mi = pi.GetGetMethod();
-                if (mi != null)
+                var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz, icbf);
+                if (pi != null && pi.CanRead)
                 {
-                    found = true;
-                    return ((InvokeCaught(mi, mi.IsStatic ? null : getInstance, ZERO_OBJECTS) ?? VoidOrNull(mi)));
+                    var mi = pi.GetGetMethod();
+                    if (mi != null)
+                    {
+                        found = true;
+                        return ((InvokeCaught(mi, mi.IsStatic ? null : getInstance, ZERO_OBJECTS) ?? VoidOrNull(mi)));
+                    }
+                    Warn("Cant find getter for property " + memberSpec + " on " + c + " for " + pi);
+                    found = false;
+                    return null;
                 }
-                WarnMissing("Cant find getter for property " + memberSpec + " on " + c + " for " + pi);
-                found = false;
-                return null;
             }
-            else
+            if ((icbf & BindingFlags.GetField) != 0)
+            {
+                FieldInfo fi = findField(memberSpec, c, icbf);
+                if (fi != null)
+                {
+                    object fiGetValue = fi.GetValue(fi.IsStatic ? null : getInstance);
+                    found = true;
+                    return (fiGetValue);
+                }
+            }
+            if ((icbf & BindingFlags.InvokeMethod) != 0)
             {
                 if (memberSpec.IsVar)
                 {
@@ -501,12 +570,12 @@ namespace Swicli.Library
                     return getInstance;
                 }
                 string fn = memberSpec.Name;
-                MethodInfo mi = findMethodInfo(memberSpec, -1, c, ref paramz) ??
-                                GetMethod(c, fn, BindingFlagsALL) ??
-                                GetMethod(c, "get_" + fn, BindingFlagsALL) ??
-                                GetMethod(c, "Get" + fn, BindingFlagsALL) ??
-                                GetMethod(c, "Is" + fn, BindingFlagsALL) ??
-                                GetMethod(c, "To" + fn, BindingFlagsALL);
+                MethodInfo mi = findMethodInfo(memberSpec, -1, c, ref paramz,icbf) ??
+                                GetMethod(c, fn, icbf) ??
+                                GetMethod(c, "get_" + fn, icbf) ??
+                                GetMethod(c, "Get" + fn, icbf) ??
+                                GetMethod(c, "Is" + fn, icbf) ??
+                                GetMethod(c, "To" + fn, icbf);
                 if (mi == null)
                 {
                     WarnMissing("Cant find getter " + memberSpec + " on " + c);
@@ -519,6 +588,11 @@ namespace Swicli.Library
                 object retval = InvokeCaught(mi, target, value, postCallHook) ?? VoidOrNull(mi);
                 found = true;
                 return retval;
+            }
+            else
+            {
+                found = false;
+                return null;
             }
         }
 
@@ -533,24 +607,18 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliGetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueOut)
         {
-            if (clazzOrInstance.IsVar)
-            {
-                return Error("Cant find instance {0}", clazzOrInstance);
-            }
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
                 return cliGetProperty(clazzOrInstance, memberSpec, indexValues, plvar) && SpecialUnify(valueOut, plvar);
             }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            if (getInstance == null && c == null)
-            {
-                Error("Cant find instance {0}", clazzOrInstance);
-                return false;
-            }
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             Type[] paramz = null;
-            var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz);
+            BindingFlags searchFlags = BindingFlagsALL;
+            if (!CheckBound(memberSpec, indexValues)) return false;
+            var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz, searchFlags);
             if (pi == null)
             {
                 Error("Cant find property {0} on {1}", memberSpec, c);
@@ -565,23 +633,17 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliSetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueIn)
         {
-            if (clazzOrInstance.IsVar)
-            {
-                return Error("Cant find instance {0}", clazzOrInstance);
-            }
             if (!valueIn.IsVar)
             {
                 return Error("Cant set property with a var {0}", valueIn);
             }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            if (getInstance == null && c == null)
-            {
-                Error("Cant find instance {0}", clazzOrInstance);
-                return false;
-            }
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             Type[] paramz = null;
-            var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz);
+            if (!CheckBound(memberSpec, indexValues, valueIn)) return false;
+            BindingFlags searchFlags = BindingFlagsALL;
+            var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz, searchFlags);
             if (pi == null)
             {
                 Error("Cant find property {0} on {1}", memberSpec, c);
@@ -617,43 +679,55 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliSetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramIn)
         {
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
-            return cliSet0(getInstance, memberSpec, paramIn, c);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
+            foreach (var searchFlags in getInstance == null ? BindingFlags_SEARCHS : BindingFlags_SEARCHIS)
+            {
+                if (cliSet0(getInstance, memberSpec, paramIn, c, searchFlags)) return true;
+            }
+            return false;
         }
 
-        static public bool cliSet0(object getInstance, PlTerm memberSpec, PlTerm paramIn, Type c)
+        static public bool cliSet0(object getInstance, PlTerm memberSpec, PlTerm paramIn, Type c, BindingFlags searchFlags)
         {
-
-            FieldInfo fi = findField(memberSpec, c);
-            if (fi != null)
-            {
-                object value = CastTerm(paramIn, fi.FieldType);
-                object target = fi.IsStatic ? null : getInstance;
-                fi.SetValue(target, value);
-                return true;
-            }
             Type[] paramz = null;
-            var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz);
-            if (pi != null)
+            if ((searchFlags & BindingFlags.SetProperty) != 0)
             {
-                var mi = pi.GetSetMethod();
-                if (mi != null)
+                var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz, searchFlags);
+
+                if (pi != null)
                 {
-                    object value = CastTerm(paramIn, pi.PropertyType);
-                    object target = mi.IsStatic ? null : getInstance;
-                    InvokeCaught(mi, target, new[] { value });
+                    var mi = pi.GetSetMethod();
+                    if (mi != null)
+                    {
+                        object value = CastTerm(paramIn, pi.PropertyType);
+                        object target = mi.IsStatic ? null : getInstance;
+                        InvokeCaught(mi, target, new[] { value });
+                        return true;
+                    }
+                    return WarnMissing("Cant find setter for property " + memberSpec + " on " + c);
+                }
+            }
+            if ((searchFlags & BindingFlags.SetField) != 0)
+            {
+                FieldInfo fi = findField(memberSpec, c ,searchFlags);
+                if (fi != null)
+                {
+                    object value = CastTerm(paramIn, fi.FieldType);
+                    object target = fi.IsStatic ? null : getInstance;
+                    fi.SetValue(target, value);
                     return true;
                 }
-                return WarnMissing("Cant find setter for property " + memberSpec + " on " + c);
+
             }
-            else
+            if ((searchFlags & BindingFlags.InvokeMethod) != 0)
             {
                 string fn = memberSpec.Name;
-                MethodInfo mi = findMethodInfo(memberSpec, -1, c, ref paramz) ??
-                                GetMethod(c, "set_" + fn, BindingFlagsALL) ??
-                                GetMethod(c, "Set" + fn, BindingFlagsALL) ??
-                                GetMethod(c, "from" + fn, BindingFlagsALL);
+                MethodInfo mi = findMethodInfo(memberSpec, -1, c, ref paramz, searchFlags) ??
+                                GetMethod(c, "set_" + fn, searchFlags) ??
+                                GetMethod(c, "Set" + fn, searchFlags) ??
+                                GetMethod(c, "from" + fn, searchFlags);
                 if (mi == null)
                 {
                     WarnMissing("Cant find setter " + memberSpec + " on " + c);
@@ -663,7 +737,7 @@ namespace Swicli.Library
                 object[] value = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook);
                 object target = mi.IsStatic ? null : getInstance;
                 object retval = InvokeCaught(mi, target, value, postCallHook);
-                return true;// valueOut.FromObject(retval);
+                return true; // valueOut.FromObject(retval);
             }
             WarnMissing("Cant find setter " + memberSpec + " on " + c);
             return false;

@@ -210,8 +210,10 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliToImmediate(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            object retval = GetInstance(valueIn);
-            return valueOut.FromObject(retval);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(valueIn, out getInstance, out c)) return false;
+            return valueOut.FromObject(getInstance ?? c);
         }
 
         public static bool UnifyTagged(object c, PlTerm term2)

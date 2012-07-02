@@ -651,7 +651,10 @@ namespace Swicli.Library
             {
                 return arg1;
             }
-            if (pt == typeof(object)) pt = null;
+            if (pt == typeof(object))
+            {
+                pt = null;
+            }
             //{T}
             //@(_Tag)
             if (key == "@/1" && arg1.IsAtom)
@@ -671,7 +674,7 @@ namespace Swicli.Library
                         {
                             if (pt != null && pt.IsValueType)
                             {
-                                return pt.GetConstructor(ZERO_TYPES).Invoke(ZERO_OBJECTS);
+                                return MakeDefaultInstance(pt);
                             }
                             return null;
                         }
@@ -782,7 +785,8 @@ namespace Swicli.Library
                         {
                             Warn(" send a list into cliGet0 ", orig);
                             bool found;
-                            var res = cliGet0(arg1, orig.Arg(1), o1.GetType(), out found);
+                            var res = cliGet0(arg1, orig.Arg(1), o1.GetType(), out found,
+                                              BindingFlagsALL3 | BindingFlagsALL);
                             if (found) return res;
                         }
                         Warn("Return as array of object[]?", orig);

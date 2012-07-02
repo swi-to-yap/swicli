@@ -75,7 +75,7 @@ namespace Swicli.Library
             return paramz;
         }
 
-        private static EventInfo findEventInfo(PlTerm memberSpec, Type c, ref Type[] paramz)
+        private static EventInfo findEventInfo(PlTerm memberSpec, Type c, ref Type[] paramz, BindingFlags searchFlags)
         {
             if (memberSpec.IsVar)
             {
@@ -102,14 +102,14 @@ namespace Swicli.Library
                     if (arg1.IsInteger)
                     {
                         Type[] paramzN = null;
-                        return findEventInfo(arg1, c, ref paramzN);
+                        return findEventInfo(arg1, c, ref paramzN, searchFlags);
                     }
                 }
             }
             if (c == null) return null;
-            EventInfo ei = c.GetEvent(memberSpec.Name, BindingFlagsALL);
+            EventInfo ei = c.GetEvent(memberSpec.Name, searchFlags);
             if (ei != null) return ei;
-            var members = c.GetEvents(BindingFlagsALL);
+            var members = c.GetEvents(searchFlags);
             if (members.Length == 0) return null;
             int arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
             EventInfo candidate = null;
@@ -138,9 +138,9 @@ namespace Swicli.Library
             }
             return candidate ?? members[0];
         }
-        private static MethodInfo findMethodInfo(PlTerm memberSpec, int arity, Type c, ref Type[] paramz)
+        private static MethodInfo findMethodInfo(PlTerm memberSpec, int arity, Type c, ref Type[] paramz, BindingFlags searchFlags)
         {
-            var mi = findMethodInfo0(memberSpec, arity, c, ref paramz);
+            var mi = findMethodInfo0(memberSpec, arity, c, ref paramz, searchFlags);
             if (mi == null)
             {
                 return null;
@@ -182,7 +182,7 @@ namespace Swicli.Library
             }
         }
 
-        private static MethodInfo findMethodInfo0(PlTerm memberSpec, int arity, Type c, ref Type[] paramz)
+        private static MethodInfo findMethodInfo0(PlTerm memberSpec, int arity, Type c, ref Type[] paramz, BindingFlags searchFlags)
         {
             if (c == null)
             {
@@ -209,9 +209,10 @@ namespace Swicli.Library
             }
             string fn = memberSpec.Name;
             MethodInfo mi = null;
+            BindingFlags icbf = searchFlags;
             if (arity < 1)
             {
-                mi = GetMethod(c, fn, BindingFlagsALL);
+                mi = GetMethod(c, fn, icbf);
                 if (mi != null) return mi;
             }
             if (paramz == null)
@@ -232,7 +233,7 @@ namespace Swicli.Library
                 }
                 if (!hasNull)
                 {
-                    mi = c.GetMethod(fn, BindingFlagsALL, null, CallingConventions.Any, paramz, null);
+                    mi = c.GetMethod(fn, icbf, null, CallingConventions.Any, paramz, null);
                 }
                 if (mi != null)
                 {
@@ -243,7 +244,7 @@ namespace Swicli.Library
             {
                 Debug("AME: {0} fn = {1}", e, fn);
             }
-            MethodInfo[] members = c.GetMethods(BindingFlagsALL);
+            MethodInfo[] members = c.GetMethods(searchFlags);
             if (arity < 0) arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
 
             string fnLower = fn.ToLower();
@@ -504,15 +505,18 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliFindMethod(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm methodOut)
         {
+            BindingFlags searchFlags = BindingFlagsALL;
             if (!methodOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
                 return cliFindMethod(clazzOrInstance, memberSpec, plvar) && SpecialUnify(methodOut, plvar);
             }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
+            if (!CheckBound(memberSpec)) return false;
             Type[] paramz = null;
-            var mi = findMethodInfo(memberSpec, -1, c, ref paramz);
+            var mi = findMethodInfo(memberSpec, -1, c, ref paramz, searchFlags);
             if (mi != null)
             {
                 return methodOut.FromObject((mi));
@@ -525,23 +529,26 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliCallRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
         {
+            BindingFlags searchFlags = BindingFlagsALL;
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
                 return cliCallRaw(clazzOrInstance, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
+            if (!CheckBound(memberSpec, paramsIn)) return false;
             Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             PlTerm[] paramIn = ToTermArray(paramsIn);
             if (paramz.Length == 0 && paramIn.Length > paramz.Length)
             {
                 paramz = GetParamSpec(paramIn, true);
             }
-            var mi = findMethodInfo(memberSpec, paramz.Length, c, ref paramz);
+            var mi = findMethodInfo(memberSpec, paramz.Length, c, ref paramz, searchFlags);
             if (mi == null)
             {
-                var ei = findEventInfo(memberSpec, c, ref paramz);
+                var ei = findEventInfo(memberSpec, c, ref paramz, searchFlags);
                 if (ei != null) return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, ei, c);
                 if (paramsIn.IsAtom && paramsIn.Name == "[]") return cliGetRaw(clazzOrInstance, memberSpec, valueOut);
                 Warn("Cant find method {0} on {1}", memberSpec, c);
@@ -562,15 +569,17 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliRaiseEventHandler(clazzOrInstance, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
+            if (!CheckBound(memberSpec, paramsIn)) return false;
             PlTerm[] paramIn = ToTermArray(paramsIn);
             if (paramz.Length == 0 && paramIn.Length > paramz.Length)
             {
                 paramz = GetParamSpec(paramIn, true);
             }
-            EventInfo evi = findEventInfo(memberSpec, c, ref paramz);
+            EventInfo evi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, evi, c);
         }
 
@@ -585,7 +594,7 @@ namespace Swicli.Library
             string fn = evi.Name;
             if (mi == null)
             {
-                FieldInfo fi = c.GetField(fn, BindingFlagsALL);
+                FieldInfo fi = c.GetField(fn, BindingFlagsALLNC);
                 if (fi != null)
                 {
                     Delegate del = (Delegate)fi.GetValue(getInstance);

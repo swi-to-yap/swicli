@@ -137,7 +137,9 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliMembers(CycFort clazzOrInstance, CycFort membersSpecListOut)
         {
-            Type c = GetTypeFromInstance(null, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             MemberInfo[] members = c.GetMembers(BindingFlagsALL);
             List<PlTerm> list = new List<PlTerm>();
             string cname = c.Name;

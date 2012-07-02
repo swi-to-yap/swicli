@@ -53,10 +53,12 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliAddEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm prologPred)
         {
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false; 
             Type[] paramz = null;
-            EventInfo fi = findEventInfo(memberSpec, c, ref paramz);
+            if (!CheckBound(memberSpec, prologPred)) return false;
+            EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
                 return Error("Cant find event {0} on {1}", memberSpec, c);
@@ -88,10 +90,12 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliRemoveEventHandler(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm prologPred)
         {
-            object getInstance = GetInstance(clazzOrInstance);
-            Type c = GetTypeFromInstance(getInstance, clazzOrInstance);
+            object getInstance;
+            Type c;
+            if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             Type[] paramz = null;
-            EventInfo fi = findEventInfo(memberSpec, c, ref paramz);//
+            if (!CheckBound(memberSpec, prologPred)) return false;
+            EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
                 return Error("Cant find event {0} on {1}", memberSpec, c);

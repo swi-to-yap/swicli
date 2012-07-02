@@ -211,7 +211,7 @@ namespace Swicli.Library
         }
 
 #endif
-        public static void SetField(object target, string name, object value)
+        private static void SetField(object target, string name, object value)
         {
             FieldInfo field = target.GetType().GetField(name, BindingFlagsALL);
             //if (!field.IsPublic) field..IsPublic = true;
