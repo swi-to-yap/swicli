@@ -584,8 +584,8 @@ cli_expanded(In,Out):-cli_expand(In,Out),!,In\==Out,!.
 
 cli_expand(Value,Value):- (var(Value);atomic(Value);cli_is_ref(Value)),!.
 cli_expand(eval(Call),Result):-nonvar(Call),!,call(Call,Result).
-cli_expand([A|B],Result):- cli_get(A,B,Result),!.
-cli_expand(Call,Result):- call(Call,Result),!.
+%%cli_expand([A|B],Result):- cli_get(A,B,Result),!.
+%%cli_expand(Call,Result):- call(Call,Result),!.
 cli_expand(Value,Value).
 
 
