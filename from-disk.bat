@@ -15,7 +15,6 @@ copy "c:\program files\pl\bin"\swicli.libr*.* "swicli-inst\pl\lib\x86_64-linux"
 copy "c:\program files\pl\bin"\swicli.libr*.* "swicli-inst\pl\lib\i386-linux"
 
 
-copy %COGDEV%\sources\main\swicli\d*.html "swicli-inst\"
 copy %COGDEV%\sources\main\swicli\RE*.* "swicli-inst\"
 copy %COGDEV%\sources\main\swicli\IN*.* "swicli-inst\"
 

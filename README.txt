@@ -4,6 +4,11 @@
 
 == [https://github.com/logicmoo/swicli Sourcecode] ==
 
+== [http://logicmoo.github.com/swicli/api.html Documentation] ==
+
+== [http://logicmoo.github.com/swicli/documentation.html Old Docs] ==
+
+
 == Introduction ==
 
   * Provides SWI-Prolog full control of the Common Language Infrastructure.

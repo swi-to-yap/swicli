@@ -51,7 +51,7 @@ namespace Swicli.Library
     {
         
         [PrologVisible]
-        static public bool cliTypespec(PlTerm clazzSpec, PlTerm valueOut)
+        static public bool cliTypeToTypespec(PlTerm clazzSpec, PlTerm valueOut)
         {
             return valueOut.Unify(typeToSpec(GetType(clazzSpec)));
         }
@@ -482,12 +482,12 @@ namespace Swicli.Library
 #endif
         }
         [PrologVisible]
-        static public bool cliGetTypeFullname(PlTerm valueIn, PlTerm valueOut)
+        static public bool cliTypeToFullname(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
-                return cliGetTypeFullname(valueIn, plvar) && SpecialUnify(valueOut, plvar);
+                return cliTypeToFullname(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
             Type val = CastTerm(valueIn, typeof(Type)) as Type;
             if (val == null) return false;

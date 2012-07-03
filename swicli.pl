@@ -330,7 +330,7 @@ cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli
 
 %% cli_get_typespec(+Obj,?TypeSpec)
 % gets or checks the TypeSpec
-cli_get_typespec(Obj,TypeSpec):- cli_get_type(Obj,Type), cli_typespec(Type,TypeSpec).
+cli_get_typespec(Obj,TypeSpec):- cli_get_type(Obj,Type), cli_type_to_typespec(Type,TypeSpec).
 
 %% cli_get_typeref(+Obj,?TypeRef)
 % gets or checks the TypeRef
@@ -338,9 +338,9 @@ cli_get_typeref(Obj,TypeRef):- cli_get_type(Obj,Type), cli_to_ref(Type,TypeRef).
 
 %% cli_get_typename(+Obj,?TypeName)
 % gets or checks the TypeName
-cli_get_typename(Obj,TypeName):- cli_get_type(Obj,Type), cli_get_type_fullname(Type,TypeName).
+cli_get_typename(Obj,TypeName):- cli_get_type(Obj,Type), cli_type_to_fullname(Type,TypeName).
 
-%% cli_typespec(+ClazzSpec,-Value).
+%% cli_type_to_typespec(+ClazzSpec,-Value).
 % coerces a ClazzSpec to a Value representing a TypeSpec term
 
 %% cli_add_tag(+RefObj,+TagString).
@@ -535,6 +535,9 @@ cli_halt(_Status):-cli_lib_type(LibType),cli_call(LibType,'ManagedHalt',_).
 %% cli_break(+Ex).
 %
 
+%% cli_debug(+Obj).
+%% cli_debug(+Fmt,Args).
+% writes to user_error
 cli_debug(format(Format,Args)):-atom(Format),sformat(S,Format,Args),!,cli_debug(S).
 cli_debug(Data):-format(user_error,'~n %% cli_-DEBUG: ~q~n',[Data]),flush_output(user_error).
 
@@ -646,9 +649,9 @@ cli_sublist(Mask,What):-append(Pre,_,What),append(_,Mask,Pre).
 %=========================================
 
 %% cli_new_array(+ClazzSpec,+Rank,-Value).
-%% cli_array_fill(Arg1, Arg2).
-%% cli_array_fill_values(Arg1, Arg2).
-%% cli_array_to_length(Arg1, Arg2).
+%% cli_array_fill(+Obj, Arg2).
+%% cli_array_fill_values(+Obj, Arg2).
+%% cli_array_to_length(+Obj, Arg2).
 %% cli_array_to_list(+Obj,+Arg2).
 %% cli_array_to_term(+ArrayValue,-Value).
 %% cli_array_to_termlist(+ArrayValue,-Value).
@@ -724,6 +727,7 @@ cli_expand(Value,Value).
 
 
 %% cli_to_data(+Ref,-Term).
+%% cli_to_data(+ValueCol,+Ref,-Term).
 %% cli_getterm(+ValueCol,+Ref,-Term).
 %
 % converts a Ref to prolog Term
@@ -805,6 +809,7 @@ cli_get_symbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_U
 % Object NEW
 %=========================================
 
+%% cli_make_default(+ClazzSpec, -Result).
 %% cli_new(+ClassNameWithParams,-Result).
 %% cli_new(+ClazzSpec, +Params, -Result).
 %% cli_new(+ClazzSpec,+MemberSpec,+Params,-Result).
@@ -1219,6 +1224,8 @@ cli_demo(PBC,PBD):- asserta(( add_new_flag(Flag) :- create_prolog_flag(Flag,_,[a
 % Module Utils
 %=========================================
 
+%% module_functor(+Obj, Arg2, Arg3, Arg4).
+
 module_functor(PredImpl,Module,Pred,Arity):-strip_module(PredImpl,Module,NewPredImpl),strip_arity(NewPredImpl,Pred,Arity).
 strip_arity(Pred/Arity,Pred,Arity).
 strip_arity(PredImpl,Pred,Arity):-functor(PredImpl,Pred,Arity).
@@ -1254,7 +1261,7 @@ cli_notrace(Call):-call(Call).
 %% cli_get_class(+Value,-Value).
 %% cli_get_classname(+Value,-Value).
 %% cli_get_type(+Value,-Value).
-%% cli_get_type_fullname(+Value,-Value).
+%% cli_type_to_fullname(+Value,-Value).
 %% cli_type_from_class(+Value,-Value).
 % todo
 
@@ -1271,25 +1278,21 @@ cli_notrace(Call):-call(Call).
 %% cli_props_for_type(+ClazzSpec,+MemberSpecs).
 % need doc
 
+%% cli_special_unify(+Obj, Arg2).
+%% cli_expand(+Obj, Arg2).
+%% cli_expanded(+Obj, Arg2).
+%% cli_eval(+Obj, Arg2, Arg3).
+%% cli_eval_hook(+Obj, Arg2, Arg3).
+%% cli_set_hook(+Obj, Arg2, Arg3).
+%% cli_get_hook(+Obj, Arg2, Arg3).
+%% cli_subproperty(+Obj, Arg2).
+%% cli_link_swiplcs(+Obj).
 
-%% cli_special_unify(Arg1, Arg2).
-%% cli_intern(Arg1, Arg2, Arg3).
-%% cli_to_data(Arg1, Arg2, Arg3).
-%% cli_get_symbol(Arg1, Arg2, Arg3).
-%% cli_debug(Arg1).
-%% cli_expanded(Arg1, Arg2).
-%% module_functor(Arg1, Arg2, Arg3, Arg4).
-%% cli_link_swiplcs(Arg1).
-%% cli_make_default(Arg1, Arg2).
-%% cli_subproperty(Arg1, Arg2).
-%% cli_demo(Arg1, Arg2).
-%% cli_expand(Arg1, Arg2).
-%% cli_set_hook(Arg1, Arg2, Arg3).
-%% cli_get_hook(Arg1, Arg2, Arg3).
-%% cli_is_defined(Arg1, Arg2).
-%% cli_eval(Arg1, Arg2, Arg3).
-%% cli_eval_hook(Arg1, Arg2, Arg3).
-%% cli_interned(Arg1, Arg2, Arg3).
+%% cli_demo(+Obj, Arg2).
+%% cli_is_defined(+Obj, Arg2).
+%% cli_interned(+Obj, Arg2, Arg3).
+%% cli_intern(+Obj, Arg2, Arg3).
+%% cli_get_symbol(+Obj, Arg2, Arg3).
 % need docs!
 
 % ===================================================
@@ -1366,9 +1369,9 @@ X=499, Y=1000
 "2.0.50727.5448"
 X = @'C#499252128'.
 
-
 ==
-Doc root will be findable from http://code.google.com/p/opensim4opencog/wiki/SwiCLI
+
+Doc root and Download will be findable from http://code.google.com/p/opensim4opencog/wiki/SwiCLI
 
 
 @see	CSharp.txt
@@ -1390,7 +1393,7 @@ end_of_file.
 %    Name = 'System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]'.
 %
 %
-%    ?- cli_get_type($Obj,Type), cli_typespec(Type,Name).
+%    ?- cli_get_type($Obj,Type), cli_type_to_typespec(Type,Name).
 %    Type = @'C#516939520',
 %    Name = 'System.Collections.Generic.List'('String').
 %
@@ -1403,7 +1406,7 @@ end_of_file.
 %    O = @'C#516939472'.
 %
 %
-%    ?- cli_get_type($O,Type),cli_typespec(Type,Name).
+%    ?- cli_get_type($O,Type),cli_type_to_typespec(Type,Name).
 %    Type = @'C#516939520',
 %    Name = 'System.Collections.Generic.List'('String').
 %
