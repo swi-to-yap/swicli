@@ -173,7 +173,7 @@ namespace Swicli.Library
 #endif
         }
 
-        public static Type ResolveType0(string typeName)
+        private static Type ResolveType0(string typeName)
         {
             Type type = Type.GetType(typeName, false, false) ?? Type.GetType(typeName, false, true);
             if (type == null)
@@ -216,7 +216,7 @@ namespace Swicli.Library
             return type;
         }
 
-        public static Type ResolveType(string typeName)
+        private static Type ResolveType(string typeName)
         {
             Type type = ResolveType0(typeName);
             if (type == null)

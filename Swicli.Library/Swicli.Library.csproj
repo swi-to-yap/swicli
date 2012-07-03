@@ -98,12 +98,13 @@
     </Compile>
     <Compile Include="ClassBuilder.cs">
     </Compile>
+    <Compile Include="GetSet.cs" />
     <Compile Include="IKVMClassLoader.cs" />
-    <Compile Include="PrologClientInit.cs" />
-    <Compile Include="PrologCLRInvoke.cs" />
-    <Compile Include="ObjectInstance.cs" />
-    <Compile Include="ObjectCoercionLayout.cs" />
-    <Compile Include="ObjectCollections.cs" />
+    <Compile Include="Init.cs" />
+    <Compile Include="Invoke.cs" />
+    <Compile Include="Instance.cs" />
+    <Compile Include="CoercionLayout.cs" />
+    <Compile Include="Collections.cs" />
     <Compile Include="RuntimeTypeInfo.cs">
     </Compile>
     <Compile Include="DelegateObjectInProlog.cs">
@@ -124,13 +125,13 @@
     </Compile>
     <Compile Include="NondetContextHandle.cs">
     </Compile>
-    <Compile Include="ObjectArrays.cs">
+    <Compile Include="Arrays.cs">
     </Compile>
-    <Compile Include="ObjectCoercion.cs">
+    <Compile Include="Coercion.cs">
     </Compile>
-    <Compile Include="ObjectTracker.cs">
+    <Compile Include="Tracker.cs">
     </Compile>
-    <Compile Include="ObjectTypeSystem.cs">
+    <Compile Include="TypeSystem.cs">
     </Compile>
     <Compile Include="PInvokeDLL.cs">
     </Compile>
@@ -138,13 +139,13 @@
     </Compile>
     <Compile Include="PrologClient.cs">
     </Compile>
-    <Compile Include="PrologClientThreads.cs">
+    <Compile Include="Threads.cs">
     </Compile>
     <Compile Include="PrologCLR.cs">
     </Compile>
     <Compile Include="PrologCLRExt.cs">
     </Compile>
-    <Compile Include="PrologGenericDelegate.cs">
+    <Compile Include="GenericDelegate.cs">
     </Compile>
     <Compile Include="SWI-cs-PlQuery.cs">
     </Compile>
