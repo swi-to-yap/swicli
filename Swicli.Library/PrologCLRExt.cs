@@ -508,7 +508,7 @@ namespace Swicli.Library
                 return term.ExprValue.AsObject;
             }
 #endif
-            return term;
+            return PrologCLR.GetInstance( term);
         }
 
         static public Term ToTermList(IEnumerable ie)

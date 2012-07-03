@@ -207,13 +207,13 @@ namespace Swicli.Library
         private static string ToString0(object o)
         {
             if (o == null) return "null";
-            if (o is IConvertible) return o.ToString();
+            if (o is IConvertible || o is PlTerm || o is ValueType) return o.ToString();
             if (o is System.Collections.IEnumerable)
             {
                 var oc = (System.Collections.IEnumerable)o;
                 int count = 0;
                 string ret = "[";
-                foreach (var o1 in (System.Collections.IEnumerable)o)
+                foreach (var o1 in oc)
                 {
                     if (count > 1) ret += ",";
                     count++;

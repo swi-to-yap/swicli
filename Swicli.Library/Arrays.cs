@@ -1,12 +1,11 @@
+#region
 /*  $Id$
 *  
 *  Project: Swicli.Library - Two Way Interface for .NET and MONO to SWI-Prolog
 *  Author:        Douglas R. Miles
-*                 Uwe Lesta (SbsSW.SwiPlCs classes)
 *  E-mail:        logicmoo@gmail.com
 *  WWW:           http://www.logicmoo.com
-*  Copyright (C): 2008, Uwe Lesta SBS-Softwaresysteme GmbH, 
-*     2010-2012 LogicMOO Developement
+*  Copyright (C):  2010-2012 LogicMOO Developement
 *
 *  This library is free software; you can redistribute it and/or
 *  modify it under the terms of the GNU Lesser General Public
@@ -23,6 +22,8 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+#endregion
+
 #if USE_MUSHDLR
 using MushDLR223.Utilities;
 #endif
@@ -45,7 +46,6 @@ namespace Swicli.Library
 {
     public partial class PrologCLR
     {
-
         /// <summary>
         /// ?- cliNewArray(long,10,Out),cliToString(Out,Str).
         /// </summary>
@@ -54,7 +54,7 @@ namespace Swicli.Library
         /// <param name="valueOut">Tagged ref to the array</param>
         /// <returns></returns>
         [PrologVisible]
-        static public bool cliNewArray(PlTerm clazzSpec, PlTerm indexes, PlTerm valueOut)
+        public static bool cliNewArray(PlTerm clazzSpec, PlTerm indexes, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -74,12 +74,12 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliArrayFill(PlTerm arrayValue, PlTerm valueIn)
+        public static bool cliArrayFill(PlTerm arrayValue, PlTerm valueIn)
         {
             object getInstance;
             Type c;
             if (!GetInstanceAndType(arrayValue, out getInstance, out c)) return false;
-            Array al = (Array)getInstance;
+            Array al = (Array) getInstance;
             var initValue = CastTerm(valueIn, c.GetElementType());
             var idxIter = new ArrayIndexEnumerator(al);
             while (idxIter.MoveNext())
@@ -88,8 +88,9 @@ namespace Swicli.Library
             }
             return true;
         }
+
         [PrologVisible]
-        static public bool cliArrayFillValues(PlTerm arrayValue, PlTerm valueIn)
+        public static bool cliArrayFillValues(PlTerm arrayValue, PlTerm valueIn)
         {
             object getInstance;
             Type c;
@@ -100,7 +101,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliArrayToTerm(PlTerm arrayValue, PlTerm valueOut)
+        public static bool cliArrayToTerm(PlTerm arrayValue, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -155,18 +156,20 @@ namespace Swicli.Library
 
         [PrologVisible]
         [PrologTest]
-        static public bool cliTestArrayToTerm1(PlTerm valueOut)
+        public static bool cliTestArrayToTerm1(PlTerm valueOut)
         {
-            return cliArrayToTerm(ToProlog(new[] { 1, 2, 3, 4, }), valueOut);
+            return cliArrayToTerm(ToProlog(new[] {1, 2, 3, 4,}), valueOut);
         }
+
         [PrologVisible]
         [PrologTest]
-        static public bool cliTestArrayToTerm2(PlTerm valueOut)
+        public static bool cliTestArrayToTerm2(PlTerm valueOut)
         {
-            return cliArrayToTerm(ToProlog(new[, ,] { { { 1, 2 }, { 3, 4 } }, { { 5, 6 }, { 7, 8 } } }), valueOut);
+            return cliArrayToTerm(ToProlog(new[,,] {{{1, 2}, {3, 4}}, {{5, 6}, {7, 8}}}), valueOut);
         }
+
         [PrologVisible]
-        static public bool cliArrayToTermlist(PlTerm arrayValue, PlTerm valueOut)
+        public static bool cliArrayToTermlist(PlTerm arrayValue, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -196,8 +199,9 @@ namespace Swicli.Library
             //Type et = value.GetType().GetElementType();
             return valueOut.Unify(termv);
         }
+
         [PrologVisible]
-        static public bool cliTermToArray(PlTerm arrayValue, PlTerm valueOut)
+        public static bool cliTermToArray(PlTerm arrayValue, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -223,12 +227,11 @@ namespace Swicli.Library
         {
             if (idx is int)
             {
-                array.SetValue(value, (int)idx);
-
+                array.SetValue(value, (int) idx);
             }
             else
             {
-                array.SetValue(value, (int[])idx);
+                array.SetValue(value, (int[]) idx);
             }
         }
 
@@ -248,14 +251,15 @@ namespace Swicli.Library
                 }
             }
         }
+
         private static Array GetArrayValue0(object getInstance)
         {
             if (getInstance is Array)
             {
-                return (Array)getInstance;
+                return (Array) getInstance;
             }
             Type t = getInstance.GetType();
-            Type et = typeof(object);
+            Type et = typeof (object);
             if (t.IsGenericType)
             {
                 Type[] typeArguments = t.GetGenericArguments();
@@ -266,11 +270,11 @@ namespace Swicli.Library
             }
             if (getInstance is ArrayList)
             {
-                return ((ArrayList)getInstance).ToArray(et);
+                return ((ArrayList) getInstance).ToArray(et);
             }
             if (getInstance is ICollection)
             {
-                var collection = ((ICollection)getInstance);
+                var collection = ((ICollection) getInstance);
                 int count = collection.Count;
                 var al = Array.CreateInstance(et, count);
                 try
@@ -285,7 +289,8 @@ namespace Swicli.Library
                     int count2 = collection.Count;
                     if (count2 != count)
                     {
-                        ConsoleWriteLine("Collection Modified while in CopyTo! " + count + "->" + count2 + " of " + collection);
+                        ConsoleWriteLine("Collection Modified while in CopyTo! " + count + "->" + count2 + " of " +
+                                         collection);
                         throw;
                     }
                     int index = 0;
@@ -298,7 +303,7 @@ namespace Swicli.Library
             }
             if (getInstance is IEnumerable)
             {
-                var collection = ((IEnumerable)getInstance).GetEnumerator();
+                var collection = ((IEnumerable) getInstance).GetEnumerator();
                 var al = new ArrayList();
                 while (collection.MoveNext())
                 {
@@ -308,7 +313,7 @@ namespace Swicli.Library
             }
             else if (getInstance is IEnumerator)
             {
-                var collection = ((IEnumerator)getInstance);
+                var collection = (IEnumerator) getInstance;
                 var al = new ArrayList();
                 while (collection.MoveNext())
                 {
@@ -323,19 +328,30 @@ namespace Swicli.Library
             }
         }
 
+        public static Object[] ToObjectArray(PlTerm[] a/*CONTEXT*/)
+        {
+            if (a == null) return null;
+            Object[] ret = new Object[a.Length];
+            int i = 0;
+            foreach (var term in a)
+            {
+                ret[i++] = GetInstance(term/*ctx*/);
+            }
+            return ret;
+        }
         public static PlTerm[] ToTermArray(IEnumerable<PlTerm> enumerable)
         {
-            if (enumerable is PlTerm[]) return (PlTerm[])enumerable;
+            if (enumerable is PlTerm[]) return (PlTerm[]) enumerable;
             if (enumerable is PlTermV)
             {
-                PlTermV tv = (PlTermV)enumerable;
+                PlTermV tv = (PlTermV) enumerable;
                 return tv.ToArray();
             }
             if (enumerable is PlTerm)
             {
                 // I guess IsList makes a copy
-                PlTerm tlist = (PlTerm)enumerable;
-                if (tlist.IsVar) return new PlTerm[] { tlist };
+                PlTerm tlist = (PlTerm) enumerable;
+                if (tlist.IsVar) return new PlTerm[] {tlist};
                 if (tlist.IsList)
                 {
                     enumerable = tlist.Copy();
@@ -343,7 +359,7 @@ namespace Swicli.Library
                 if (tlist.Name == "{}")
                 {
                     var t = tlist.Arg(0);
-                    var terms = new System.Collections.Generic.List<PlTerm>();
+                    var terms = new List<PlTerm>();
                     while (t.Arity == 2)
                     {
                         terms.Add(t.Arg(0));
@@ -356,11 +372,12 @@ namespace Swicli.Library
                 if (tlist.IsAtomic)
                 {
                     if (tlist.IsAtom && tlist.Name == "[]") return new PlTerm[0];
-                    return new PlTerm[] { tlist };
+                    return new PlTerm[] {tlist};
                 }
             }
             return enumerable.ToArray();
         }
+
         /// <summary>
         /// Construct an array of some type
         /// </summary>
@@ -383,6 +400,7 @@ namespace Swicli.Library
             Array al = Array.CreateInstance(elementType, lengths);
             return al;
         }
+
         private static Array CreateArrayOfTypeRankOneFilled(PlTerm arrayValue, Type arrayType)
         {
             if (!arrayType.IsArray)
@@ -400,6 +418,72 @@ namespace Swicli.Library
             return al;
         }
 
+        private static Array CreateArrayNarrowest(object[] values)
+        {
+            if (values == null || values.Length == 0) return values;
+            List<Type> elementType = null;
+            Type lastType = null;
+            foreach (var o in values)
+            {
+                if (o == null) continue;
+                if (elementType == null)
+                {
+                    lastType = o.GetType();
+                    elementType = GetInheritsType(lastType);
+                    if (elementType.Count == 0) return values;
+                    continue;
+                }
+                if (lastType.IsInstanceOfType(o) || elementType[0].IsInstanceOfType(o)) continue;
+                var ot = o.GetType();
+                elementType = new List<Type>(elementType.Intersect(GetInheritsType(ot)));
+                if (elementType.Count == 0) return values;
+                lastType = ot;
+            }
+            if (elementType == null) return values;
+            Type elementType1 = elementType[0];
+            Array al = Array.CreateInstance(elementType1, values.Length);
+            int at = 0;
+            foreach (var o in values)
+            {
+                if (o != null) al.SetValue(o, at);
+            }
+            return al;
+        }
+
+        private static List<Type> exThese;
+        private static List<Type> GetInheritsType(Type t1)
+        {
+            Type[] t1GetInterfaces = t1.GetInterfaces();
+            List<Type> l1 = new List<Type>(t1GetInterfaces.Length+2);
+            while (t1 != null)
+            {
+                if (OkType(t1)) l1.Add(t1);
+                t1 = t1.BaseType;
+            }
+            foreach(var it in t1GetInterfaces)
+            {
+                if (OkType(it)) l1.Add(it);  
+            }
+            return l1;
+        }
+
+        static bool OkType(Type t)
+        {
+            if (t == null) return false;
+            if (t == typeof(object)) return false;
+            if (t == typeof(ValueType)) return false;
+            if (t == typeof(IComparable)) return false;
+            if (t == typeof(IFormattable)) return false;
+            if (exThese == null)
+            {
+                exThese = new List<Type>();
+                //exThese = GetInheritsType(typeof (int));
+               // exThese.Remove(typeof (int));
+            }
+            return !exThese.Contains(t);
+        }
+
+
         private static void FillArray(PlTerm[] terms, Type elementType, Array al)
         {
             int termsLength = terms.Length;
@@ -411,16 +495,15 @@ namespace Swicli.Library
                 al.SetValue(CastTerm(term, elementType), idxIter.Current);
             }
         }
-
     }
 
     public class ArrayIndexEnumerator : IEnumerator<int[]>
     {
-        private readonly int rank;
-        private readonly int[] lowers;
-        private readonly int[] uppers;
         private readonly int[] idx;
         private readonly int len = 1;
+        private readonly int[] lowers;
+        private readonly int rank;
+        private readonly int[] uppers;
         private int at = -1;
 
         public ArrayIndexEnumerator(Array value)
@@ -431,7 +514,7 @@ namespace Swicli.Library
             lowers = new int[rank];
             idx = new int[rank];
 
-            this.len = 1;
+            len = 1;
             for (int i = 0; i < rank; i++)
             {
                 int high = uppers[i] = value.GetUpperBound(i);
@@ -453,7 +536,6 @@ namespace Swicli.Library
         /// <filterpriority>2</filterpriority>
         public void Dispose()
         {
-
         }
 
         #endregion
@@ -532,5 +614,4 @@ namespace Swicli.Library
 
         #endregion
     }
-
 }

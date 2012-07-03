@@ -769,39 +769,38 @@ namespace Swicli.Library
             }
             if (orig.IsList)
             {
-                if (pt != null && pt.IsArray)
-                {
-                    return CreateArrayOfTypeRankOneFilled(orig, pt);
-                }
                 if (arg1.IsInteger || arg1.IsAtom)
                 {
                     Debug("maybe this is a string {0}", orig);
                 }
+                if (pt == null)
+                {
+                    var o1 = GetInstance(arg1);
+                    if (false && o1 != null && IsTaggedObject(arg1) && arg1.IsCompound && !o1.GetType().IsPrimitive)
+                    {                        
+                        Warn(" send a list into cliGet0 ", orig);
+                        bool found;
+                        var res = cliGet0(arg1, orig.Arg(1), o1.GetType(), out found,
+                                          BindingFlagsALL3 | BindingFlagsALL);
+                        if (found) return res;
+                    }
+                    Debug("Return as array of object[]?", orig);
+                    var o = CreateArrayNarrowest(ToObjectArray(ToTermArray(orig)));
+                    return o;
+                }
                 else
                 {
-                    if (pt == null)
+                    if (pt.IsArray)
                     {
-                        var o1 = GetInstance(arg1);
-                        if (o1 != null)
-                        {
-                            Warn(" send a list into cliGet0 ", orig);
-                            bool found;
-                            var res = cliGet0(arg1, orig.Arg(1), o1.GetType(), out found,
-                                              BindingFlagsALL3 | BindingFlagsALL);
-                            if (found) return res;
-                        }
-                        Warn("Return as array of object[]?", orig);
-                        return CreateArrayOfTypeRankOneFilled(orig, typeof(object[]));
+                        return CreateArrayOfTypeRankOneFilled(orig, pt);
                     }
-                    else
+                    if (!typeof(IEnumerable).IsAssignableFrom(pt))
                     {
-                        if (!typeof (IEnumerable).IsAssignableFrom(pt))
-                        {
-                            Warn("Return as collection?", orig);
-                        }
-                        return CreateCollectionOfType(orig, pt);
+                        Warn("Return as collection?", orig);
                     }
+                    return CreateCollectionOfType(orig, pt);
                 }
+
             }
             if (pt != null && pt.IsArray)
             {
@@ -815,17 +814,28 @@ namespace Swicli.Library
             }
             if (pt == null || pt.IsAssignableFrom(t))
             {
+                if (arity == 1)
+                {
+                    return CastTerm(arg1, t);
+                }
                 foreach (var m in t.GetConstructors())
                 {
                     ParameterInfo[] mGetParameters = m.GetParameters();
                     if (mGetParameters.Length == arity)
                     {
-                        Warn("using contructor {0}", m);
                         Action postCallHook;
-                        var values = PlListToCastedArray(orig, m.GetParameters(), out postCallHook);
-                        var retval = m.Invoke(values);
-                        CommitPostCall(postCallHook);
-                        return retval;
+                        try
+                        {
+                            WarnMissing("using contructor {0}", m);
+                            var values = PlListToCastedArray(orig, mGetParameters, out postCallHook);
+                            var retval = m.Invoke(values);
+                            CommitPostCall(postCallHook);
+                            return retval;
+                        }
+                        catch (Exception)
+                        {
+                        }
+
                     }
                 }
             }

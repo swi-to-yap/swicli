@@ -66,23 +66,23 @@ namespace Swicli.Library
             }
             if (!classOrInstance.IsCompound)
             {
+                if (classOrInstance.IsString)
+                {
+                    Debug("GetInstance(string) {0}", classOrInstance);
+                    return (string)classOrInstance;
+                }
                 if (classOrInstance.IsAtom)
                 {
+                    if (classOrInstance.Name == "[]")
+                    {
+                        return CastCompoundTerm("[]", 0, classOrInstance, classOrInstance, null);
+                    }
                     Type t = GetType(classOrInstance);
                     // we do this for static invokations like: cliGet('java.lang.Integer','MAX_VALUE',...)
                     // the arg1 denotes a type, then return null!
                     if (t != null) return null;
                     Warn("GetInstance(atom) {0}", classOrInstance);
                     // possibly should always return null?!
-                }
-                else if (classOrInstance.IsString)
-                {
-                    Debug("GetInstance(string) {0}", classOrInstance);
-                    return (string)classOrInstance;
-                }
-                else
-                {
-                    return CastTerm(classOrInstance, null);
                 }
                 return CastTerm(classOrInstance, null);
             }
