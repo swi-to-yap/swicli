@@ -1,3 +1,4 @@
+#region
 /*  $Id$
 *  
 *  Project: Swicli.Library - Two Way Interface for .NET and MONO to SWI-Prolog
@@ -21,27 +22,28 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+#endregion
 #if USE_MUSHDLR
 using MushDLR223.Utilities;
 #endif
 #if USE_IKVM
 using Class = java.lang.Class;
 #endif
+
+#region
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
 using SbsSW.SwiPlCs;
-using PlTerm = SbsSW.SwiPlCs.PlTerm;
+
+#endregion
 
 namespace Swicli.Library
 {
     public partial class PrologCLR
     {
         [PrologVisible]
-        static public bool cliGetField(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueOut)
+        public static bool cliGetField(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -66,7 +68,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliSetField(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueIn)
+        public static bool cliSetField(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueIn)
         {
             if (!valueIn.IsVar)
             {
@@ -93,7 +95,7 @@ namespace Swicli.Library
         /// <param name="valueOut"></param>
         /// <returns></returns>
         [PrologVisible]
-        static public bool cliGetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueOut)
+        public static bool cliGetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -120,7 +122,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliSetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueIn)
+        public static bool cliSetProperty(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm indexValues, PlTerm valueIn)
         {
             if (!valueIn.IsVar)
             {
@@ -147,7 +149,7 @@ namespace Swicli.Library
 
 
         [PrologVisible]
-        static public bool cliGetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueOut)
+        public static bool cliGetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
@@ -171,7 +173,7 @@ namespace Swicli.Library
             return false;
         }
 
-        static public object cliGet0(object getInstance, PlTerm memberSpec, Type c, out bool found, BindingFlags icbf)
+        public static object cliGet0(object getInstance, PlTerm memberSpec, Type c, out bool found, BindingFlags icbf)
         {
             Type[] paramz = null;
             paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
@@ -237,7 +239,7 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        static public bool cliSetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramIn)
+        public static bool cliSetRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramIn)
         {
             object getInstance;
             Type c;
@@ -250,8 +252,8 @@ namespace Swicli.Library
         }
 
 
-
-        static public bool cliSet0(object getInstance, PlTerm memberSpec, PlTerm paramIn, Type c, BindingFlags searchFlags)
+        public static bool cliSet0(object getInstance, PlTerm memberSpec, PlTerm paramIn, Type c,
+                                   BindingFlags searchFlags)
         {
             Type[] paramz = null;
             if ((searchFlags & BindingFlags.SetProperty) != 0)
@@ -265,7 +267,7 @@ namespace Swicli.Library
                     {
                         object value = CastTerm(paramIn, pi.PropertyType);
                         object target = mi.IsStatic ? null : getInstance;
-                        InvokeCaught(mi, target, new[] { value });
+                        InvokeCaught(mi, target, new[] {value});
                         return true;
                     }
                     return WarnMissing("Cant find setter for property " + memberSpec + " on " + c);
@@ -281,7 +283,6 @@ namespace Swicli.Library
                     fi.SetValue(target, value);
                     return true;
                 }
-
             }
             if ((searchFlags & BindingFlags.InvokeMethod) != 0)
             {
@@ -325,11 +326,13 @@ namespace Swicli.Library
                 return null;
             }
         }
+
         private static MemberInfo findMember(PlTerm memberSpec, Type c)
         {
             return findMember(memberSpec, c, InstanceFields) ??
                    findMember(memberSpec, c, InstanceFields | BindingFlags.IgnoreCase);
         }
+
         private static MemberInfo findMember(PlTerm memberSpec, Type c, BindingFlags searchFlags)
         {
             if (IsTaggedObject(memberSpec))
@@ -341,7 +344,7 @@ namespace Swicli.Library
             return findField(memberSpec, c, searchFlags) ??
                    findPropertyInfo(memberSpec, c, true, true, ref paramz, searchFlags) ??
                    findMethodInfo(memberSpec, -1, c, ref paramz, searchFlags) ??
-                   (MemberInfo)findPropertyInfo(memberSpec, c, false, false, ref paramz, searchFlags);
+                   (MemberInfo) findPropertyInfo(memberSpec, c, false, false, ref paramz, searchFlags);
             //findConstructor(memberSpec, c));
         }
 
@@ -384,7 +387,8 @@ namespace Swicli.Library
         }
 
 
-        private static PropertyInfo findPropertyInfo(PlTerm memberSpec, Type c, bool mustHaveP, bool assumeParamTypes, ref Type[] paramz, BindingFlags searchFlags)
+        private static PropertyInfo findPropertyInfo(PlTerm memberSpec, Type c, bool mustHaveP, bool assumeParamTypes,
+                                                     ref Type[] paramz, BindingFlags searchFlags)
         {
             if (c == null)
             {
@@ -456,6 +460,5 @@ namespace Swicli.Library
             }
             return c.GetProperty(fn, searchFlags) ?? c.GetProperty("Is" + fn, searchFlags) ?? nameMatched;
         }
-
     }
 }
