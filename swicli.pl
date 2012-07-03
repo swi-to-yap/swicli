@@ -97,6 +97,9 @@ cli_lib_type('Swicli.Library.PrologCLR').
 % ?- cli_load_assembly_methods('Swicli.Library', @false, "cli_").
 % ==
 
+%% cli_add_foreign_methods(+Type, +OnlyPrologVisible, +StringPrefixOrNull).
+% Loads foriegn predicates from Type 
+
 %=========================================
 % Assembly Searchpath
 %=========================================
@@ -194,9 +197,113 @@ hcli_immed_funct(O):- member(O,[void,null,true,false]).
 % Type Inspection
 %=========================================
 
-%% cli_memb(O,F,X) 
+%% cli_member_doc(+Memb,+Doc,+Xml).
+%% cli_members(+ClazzOrInstance,-Members).
+%% cli_memb(O,X).
+%% cli_memb(O,F,X).
+% ==
+% cli_memb(O,X):-cli_members(O,Y),member(X,Y).
+% cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
+% ==
+%
 % Object to the member infos of it
-
+% ==
+%    3 ?- cli_new('System.Collections.Generic.List'(string),[int],[10],O),cli_members(O,M),!,member(E,M),writeq(E),nl,fail.
+%    f(0,'_items'(arrayOf('String')))
+%    f(1,'_size'('Int32'))
+%    f(2,'_version'('Int32'))
+%    f(3,'_syncRoot'('Object'))
+%    f(4,'_emptyArray'(arrayOf('String')))
+%    f(5,'_defaultCapacity'('Int32'))
+%    p(0,'Capacity'('Int32'))
+%    p(1,'Count'('Int32'))
+%    p(2,'System.Collections.IList.IsFixedSize'('Boolean'))
+%    p(3,'System.Collections.Generic.ICollection<T>.IsReadOnly'('Boolean'))
+%    p(4,'System.Collections.IList.IsReadOnly'('Boolean'))
+%    p(5,'System.Collections.ICollection.IsSynchronized'('Boolean'))
+%    p(6,'System.Collections.ICollection.SyncRoot'('Object'))
+%    p(7,'Item'('String'))
+%    p(8,'System.Collections.IList.Item'('Object'))
+%    m(0,'ConvertAll'('Converter'('String',<)))
+%    m(1,get_Capacity)
+%    m(2,set_Capacity('Int32'))
+%    m(3,get_Count)
+%    m(4,'System.Collections.IList.get_is_FixedSize')
+%    m(5,'System.Collections.Generic.ICollection<T>.get_is_ReadOnly')
+%    m(6,'System.Collections.IList.get_is_ReadOnly')
+%    m(7,'System.Collections.ICollection.get_is_Synchronized')
+%    m(8,'System.Collections.ICollection.get_SyncRoot')
+%    m(9,get_item('Int32'))
+%    m(10,set_item('Int32','String'))
+%    m(11,'IsCompatibleObject'('Object'))
+%    m(12,'VerifyValueType'('Object'))
+%    m(13,'System.Collections.IList.get_item'('Int32'))
+%    m(14,'System.Collections.IList.set_item'('Int32','Object'))
+%    m(15,'Add'('String'))
+%    m(16,'System.Collections.IList.Add'('Object'))
+%    m(17,'AddRange'('System.Collections.Generic.IEnumerable'('String')))
+%    m(18,'AsReadOnly')
+%    m(19,'BinarySearch'('Int32','Int32','String','System.Collections.Generic.IComparer'('String')))
+%    m(20,'BinarySearch'('String'))
+%    m(21,'BinarySearch'('String','System.Collections.Generic.IComparer'('String')))
+%    m(22,'Clear')
+%    m(23,'Contains'('String'))
+%    m(24,'System.Collections.IList.Contains'('Object'))
+%    m(25,'CopyTo'(arrayOf('String')))
+%    m(26,'System.Collections.ICollection.CopyTo'('Array','Int32'))
+%    m(27,'CopyTo'('Int32',arrayOf('String'),'Int32','Int32'))
+%    m(28,'CopyTo'(arrayOf('String'),'Int32'))
+%    m(29,'EnsureCapacity'('Int32'))
+%    m(30,'Exists'('System.Predicate'('String')))
+%    m(31,'Find'('System.Predicate'('String')))
+%    m(32,'FindAll'('System.Predicate'('String')))
+%    m(33,'FindIndex'('System.Predicate'('String')))
+%    m(34,'FindIndex'('Int32','System.Predicate'('String')))
+%    m(35,'FindIndex'('Int32','Int32','System.Predicate'('String')))
+%    m(36,'FindLast'('System.Predicate'('String')))
+%    m(37,'FindLastIndex'('System.Predicate'('String')))
+%    m(38,'FindLastIndex'('Int32','System.Predicate'('String')))
+%    m(39,'FindLastIndex'('Int32','Int32','System.Predicate'('String')))
+%    m(40,'ForEach'('System.Action'('String')))
+%    m(41,'GetEnumerator')
+%    m(42,'System.Collections.Generic.IEnumerable<T>.GetEnumerator')
+%    m(43,'System.Collections.IEnumerable.GetEnumerator')
+%    m(44,'GetRange'('Int32','Int32'))
+%    m(45,'IndexOf'('String'))
+%    m(46,'System.Collections.IList.IndexOf'('Object'))
+%    m(47,'IndexOf'('String','Int32'))
+%    m(48,'IndexOf'('String','Int32','Int32'))
+%    m(49,'Insert'('Int32','String'))
+%    m(50,'System.Collections.IList.Insert'('Int32','Object'))
+%    m(51,'InsertRange'('Int32','System.Collections.Generic.IEnumerable'('String')))
+%    m(52,'LastIndexOf'('String'))
+%    m(53,'LastIndexOf'('String','Int32'))
+%    m(54,'LastIndexOf'('String','Int32','Int32'))
+%    m(55,'Remove'('String'))
+%    m(56,'System.Collections.IList.Remove'('Object'))
+%    m(57,'RemoveAll'('System.Predicate'('String')))
+%    m(58,'RemoveAt'('Int32'))
+%    m(59,'RemoveRange'('Int32','Int32'))
+%    m(60,'Reverse')
+%    m(61,'Reverse'('Int32','Int32'))
+%    m(62,'Sort')
+%    m(63,'Sort'('System.Collections.Generic.IComparer'('String')))
+%    m(64,'Sort'('Int32','Int32','System.Collections.Generic.IComparer'('String')))
+%    m(65,'Sort'('System.Comparison'('String')))
+%    m(66,'ToArray')
+%    m(67,'TrimExcess')
+%    m(68,'TrueForAll'('System.Predicate'('String')))
+%    m(69,'ToString')
+%    m(70,'Equals'('Object'))
+%    m(71,'GetHashCode')
+%    m(72,'GetType')
+%    m(73,'Finalize')
+%    m(74,'MemberwiseClone')
+%    c(0,'List`1')
+%    c(1,'List`1'('Int32'))
+%    c(2,'List`1'('System.Collections.Generic.IEnumerable'('String')))
+%    c(3,'List`1')
+% ==
 cli_memb(O,X):-cli_members(O,Y),member(X,Y).
 cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
 
@@ -204,20 +311,11 @@ cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
 :-dynamic(cli_subproperty/2).
 :-module_transparent(cli_subproperty/2).
 
-
-/*
-
-?- cli_new(array(string),[int],[32],O),cli_add_tag(O,'string32').
-
-?- cli_get_type(@(string32),T),cli_writeln(T).
-
-*/
-
 %%  cli_is_type(+Impl,?Type).
 %
 % tests to see if the Impl Object is assignable to Type
 %
-cli_is_type(Impl,Type):-not(ground(Impl)),nonvar(Type),!,attach_console,trace,cli_find_type(Type,RealType),cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
+cli_is_type(Impl,Type):-not(ground(Impl)),nonvar(Type),!,cli_find_type(Type,RealType),cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
 cli_is_type(Impl,Type):-nonvar(Type),cli_find_type(Type,RealType),!,cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
 cli_is_type(Impl,Type):-cli_get_type(Impl,Type).
 
@@ -230,12 +328,29 @@ cli_is_type(Impl,Type):-cli_get_type(Impl,Type).
 
 cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli_call(RealSup,'IsAssignableFrom'('System.Type'),[RealSub],'@'(true)).
 
+%% cli_get_typespec(+Obj,?TypeSpec)
+% gets or checks the TypeSpec
+cli_get_typespec(Obj,TypeSpec):- cli_get_type(Obj,Type), cli_typespec(Type,TypeSpec).
+
+%% cli_get_typeref(+Obj,?TypeRef)
+% gets or checks the TypeRef
+cli_get_typeref(Obj,TypeRef):- cli_get_type(Obj,Type), cli_to_ref(Type,TypeRef).
+
+%% cli_get_typename(+Obj,?TypeName)
+% gets or checks the TypeName
+cli_get_typename(Obj,TypeName):- cli_get_type(Obj,Type), cli_get_type_fullname(Type,TypeName).
 
 %% cli_typespec(+ClazzSpec,-Value).
 % coerces a ClazzSpec to a Value representing a TypeSpec term
 
 %% cli_add_tag(+RefObj,+TagString).
 %  lowlevel access to create a tag name 
+% ==
+% ?- cli_new(array(string),[int],[32],O),cli_add_tag(O,'string32').
+%
+% ?- cli_get_type(@(string32),T),cli_writeln(T).
+%
+% ==
 
 %% cli_remove_tag(+TagString).
 %  lowlevel access to remove a tag name
@@ -369,7 +484,10 @@ cli_write(S):-cli_to_str(S,W),writeq(W).
 %  writes an object out with a new line
 cli_writeln(S):-cli_write(S),nl.
 
-
+%% cli_fmt(+String,+Args).
+%% cli_fmt(+Obj,+String,+Args).
+% use .NET system string.Format(String,Args)
+% Obj is WriteLineDelegate
 cli_fmt(WID,String,Args):-cli_fmt(String,Args),cli_free(WID). % WID will be made again each call
 cli_fmt(String,Args):-cli_call('System.String','Format'('string','object[]'),[String,Args],Result),cli_writeln(Result).
 
@@ -503,7 +621,9 @@ cli_col_removeall(Col):-cli_call(Col,'Clear',_).
 % Returns the Count
 cli_col_size(Col,Count):-cli_call(Col,'Count',Count).
 
-%% cli_new_prolog_collection(+PredImpl,+ElementType,-PBD)
+%% cli_set_element(+Obj,+IndexParams,+Item).
+%% cli_add_element(+Obj,+Item).
+%  todo
 
 %% cli_make_list(+Obj,+Arg2,+Arg3).
 % @see  cli_new_list_1/2
@@ -513,7 +633,6 @@ cli_col_size(Col,Count):-cli_call(Col,'Count',Count).
 
 cli_new_list_1(Item,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),cli_call(List,add(Item),_).
 cli_make_list(Items,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),forall(member(Item,Items),cli_call(List,add(Item),_)).
-
 
 %% cli_sublist(+Mask,+List)
 %  Test to see if Mask appears in List
@@ -526,6 +645,10 @@ cli_sublist(Mask,What):-append(Pre,_,What),append(_,Mask,Pre).
 % Arrays
 %=========================================
 
+%% cli_new_array(+ClazzSpec,+Rank,-Value).
+%% cli_array_fill(Arg1, Arg2).
+%% cli_array_fill_values(Arg1, Arg2).
+%% cli_array_to_length(Arg1, Arg2).
 %% cli_array_to_list(+Obj,+Arg2).
 %% cli_array_to_term(+ArrayValue,-Value).
 %% cli_array_to_termlist(+ArrayValue,-Value).
@@ -601,8 +724,10 @@ cli_expand(Value,Value).
 
 
 %% cli_to_data(+Ref,-Term).
+%% cli_getterm(+ValueCol,+Ref,-Term).
 %
 % converts a Ref to prolog Term
+% ValCol is a .NET List used to break cyclic loops
 % ==
 % ?- cli_cast("Yellow",'System.Drawing.Color',C),cli_to_data(C,D),writeq(D).
 % ["R"=255,"G"=255,"B"=0,"A"=255,"IsKnownColor"= @true,"IsEmpty"= @false,"IsNamedColor"= @true,"IsSystemColor"= @false,"Name"="Yellow"]
@@ -612,7 +737,7 @@ cli_expand(Value,Value).
 
 cli_to_data(Term,String):- cli_new('System.Collections.Generic.List'(object),[],[],Objs),cli_to_data(Objs,Term,String).
 cli_to_data(_,Term,Term):- not(compound(Term)),!.
-%%cli_to_data(_Objs,[A|B],[A|B]):-!.
+%cli_to_data(_Objs,[A|B],[A|B]):-!.
 cli_to_data(_Objs,[A|B],[A|B]):-'\+' '\+' A=[_=_],!.
 cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
 cli_to_data(Objs,Term,String):-cli_is_ref(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
@@ -629,7 +754,7 @@ hcli_get_termdata(Done,Term,String):-cli_get_type(Term,Type),cli_props_for_type(
 hcli_get_termdata(_Done,Term,Mid):-Term=Mid.
 
 
-hcli_getmap(Done,Term,_,_,_,_,ListO):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Done,E,ED)),List),trace,ListO=List,!.
+hcli_getmap(Done,Term,_,_,_,_,ListO):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Done,E,ED)),ListO),!.
 hcli_getmap(Done,Term,Props,Name,Value,NameValue,List):-hcli_getmap_1(Done,Term,Props,Name,Value,NameValue,List).
 
 hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):- findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
@@ -800,8 +925,19 @@ cli_lib_call(CallTerm,Out):-cli_lib_type(LibType),cli_call(LibType,CallTerm,Out)
 %% cli_set(+ClazzOrInstance, +MemberSpec, +Value).
 %% cli_get_raw(+ClazzOrInstance,+MemberSpec,-Value).
 %% cli_set_raw(+ClazzOrInstance,+MemberSpec,+Value).
+%% cli_get_field(+ClazzOrInstance,+MemberSpec,-Value).
+%% cli_set_field(+ClazzOrInstance,+MemberSpec,+Value).
 %% cli_set_property(+ClazzOrInstance,+MemberSpec,+IndexValues,+Value).
 %% cli_get_property(+ClazzOrInstance,+MemberSpec,+IndexValues,-Value).
+%
+%   _get/_set (the first two) 
+%    Attempts to find the "best" member 
+%     * Public properties, fields and bean-ifications (happy, is_happy, GetHappy, get_Happy, etc)
+%     * Nonpublic properties, fields and bean-ifications (is_happy, GetHappy, get_Happy, etc)
+%     * Case insensive public and non-public
+%   _raw is the foreing impls of the first two (Actually the above search impl is done from this _raw)
+%   _field will only try to set fields
+%   _property will only try to set fields
 %
 %   ClazzOrInstance can be:
 %     * a classname, a descriptor, or an (object or array) type
@@ -819,7 +955,8 @@ cli_lib_call(CallTerm,Out):-cli_lib_type(LibType),cli_call(LibType,CallTerm,Out)
 %       * or an integral array index (to get an element from an array,
 %	* or a pair I-J of integers (to get a subrange (slice?) of an
 %	  array)
-%       * A list of  [a,b(1),c] to denoate cli_getting X.a.b(1).c
+%       * A list of  [a,b(1),c] to denoate cli getting X.a.b(1).c
+%       * [#f(fieldname),#p(propertyname),#p(propertyname,indexer)] when you want to avoid the search
 %
 %   IndexValues can be:
 %	* Property index params ["foo",1] or []
@@ -888,6 +1025,10 @@ cli_block_until_event(WaitOn,Time,Lambda):-setup_call_cleanup(true,cli_block_unt
 % foriegnly defined tododocs
 
 
+%% cli_new_delegate(+DelegateClass,+PrologPred,-Value).
+%% cli_new_delegate_term(+TypeFi,+PrologPred,+BooleanSaveKey,-Delegate).
+% todo
+
 %% cli_add_event_handler(+Term1,+Arity,+IntPtrControl,Pred).
 % @see cli_add_event_handler/4
 
@@ -939,6 +1080,9 @@ handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
 % Prolog Backed Collection
 %=========================================
 
+%% cli_new_prolog_collection(+PredImpl,+ElementType,-PBD)
+% Prolog Backed Collection
+
 cli_new_prolog_collection(PredImpl,TypeSpec,PBC):-
    module_functor(PredImpl,Module,Pred,_),
    atom_concat(Pred,'_get',GET),atom_concat(Pred,'_add',ADD),atom_concat(Pred,'_remove',REM),atom_concat(Pred,'_clear',CLR),
@@ -953,7 +1097,9 @@ cli_new_prolog_collection(PredImpl,TypeSpec,PBC):-
 %=========================================
 % Prolog Backed Dictionaries
 %=========================================
+
 %% cli_new_prolog_dictionary(+PredImpl,+KeyType,+ValueType,-PBD)
+% Prolog Backed Dictionaries
 
 cli_new_prolog_dictionary(PredImpl,KeyType,ValueType,PBD):-
    cli_new_prolog_collection(PredImpl,KeyType,PBC),
@@ -1112,11 +1258,6 @@ cli_notrace(Call):-call(Call).
 %% cli_type_from_class(+Value,-Value).
 % todo
 
-%% cli_new_delegate_term(+TypeFi,+PrologPred,+BooleanSaveKey,-Delegate).
-%% cli_getterm(+ValueCol,+Value,-Value).
-%% cli_new_array(+ClazzSpec,+Rank,-Value).
-%% cli_new_delegate(+DelegateClass,+PrologPred,-Value).
-% todo
 
 %% cli_is_layout(+MemberSpec).
 %% cli_add_layout(+ClazzSpec,+MemberSpec).
@@ -1126,28 +1267,15 @@ cli_notrace(Call):-call(Call).
 
 %% cli_find_constructor(+ClazzSpec,+MemberSpec,-Method).
 %% cli_find_method(+ClazzOrInstance,+MemberSpec,-Method).
-%% cli_member_doc(+Memb,+Doc,+Xml).
-%% cli_members(+ClazzOrInstance,-Members).
 %% cli_add_shorttype(+Short,+Long).
 %% cli_props_for_type(+ClazzSpec,+MemberSpecs).
 % need doc
 
-%% cli_new_array(Arg1, Arg2, Arg3).
-%% cli_array_fill(Arg1, Arg2).
-%% cli_array_fill_values(Arg1, Arg2).
-% need docs
 
 %% cli_special_unify(Arg1, Arg2).
-%% cli_fmt(Arg1, Arg2, Arg3).
 %% cli_intern(Arg1, Arg2, Arg3).
-%% cli_memb(Arg1, Arg2).
 %% cli_to_data(Arg1, Arg2, Arg3).
-%% cli_new_prolog_dictionary(Arg1, Arg2, Arg3, Arg4).
-%% cli_set_element(Arg1, Arg2, Arg3).
-%% cli_add_foreign_methods(Arg1, Arg2, Arg3).
-%% cli_array_to_length(Arg1, Arg2).
 %% cli_get_symbol(Arg1, Arg2, Arg3).
-%% cli_add_element(Arg1, Arg2).
 %% cli_debug(Arg1).
 %% cli_expanded(Arg1, Arg2).
 %% module_functor(Arg1, Arg2, Arg3, Arg4).
@@ -1158,7 +1286,6 @@ cli_notrace(Call):-call(Call).
 %% cli_expand(Arg1, Arg2).
 %% cli_set_hook(Arg1, Arg2, Arg3).
 %% cli_get_hook(Arg1, Arg2, Arg3).
-%% cli_fmt(Arg1, Arg2).
 %% cli_is_defined(Arg1, Arg2).
 %% cli_eval(Arg1, Arg2, Arg3).
 %% cli_eval_hook(Arg1, Arg2, Arg3).
@@ -1555,5 +1682,4 @@ end_of_file.
 %    
 
 end_of_file.
-
 

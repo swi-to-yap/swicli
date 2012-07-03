@@ -15,4 +15,13 @@ namespace SWICLITestDLL
             //System.Reflection.Assembly.Load("csharp").EntryPoint.DeclaringType.GetMethod("Main", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { new String[0] });
         }
     }
+
+    public class OpImplTest
+    {
+        private OpImplTest()
+        {
+
+        }
+        //static public operator String
+    }
 }
