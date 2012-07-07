@@ -77,9 +77,6 @@ cli_lib_type('Swicli.Library.PrologCLR').
 %% link_swiplcs(+PathName).
 %  TODO
 
-:- use_module(library(backcomp)).
-:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
-
 %=========================================
 % Assembly Loading
 %=========================================
@@ -103,6 +100,9 @@ cli_lib_type('Swicli.Library.PrologCLR').
 %% cli_add_foreign_methods(+Type, +OnlyPrologVisible, +StringPrefixOrNull).
 % Loads foriegn predicates from Type 
 
+% Install our .NET GC Hook
+:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
+
 %=========================================
 % Assembly Searchpath
 %=========================================
@@ -125,7 +125,7 @@ cli_lib_type('Swicli.Library.PrologCLR').
 
 
 %=========================================
-% Term Inspection
+% Term/Reference Inspection
 %=========================================
 
 %% cli_non_obj(+Obj) 
@@ -182,6 +182,16 @@ cli_is_object('@'(O)):-!,O\=void,O\=null.
 cli_is_object(O):-functor(O,CLRF,_),hcli_clr_functor(CLRF).
 
 hcli_clr_functor(F):-memberchk(F,[struct,enum,object,event,'{}']).
+
+%% cli_is_prolog(+Obj).
+%
+% is Object a CLR ValueType and not null or void (includes struct,enums)
+cli_is_prolog(O):- \+ cli_is_object(O).
+
+%% cli_is_value(+Obj).
+%
+% is Object a CLR ValueType and not null or void (includes struct,enums)
+cli_is_value(O):-cli_is_type(O,'System.ValueType').
 
 %% cli_is_tagged_object(+Obj)
 % is Object a ref object (maybe null or void) (excludes struct,enum,object/N,event refernces)

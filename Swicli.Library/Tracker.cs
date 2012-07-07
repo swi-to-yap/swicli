@@ -123,7 +123,7 @@ namespace Swicli.Library
                 TrackedObject o;
                 if (TagToObj.TryGetValue(s, out o))
                 {
-                    LocallyTrackedObjects.AddTracking(o);
+                    if (UsePerThreadObjectTracker) LocallyTrackedObjects.AddTracking(o);
                     return o.Value;
                 }
                 if (DebugRefs) Warn("tag_to_object: {0}", s);
@@ -203,7 +203,7 @@ namespace Swicli.Library
                 TrackedObject s;
                 if (ObjToTag.TryGetValue(o, out s))
                 {
-                    LocallyTrackedObjects.AddTracking(s);
+                    if (UsePerThreadObjectTracker) LocallyTrackedObjects.AddTracking(s);
                     return s.TagName;
                 }
 
@@ -225,7 +225,7 @@ namespace Swicli.Library
                 ObjToTag[o] = s;
                 TagToObj[tagname] = s;
 
-                LocallyTrackedObjects.AddTracking(s);
+                if (UsePerThreadObjectTracker) LocallyTrackedObjects.AddTracking(s);
                 if (DebugRefs && ObjToTag.Count % 10000 == 0)
                 {
                     PrologCLR.ConsoleTrace("ObjToTag=" + ObjToTag);
@@ -343,6 +343,7 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliTrackerBegin(PlTerm trackerOut)
         {
+            ThisThreadTracked++;
             var newTracking = LocallyTrackedObjects.CreateFrame();
             return UnifyTagged(newTracking, trackerOut);
         }
@@ -350,6 +351,7 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliTrackerFree(PlTerm trackerIn)
         {
+            ThisThreadTracked--;
             TrackedFrame tc0 = (TrackedFrame)GetInstance(trackerIn);
             if (tc0 != null)
             {
@@ -407,6 +409,18 @@ namespace Swicli.Library
                 }
                 return forced;
             }
+        }
+
+        /// <summary>
+        /// This is no longer needed since we use atom GC (maybe)
+        /// </summary>
+        public static bool AlwaysUsePerThreadObjectTracker = true;
+        [ThreadStatic]
+        public static int ThisThreadTracked = 0;
+
+        public static bool UsePerThreadObjectTracker
+        {
+            get { return AlwaysUsePerThreadObjectTracker || ThisThreadTracked > 0; }
         }
 
         private static bool InstalledAtomCGHook = false;
@@ -526,7 +540,7 @@ namespace Swicli.Library
                 {
                     //UnPinObject(obj);
                     TagToObj.Remove(tag);
-                    if (obj is IDisposable)
+                    if (false && obj is IDisposable)
                     {
                         try
                         {
@@ -601,7 +615,7 @@ namespace Swicli.Library
         }
     }
 
-    public class TrackedObject: IComparable<TrackedObject>
+    public class TrackedObject : IComparable<TrackedObject>
     {
         public string TagName;
         public int Refs = 0;
@@ -623,7 +637,7 @@ namespace Swicli.Library
             {
                 return false;
             }
-            TrackedObject other = (TrackedObject) obj;
+            TrackedObject other = (TrackedObject)obj;
             return Pinned == other.Pinned && addr == other.addr;
         }
 
@@ -714,7 +728,7 @@ namespace Swicli.Library
                 CurrentTrackedFrame = new TrackedFrame();
                 return CurrentTrackedFrame;
             }
-            TrackedFrame newTrackedFrame = new TrackedFrame {Prev = CurrentTrackedFrame};
+            TrackedFrame newTrackedFrame = new TrackedFrame { Prev = CurrentTrackedFrame };
             CurrentTrackedFrame = newTrackedFrame;
             return newTrackedFrame;
         }
