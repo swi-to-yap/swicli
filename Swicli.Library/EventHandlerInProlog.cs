@@ -82,7 +82,6 @@ namespace Swicli.Library
                 }
                 handlerInProlog = new EventHandlerInProlog(Key);
                 PrologEventHandlers.Add(Key, handlerInProlog);
-                PinObject(handlerInProlog.Delegate);
                 fi.AddEventHandler(getInstance, handlerInProlog.Delegate);
             }
             return true;

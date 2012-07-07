@@ -303,7 +303,7 @@ typedef struct // define a context structure  { ... } context;
         }
         public static void InternMethod(string module, string pn, AnyMethod d)
         {
-            if (!PlEngine.PinDelegate(module, pn.ToString(), -1, d)) return;
+            if (!PlEngine.SaveRegisterForeign(module, pn.ToString(), -1, d)) return;
             InternMethod(module, pn, d.Method);
         }
         public static void InternMethod(string module, string pn, MethodInfo info)

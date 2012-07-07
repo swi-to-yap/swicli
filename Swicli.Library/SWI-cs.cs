@@ -2436,7 +2436,7 @@ namespace SbsSW.SwiPlCs
         /// </summary>
         public static readonly Dictionary<string, Delegate> SavedRegisterForeign = new Dictionary<string, Delegate>();
 
-        public static bool PinDelegate(string module, string name, int arity, Delegate method)
+        public static bool SaveRegisterForeign(string module, string name, int arity, Delegate method)
         {
             Delegate prev;
             string key = (module ?? "user") + ":" + (name ?? "_NONAME_") + "/" + arity;
@@ -2445,12 +2445,10 @@ namespace SbsSW.SwiPlCs
             {
                 if (!SavedRegisterForeign.TryGetValue(key, out prev))
                 {
-                    PrologCLR.PinObject(method);
                     SavedRegisterForeign[key] = method;
                     return true;
                 }
             }
-            PrologCLR.PinObject(method);
             PrologCLR.ConsoleWriteLine("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
                                     " as " + method.GetType().Name);
             return false;
@@ -2530,7 +2528,7 @@ namespace SbsSW.SwiPlCs
         /// <returns></returns>
         public static bool RegisterForeign(string module, string name, int arity, Delegate method, Callback.PlForeignSwitches plForeign)
         {
-            if (!PinDelegate(module, name, arity, method)) return false;
+            if (!SaveRegisterForeign(module, name, arity, method)) return false;
             return Convert.ToBoolean(libpl.PL_register_foreign_in_module(module, name, arity, method, (int)plForeign));
         }
 

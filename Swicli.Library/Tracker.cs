@@ -423,9 +423,7 @@ namespace Swicli.Library
         }
         public static bool ForceInstallAtomGCHook()
         {
-            PL_agc_hook_t agc = Tracker_FreeAtom;
-            PinObject(agc);
-            PL_agc_hook_t old = libpl.PL_agc_hook(agc);
+            PL_agc_hook_t old = libpl.PL_agc_hook(Tracker_FreeAtom);
             if (old == null) return true;
             return true;
         }
@@ -471,8 +469,10 @@ namespace Swicli.Library
             return pinme.GetType().Name.Contains("e");
         }
 
+        public readonly static List<object> PinnedObjects = new List<object>();
         public static GCHandle PinObject(object pinme)
         {
+            lock (PinnedObjects) PinnedObjects.Add(pinme);
             return GCHandle.Alloc(pinme);
 #if false
             if (true) return pinme;

@@ -202,7 +202,7 @@ namespace SbsSW.SwiPlCs
         public static void SetStreamFunction(Streams.PlStreamType streamType, StreamsFunction functionType, Delegate function)
         {
             //int size_of_IOSTREAM = 136;
-
+            PrologCLR.PinObject(function);
             int size_of_IOSTREAM;
             int offset_to_poninter_of_IOFUNCTIONS;
             int size_of_pointer;
@@ -335,7 +335,10 @@ namespace SbsSW.SwiPlCs
 
         // see http://www.codeproject.com/KB/dotnet/Cdecl_CSharp_VB.aspx
         public static int PL_register_foreign_in_module(string module, string name, int arity, Delegate function, int flags)
-        { return SafeNativeMethods.PL_register_foreign_in_module(module, name, arity, function, flags); }
+        {
+            PrologCLR.PinObject(function);
+            return SafeNativeMethods.PL_register_foreign_in_module(module, name, arity, function, flags);
+        }
 
 
         public static IntPtr PL_create_engine(IntPtr attr)
@@ -349,6 +352,7 @@ namespace SbsSW.SwiPlCs
 
         public static int PL_thread_at_exit(Delegate function, IntPtr closure, int global)
         {
+            PrologCLR.PinObject(function);
             return SafeNativeMethods.PL_thread_at_exit(function, closure, global);
         }
 
@@ -446,6 +450,7 @@ namespace SbsSW.SwiPlCs
         {
             try
             {
+                PrologCLR.PinObject(newhook);
                 return SafeNativeMethods.PL_agc_hook(newhook);
             }
             catch (Exception e)
@@ -459,6 +464,7 @@ namespace SbsSW.SwiPlCs
         {
             try
             {
+                PrologCLR.PinObject(oh);
                 SafeNativeMethods.PL_on_halt(oh, closure);
             }
             catch (Exception e)
@@ -472,6 +478,7 @@ namespace SbsSW.SwiPlCs
         {
             try
             {
+                PrologCLR.PinObject(ah);
                 SafeNativeMethods.PL_abort_hook(ah);
             }
             catch (Exception e)
@@ -722,7 +729,7 @@ namespace SbsSW.SwiPlCs
         { return SafeNativeMethods.PL_exception(qid); }
 
         // Handling exceptions
-        public static int PL_warning(string text, params IntPtr[] varargs)
+        public static unsafe int PL_warning(string text, params void*[] varargs)
         {
             try
             {

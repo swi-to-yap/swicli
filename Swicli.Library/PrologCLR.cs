@@ -108,12 +108,12 @@ namespace Swicli.Library
 
         const string ExportModule = "swicli";
 
-        public static bool Warn(string text, params object[] ps)
+        public unsafe static bool Warn(string text, params object[] ps)
         {
             text = PlStringFormat(text, ps);
             return libpl.PL_warning(text) != 0;
         }
-        public static bool Error(string text, params object[] ps)
+        public unsafe static bool Error(string text, params object[] ps)
         {
             text = PlStringFormat(text, ps);
             return libpl.PL_warning(text) != 0;

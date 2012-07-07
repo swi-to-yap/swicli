@@ -242,7 +242,7 @@ namespace SbsSW.SwiPlCs
 
         //PL_EXPORT(int)		PL_warning(const char *fmt, ...);
         [DllImport(DllFileName, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int PL_warning(string text, params IntPtr[] varargs);
+        internal static extern unsafe int PL_warning(string text, params void*[] varargs);
         //PL_EXPORT(void)		PL_fatal_error(const char *fmt, ...);
         [DllImport(DllFileName, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern void PL_fatal_error(string text, params IntPtr[] varargs);
