@@ -24,6 +24,7 @@
 #if USE_IKVM
 using Class = java.lang.Class;
 #else
+using SbsSW.SwiPlCs.Callback;
 using Class = System.Type;
 #endif
 using System;
@@ -79,6 +80,7 @@ namespace Swicli.Library
                         {
                             TagName = tagname,
                             Pinned = iptr,
+                            addr = adr,
                             HashCode = hc,
                             Heaped = true
                         };
@@ -132,6 +134,56 @@ namespace Swicli.Library
 #endif
             }
         }
+
+        readonly public static GCHandle NULL_GCHANDLE = default(GCHandle);
+        public static long nextTrackingNum = 666;
+        private static GCHandle GetIptr(object o, out long adr, bool pinObj)
+        {
+            GCHandle iptr;
+            if (pinObj)
+            {
+                iptr = PinObject(o);
+                adr = ((IntPtr) iptr).ToInt64();
+            }
+            else
+            {
+                iptr = NULL_GCHANDLE;
+                adr = nextTrackingNum++;
+                if (nextTrackingNum == long.MaxValue)
+                {
+                    nextTrackingNum = long.MinValue;
+                }
+            }
+            return iptr;
+        }
+
+        private static bool ShouldNotTrack(Type t)
+        {
+            if (t.IsPrimitive) return true;
+            if (IsStructRecomposable(t)) return true;
+            if (t.IsArray)
+            {
+                return true;
+            }
+            if (typeof(List<>).IsAssignableFrom(t))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private static int Tracker_FreeAtom(uint arg)
+        {
+            FreeTag(libpl.PL_atom_chars(arg), false);
+            return 1;
+        }
+
+        public static bool MakeArrayImmediate = false;           
+        [ThreadStatic]
+        public static bool MakeNoRefs = false;
+        [ThreadStatic]
+        public static bool MadeARef = false;
+
         public static string object_to_tag(object o)
         {
             if (o == null)
@@ -141,7 +193,7 @@ namespace Swicli.Library
             }
 
             Type t = o.GetType();
-            if (IsStructRecomposable(t) || t.IsPrimitive)
+            if (ShouldNotTrack(t))
             {
                 if (DebugRefs) Debug("object_to_tag:{0} from {1}", t, o);
             }
@@ -154,19 +206,25 @@ namespace Swicli.Library
                     LocallyTrackedObjects.AddTracking(s);
                     return s.TagName;
                 }
-                GCHandle iptr = PinObject(o);
-                long adr = ((IntPtr)iptr).ToInt64();
-                var hc = iptr.GetHashCode();
-                string tagname = "C#" + adr;
 
+                long adr;
+                GCHandle iptr = GetIptr(o, out adr, false);
+
+                var hc = adr.GetHashCode();
+                string tagname = "C#" + adr;
+                InstallAtomGCHook();
+                libpl.PL_new_atom(tagname);
                 s = new TrackedObject(o)
                         {
                             TagName = tagname,
                             Pinned = iptr,
+                            addr = adr,
+                            Heaped = false,
                             HashCode = hc
                         };
                 ObjToTag[o] = s;
                 TagToObj[tagname] = s;
+
                 LocallyTrackedObjects.AddTracking(s);
                 if (DebugRefs && ObjToTag.Count % 10000 == 0)
                 {
@@ -325,21 +383,51 @@ namespace Swicli.Library
             {
                 return true;
             }
+            return FreeTag(tag, true);
+        }
+
+        private static bool FreeTag(string tag, bool forced)
+        {
             lock (TagToObj)
             {
                 TrackedObject oref;
                 if (TagToObj.TryGetValue(tag, out oref))
                 {
+                    if (oref.Heaped && !forced)
+                    {
+                        return true;
+                    }
                     oref.Heaped = false;
                     oref.RemoveRef();
-                    if (oref.Refs > 0)
+                    if (oref.Refs > 0 && forced)
                     {
                         return RemoveTaggedObject(tag);
                     }
                     return true;
                 }
-                return false;
+                return forced;
             }
+        }
+
+        private static bool InstalledAtomCGHook = false;
+        private static readonly object InstalledAtomCGHookLock = new object();
+        [PrologVisible]
+        public static bool InstallAtomGCHook()
+        {
+            lock (InstalledAtomCGHookLock)
+            {
+                if (InstalledAtomCGHook) return true;
+                InstalledAtomCGHook = true;
+            }
+            return ForceInstallAtomGCHook();
+        }
+        public static bool ForceInstallAtomGCHook()
+        {
+            PL_agc_hook_t agc = Tracker_FreeAtom;
+            PinObject(agc);
+            PL_agc_hook_t old = libpl.PL_agc_hook(agc);
+            if (old == null) return true;
+            return true;
         }
 
         [PrologVisible]
@@ -449,7 +537,10 @@ namespace Swicli.Library
                             if (DebugRefs) Warn("Dispose of {0} had problem {1}", obj, e);
                         }
                     }
-                    obj.Pinned.Free();
+                    if (obj.Pinned != NULL_GCHANDLE)
+                    {
+                        obj.Pinned.Free();
+                    }
                     return ObjToTag.Remove(obj);
                 }
                 return false;
@@ -516,6 +607,7 @@ namespace Swicli.Library
         public int Refs = 0;
         public object Value;
         public GCHandle Pinned;
+        public long addr;
         public bool Heaped = false;
         public int HashCode;
         public Thread LastThread;
@@ -532,7 +624,7 @@ namespace Swicli.Library
                 return false;
             }
             TrackedObject other = (TrackedObject) obj;
-            return Pinned == other.Pinned;
+            return Pinned == other.Pinned && addr == other.addr;
         }
 
         public override int GetHashCode()
@@ -542,7 +634,7 @@ namespace Swicli.Library
 
         public long ToInt64()
         {
-            return ((IntPtr) Pinned).ToInt64();
+            return addr;
         }
 
         #region IComparable<ObjectWRefCounts> Members

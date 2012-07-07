@@ -317,6 +317,12 @@ typedef struct // define a context structure  { ... } context;
             {
                 return;
             }
+            if (!minfo.IsStatic && defaultInstanceWhenMissing == null)
+            {
+                throw new NotSupportedException(string.Format(
+                                                    "Interning a staic method without a target {0}:{1} -> {2}", module,
+                                                    pn, minfo));
+            }
             ExportedMethodInfos.Add(minfo);
             Type type = minfo.DeclaringType;
             pn = pn ?? (type.Name + "." + minfo.Name);

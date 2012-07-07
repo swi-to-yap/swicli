@@ -477,6 +477,9 @@ namespace Swicli.Library
             ShortNameType["string"] = typeof(String);
             ShortNameType["object"] = typeof(Object);
             ShortNameType["sbyte"] = typeof(sbyte);
+
+            // libpl.PL_agc_hook(new AtomGCHook(Tracker_FreeAtom));
+
             //ShortNameType = new PrologBackedDictionary<string, Type>(null, "shortTypeName");
             //PlEngine.RegisterForeign(null, "cliFindClass", 2, new DelegateParameter2(PrologCli.cliFindClass), PlForeignSwitches.None);
             PlEngine.RegisterForeign(ExportModule, "cli_load_assembly", 1, new DelegateParameter1(PrologCLR.cliLoadAssembly), PlForeignSwitches.None);

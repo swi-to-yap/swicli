@@ -119,6 +119,27 @@ namespace SbsSW.SwiPlCs.Callback
 
 
     #region delagates for C# callbacks
+
+    [System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
+    public delegate Int32 PL_agc_hook_t(uint t_atom);
+
+    /// <summary>
+    /// PL_EXPORT(void) PL_on_halt(void (*)(int, void *), void *);
+    /// </summary>
+    /// <param name="t_atom"></param>
+    /// <returns></returns>
+    [System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
+    public unsafe delegate void SwiOnHalt(int i, void* closureObj);
+
+    /// <summary>
+    /// typedef void (*PL_abort_hook_t)(void);
+    /// </summary>
+    /// <param name="t_atom"></param>
+    /// <returns></returns>
+    [System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
+    public unsafe delegate void PL_abort_hook_t();
+
+
     /// <inheritdoc cref="DelegateParameter2" />
     /// 
     [System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
@@ -886,7 +907,7 @@ namespace SbsSW.SwiPlCs
             return PlTerm.PlCompound(functor, args);
         }
 
-        public static PlTerm PlAtomOLD(string name)
+        public static PlTerm PlNewAtom(string name)
         {
             uint termRef = libpl.PL_new_term_refs(1);
             PlTerm term = new PlTerm();
@@ -1936,6 +1957,10 @@ namespace SbsSW.SwiPlCs
             var v = PrologCLR.UnifyToProlog(o, this);
             if (IsVar || v == 0)
             {
+                if (PrologCLR.MakeArrayImmediate && PrologCLR.MakeNoRefs && PrologCLR.MadeARef && IsVar)
+                {
+                    return true;
+                } 
                 PrologCLR.Warn("Unify failed! {0}", this);
                 return false;
             }

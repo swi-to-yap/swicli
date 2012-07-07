@@ -302,7 +302,7 @@ namespace Swicli.Library
                 if (t.IsEnum)
                 {
                     int res = FromEnum(TermRef, o, t);
-                    term.ToString();
+                    ///term.ToString();
                     return res;
                 }
                 if (t.IsPrimitive)

@@ -77,6 +77,9 @@ cli_lib_type('Swicli.Library.PrologCLR').
 %% link_swiplcs(+PathName).
 %  TODO
 
+:- use_module(library(backcomp)).
+:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
+
 %=========================================
 % Assembly Loading
 %=========================================

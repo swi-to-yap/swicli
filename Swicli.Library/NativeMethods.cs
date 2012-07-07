@@ -44,6 +44,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using Microsoft.Win32.SafeHandles;
+using SbsSW.SwiPlCs.Callback;
 using Swicli.Library;
 //using System.Runtime.CompilerServices;
 
@@ -214,6 +215,19 @@ namespace SbsSW.SwiPlCs
 
 	    [DllImport(DllFileName)]   // PL_EXPORT(int)	int PL_thread_at_exit(void (*function)(void *), void *closure, int global)
 	    internal static extern int PL_thread_at_exit(Delegate function, IntPtr closure, int globlal);
+
+        // typedef int  (*PL_agc_hook_t)(atom_t a);
+        // PL_EXPORT(PL_agc_hook_t)      	PL_agc_hook(PL_agc_hook_t);
+	    [DllImport(DllFileName)]
+        internal static extern PL_agc_hook_t PL_agc_hook(PL_agc_hook_t newhook);
+
+	    [DllImport(DllFileName)]
+	    internal static extern unsafe void PL_on_halt(SwiOnHalt atom, void* closure);
+
+        [DllImport(DllFileName)]
+        internal static extern void PL_abort_hook(PL_abort_hook_t ah);
+        [DllImport(DllFileName)]
+        internal static extern int PL_abort_unhook(PL_abort_hook_t atom);
 
         /*******************************
         *	     COMPARE		*

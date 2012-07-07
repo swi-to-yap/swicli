@@ -116,6 +116,10 @@ namespace Swicli.Library
                 Error("Cant find array from {0} as {1}", arrayValue, getInstance.GetType());
                 return false;
             }
+            return unifyArrayToTerm(value, valueOut);
+        }
+        public static bool unifyArrayToTerm(Array value, PlTerm valueOut)
+        {
             int len = value.Length;
             Type arrayType = value.GetType();
             var termv = NewPlTermV(len);

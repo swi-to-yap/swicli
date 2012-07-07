@@ -27,6 +27,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using SbsSW.SwiPlCs.Callback;
 using SbsSW.SwiPlCs.Exceptions;
 using Swicli.Library;
 // in PlHalt
@@ -437,6 +438,59 @@ namespace SbsSW.SwiPlCs
             catch (Exception e)
             {
                 InternalError("PL_next_solution", e);
+                throw;
+            }
+        }
+
+        public static PL_agc_hook_t PL_agc_hook(PL_agc_hook_t newhook)
+        {
+            try
+            {
+                return SafeNativeMethods.PL_agc_hook(newhook);
+            }
+            catch (Exception e)
+            {
+                InternalError("PL_agc_hook", e);
+                throw;
+            }
+        }
+
+        public static unsafe void PL_on_halt(SwiOnHalt oh, void* closure)
+        {
+            try
+            {
+                SafeNativeMethods.PL_on_halt(oh, closure);
+            }
+            catch (Exception e)
+            {
+                InternalError("PL_on_halt", e);
+                throw;
+            }
+        }
+
+        public static void PL_abort_hook(PL_abort_hook_t ah)
+        {
+            try
+            {
+                SafeNativeMethods.PL_abort_hook(ah);
+            }
+            catch (Exception e)
+            {
+                InternalError("PL_abort_hook", e);
+                throw;
+            }
+        }
+
+
+        public static int PL_abort_unhook(PL_abort_hook_t ah)
+        {
+            try
+            {
+                return SafeNativeMethods.PL_abort_unhook(ah);
+            }
+            catch (Exception e)
+            {
+                InternalError("PL_abort_unhook", e);
                 throw;
             }
         }
