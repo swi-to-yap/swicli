@@ -378,7 +378,57 @@ namespace Swicli.Library
             {
                 return ToFieldLayout("event", typeToName(t), o, t, term, false, false);
             }
+            if (t.IsArray)
+            {
+                Array al = (Array) o;
+                if (false && al.Length > 0 && al.Length < 1024)
+                {
+                    Type et = t.GetElementType();
+                    object firstNonNull = null;
+                    foreach (var ele in al)
+                    {
+                        if (ele!=null)
+                        {
+                            firstNonNull = ele;
+                        }
+                    }
+                    var needMake = firstNonNull != null;
+                    if (needMake)
+                    {
+                        PlTerm newVar = PlTerm.PlVar();
+                        needMake = NeedsToMakeRef(firstNonNull, newVar);
+                    }
+                    if (!needMake)
+                    {
+                        return PlSucceedOrFail(unifyArrayToTerm(al, term));
+                    }
+                }
+            }
             return PlObject(TermRef, o);
+        }
+
+
+        private static bool NeedsToMakeRef(object al, PlTerm newVar)
+        {
+            var resoreMadeARef = MadeARef;
+            var restoreMakeNoRefs = MakeNoRefs;
+            try
+            {
+
+                MadeARef = false;
+                MakeNoRefs = true;
+                int doit = UnifyToPrologImmediate(al, newVar);
+                if (!MadeARef)
+                {
+                    return false;
+                }
+                return true;
+            }
+            finally
+            {
+                MadeARef = resoreMadeARef;
+                MakeNoRefs = restoreMakeNoRefs;
+            }
         }
 
         public static PlTerm C(string collection)
