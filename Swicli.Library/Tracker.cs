@@ -72,9 +72,9 @@ namespace Swicli.Library
             {
 
                 TrackedObject s;
-                GCHandle iptr = PinObject(o);
-                long adr = ((IntPtr)iptr).ToInt64();
-                var hc = iptr.GetHashCode();
+                long adr;
+                GCHandle iptr = GetIptr(o, out adr, true);
+                var hc = tagname.GetHashCode();
 
                 s = new TrackedObject(o)
                         {
@@ -210,8 +210,8 @@ namespace Swicli.Library
                 long adr;
                 GCHandle iptr = GetIptr(o, out adr, false);
 
-                var hc = adr.GetHashCode();
                 string tagname = "C#" + adr;
+                var hc = tagname.GetHashCode();
                 InstallAtomGCHook();
                 libpl.PL_new_atom(tagname);
                 s = new TrackedObject(o)
