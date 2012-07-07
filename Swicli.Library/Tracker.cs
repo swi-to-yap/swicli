@@ -212,7 +212,7 @@ namespace Swicli.Library
 
                 string tagname = "C#" + adr;
                 var hc = tagname.GetHashCode();
-                InstallAtomGCHook();
+                if (!InstalledAtomCGHook) InstallAtomGCHook();
                 //libpl.PL_new_atom(tagname);
                 s = new TrackedObject(o)
                         {

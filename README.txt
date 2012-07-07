@@ -8,7 +8,6 @@
 
 == [http://logicmoo.github.com/swicli/documentation.html Old Docs] ==
 
-
 == Introduction ==
 
   * Provides SWI-Prolog full control of the Common Language Infrastructure.
@@ -147,4 +146,18 @@ To target a predicate such as:
 {{{
 handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
 }}}
+
+= Release notes =
+
+== TODO ==
+* Publish the autoload examples (to website - outside of this package)
+
+== 0.7 ==
+* Started making release notes
+* The PL_agc_hook (Atom GC) tracker for deciding when to GC foriegn objects
+* Added the dynamic registrations for exit and abort hooks
+
+
+
+
 
