@@ -1,7 +1,7 @@
 = SWI-Prolog 2-Way interface to Common Language Infrastructure (.NET) =
 
 == [http://code.google.com/p/opensim4opencog/downloads/list Download] ==
-
+ The File named (SWICLI-xxx-DIST-xxxx.zip)
 == [https://github.com/logicmoo/swicli Sourcecode] ==
 
 == [http://logicmoo.github.com/swicli/api.html Documentation] ==
@@ -91,9 +91,14 @@ Type = @'C#516939520',
 Name = 'System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]'.
 }}}
 {{{
-?- cli_get_type($Obj,Type), cli_typespec(Type,Name).
+?- cli_get_type($Obj,Type), cli_to_typespec(Type,Name).
 Type = @'C#516939520',
 Name = 'System.Collections.Generic.List'('String').
+
+?- cli_get_typespec($Obj,Type).
+Type = 'System.Collections.Generic.List'('String').
+
+
 }}}
 {{{
 ?- cli_shorttype(stringl,'System.Collections.Generic.List'('String')).
@@ -150,13 +155,13 @@ handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
 = Release notes =
 
 == TODO ==
-* Publish the autoload examples (to website - outside of this package)
+ # Publish the autoload examples (to website - outside of this package)
 
 == 0.7 ==
-* Started making release notes
-* The PL_agc_hook (Atom GC) tracker for deciding when to GC foriegn objects
-* Added the dynamic registrations for exit and abort hooks
-
+ # Started making release notes
+ # The PL_agc_hook (Atom GC) tracker for deciding when to GC foriegn objects
+ # Added the dynamic registrations for exit and abort hooks
+ 
 
 
 
