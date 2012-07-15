@@ -24,6 +24,7 @@
 #if USE_IKVM
 using Class = java.lang.Class;
 #else
+using System.Collections;
 using SbsSW.SwiPlCs.Callback;
 using Class = System.Type;
 #endif
@@ -58,6 +59,8 @@ namespace Swicli.Library
         public static bool StrictRefs = true;
         readonly static public Dictionary<object, TrackedObject> ObjToTag = new Dictionary<object, TrackedObject>();
         readonly static public Dictionary<string, TrackedObject> TagToObj = new Dictionary<string, TrackedObject>();
+        readonly static public System.Collections.Hashtable TagToST = new Hashtable();
+        readonly static public HashSet<string> NeedSweep = new HashSet<string>();
         public static object tag_to_object(string s)
         {
             return tag_to_object(s, false);
@@ -101,6 +104,8 @@ namespace Swicli.Library
                 if (TagToObj.TryGetValue(tagname, out to))
                 {
                     TagToObj.Remove(tagname);
+                    to.StrongHold = null;
+                    TagToST[tagname] = "cliRemoveTag";
                     ObjToTag.Remove(to.Value);
                     //TODO?? to.RemoveRef();
                 }
@@ -123,10 +128,20 @@ namespace Swicli.Library
                 TrackedObject o;
                 if (TagToObj.TryGetValue(s, out o))
                 {
+                    if (DebugRefs)
+                    {
+                        if (NeedSweep.Contains(s))
+                        {
+                          //  Warn("tag_to_object: {0} was missing due to {1}", s, TagToST[s]);
+                        }
+                    }
                     if (UsePerThreadObjectTracker) LocallyTrackedObjects.AddTracking(o);
                     return o.Value;
                 }
-                if (DebugRefs) Warn("tag_to_object: {0}", s);
+                if (DebugRefs)
+                {
+                    Warn("tag_to_object: {0} was missing due to {1}", s, TagToST[s]);
+                }
 #if USE_IKVM
                 return jpl.fli.Prolog.tag_to_object(s);
 #else
@@ -531,6 +546,7 @@ namespace Swicli.Library
             return pinme;
         }
 
+        public static bool SweepAtomGC = true;
         public static bool RemoveTaggedObject(string tag)
         {
             lock (TagToObj)
@@ -539,6 +555,13 @@ namespace Swicli.Library
                 if (TagToObj.TryGetValue(tag, out obj))
                 {
                     //UnPinObject(obj);
+                    TagToST[tag] = (new System.Diagnostics.StackTrace(true)).ToString();
+                    if (SweepAtomGC)
+                    {
+                        lock (NeedSweep) NeedSweep.Add(tag);
+                        obj.StrongHold = null;
+                        return true;
+                    }
                     TagToObj.Remove(tag);
                     if (false && obj is IDisposable)
                     {
@@ -619,16 +642,26 @@ namespace Swicli.Library
     {
         public string TagName;
         public int Refs = 0;
-        public object Value;
+        public object Value
+        {
+            get
+            {
+                if (!Weak.IsAlive) throw new KeyNotFoundException("Tracked object has been collected " + this);
+                return StrongHold ?? Weak.Target;
+            }
+        }
         public GCHandle Pinned;
         public long addr;
         public bool Heaped = false;
         public int HashCode;
         public Thread LastThread;
+        public object StrongHold;
+        public WeakReference Weak;
 
         public TrackedObject(object value)
         {
-            Value = value;
+            Weak = new WeakReference(value);
+            StrongHold = value;
         }
 
         public override bool Equals(object obj)
