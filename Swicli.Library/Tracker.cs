@@ -560,7 +560,16 @@ namespace Swicli.Library
                     {
                         lock (NeedSweep) NeedSweep.Add(tag);
                         obj.StrongHold = null;
-                        return true;
+                        if (obj.Weak.IsAlive)
+                        {
+                            return true;
+                        } else
+                        {
+                            if (DebugRefs)
+                            {
+                                Debug("Still alive: " + obj);
+                            }
+                        }
                     }
                     TagToObj.Remove(tag);
                     if (false && obj is IDisposable)
@@ -646,8 +655,13 @@ namespace Swicli.Library
         {
             get
             {
+                if (StrongHold != null) return StrongHold;
+                if (IsValue)
+                {
+                    throw new KeyNotFoundException("Tracked ValueType has been collected " + this);
+                }
                 if (!Weak.IsAlive) throw new KeyNotFoundException("Tracked object has been collected " + this);
-                return StrongHold ?? Weak.Target;
+                return Weak.Target;
             }
         }
         public GCHandle Pinned;
@@ -657,11 +671,13 @@ namespace Swicli.Library
         public Thread LastThread;
         public object StrongHold;
         public WeakReference Weak;
+        public readonly bool IsValue;
 
         public TrackedObject(object value)
         {
-            Weak = new WeakReference(value);
             StrongHold = value;
+            IsValue = value is ValueType;
+            Weak = new WeakReference(StrongHold);
         }
 
         public override bool Equals(object obj)
