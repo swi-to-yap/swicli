@@ -66,7 +66,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;C:\Program Files (x86)\pl\lib\swipl.lib&quot;"
+				AdditionalDependencies="&quot;C:\Program Files (x86)\pl\lib\libswipl.dll.a&quot;"
+				ShowProgress="2"
 				OutputFile="C:\Program Files (x86)\pl\bin\swicli.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -336,8 +337,8 @@
 			MinFrameworkVersion="131072"
 		/>
 		<ProjectReference
-			ReferencedProjectIdentifier="{31CFF8E7-BE42-40F2-B012-95ED537A86B1}"
-			RelativePathToProject=".\sources\main\Swicli.Library\Swicli.Library.csproj"
+			ReferencedProjectIdentifier="{44645676-D8D5-4A1F-9F8C-4105912CFE68}"
+			RelativePathToProject=".\sources\main\swicli\Swicli.Library\Swicli.Library.csproj"
 		/>
 	</References>
 	<Files>

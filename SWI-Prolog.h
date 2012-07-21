@@ -1,11 +1,10 @@
-/*  $Id$
-
-    Part of SWI-Prolog
+/*  Part of SWI-Prolog
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemak@cs.vu.nl
+    E-mail:        J.Wielemak@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 1985-2010, University of Amsterdam
+    Copyright (C): 1985-2012, University of Amsterdam
+			      VU University Amsterdam
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -19,7 +18,7 @@
 
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #ifndef _FLI_H_INCLUDED
@@ -29,14 +28,16 @@
 #define __SWI_PROLOG__	/* normally defined by the swipl-ld compiler driver */
 #endif
 
-#if defined(_MSC_VER) && !defined(__WINDOWS__)
+#ifndef __WINDOWS__
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #define __WINDOWS__ 1
+#endif
 #endif
 
 #include <stdarg.h>
 #include <stdlib.h>			/* get size_t */
 #include <stddef.h>
-#ifdef __WINDOWS__
+#ifdef _MSC_VER
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 #if (_MSC_VER < 1300)
@@ -54,7 +55,7 @@ extern "C" {
 /* PLVERSION: 10000 * <Major> + 100 * <Minor> + <Patch> */
 
 #ifndef PLVERSION
-#define PLVERSION 51122
+#define PLVERSION 60109
 #endif
 
 		 /*******************************
@@ -80,7 +81,7 @@ duplicated this stuff.
 #ifndef _PL_EXPORT_DONE
 #define _PL_EXPORT_DONE
 
-#if (defined(_MSC_VER) || defined(__CYGWIN__)) && !defined(__LCC__)
+#if (defined(__WINDOWS__) || defined(__CYGWIN__)) && !defined(__LCC__)
 #define HAVE_DECLSPEC
 #endif
 
@@ -88,21 +89,26 @@ duplicated this stuff.
 # ifdef PL_KERNEL
 #define PL_EXPORT(type)		__declspec(dllexport) type
 #define PL_EXPORT_DATA(type)	__declspec(dllexport) type
-#define install_t	 	void
+#define install_t		void
 # else
 #  ifdef __BORLANDC__
-#define PL_EXPORT(type)	 	type _stdcall
+#define PL_EXPORT(type)		type _stdcall
 #define PL_EXPORT_DATA(type)	extern type
 #  else
-#define PL_EXPORT(type)	 	extern type
+#   ifdef __MINGW32__
+#define PL_EXPORT(type)		extern type
+#define PL_EXPORT_DATA(type)	extern type
+#   else
+#define PL_EXPORT(type)		extern type
 #define PL_EXPORT_DATA(type)	__declspec(dllimport) type
+#   endif
 #  endif
-#define install_t	 	__declspec(dllexport) void
+#define install_t		__declspec(dllexport) void
 # endif
 #else /*HAVE_DECLSPEC*/
-#define PL_EXPORT(type)	 	extern type
+#define PL_EXPORT(type)		extern type
 #define PL_EXPORT_DATA(type)	extern type
-#define install_t	 	void
+#define install_t		void
 #endif /*HAVE_DECLSPEC*/
 #endif /*_PL_EXPORT_DONE*/
 
@@ -133,7 +139,10 @@ typedef uintptr_t	functor_t;	/* Name/arity pair */
 typedef void *		module_t;	/* Prolog module */
 typedef void *		predicate_t;	/* Prolog procedure */
 typedef void *		record_t;	/* Prolog recorded term */
+#ifndef PL_HAVE_TERM_T
+#define PL_HAVE_TERM_T
 typedef uintptr_t	term_t;		/* opaque term handle */
+#endif
 typedef uintptr_t	qid_t;		/* opaque query handle */
 typedef uintptr_t	PL_fid_t;	/* opaque foreign context handle */
 typedef void *		control_t;	/* non-deterministic control arg */
@@ -143,7 +152,7 @@ typedef uintptr_t	PL_atomic_t;	/* same a word */
 typedef uintptr_t	foreign_t;	/* return type of foreign functions */
 typedef wchar_t	        pl_wchar_t;	/* Prolog wide character */
 #ifdef __cplusplus
-typedef void * 		pl_function_t;	/* can only pass function as void * */
+typedef void *		pl_function_t;	/* can only pass function as void * */
 #else
 typedef foreign_t	(*pl_function_t)(); /* foreign language functions */
 #endif
@@ -256,7 +265,7 @@ typedef union
 
 PL_EXPORT(foreign_t)	_PL_retry(intptr_t);
 PL_EXPORT(foreign_t)	_PL_retry_address(void *);
-PL_EXPORT(int)	 	PL_foreign_control(control_t);
+PL_EXPORT(int)		PL_foreign_control(control_t);
 PL_EXPORT(intptr_t)	PL_foreign_context(control_t);
 PL_EXPORT(void *)	PL_foreign_context_address(control_t);
 
@@ -278,17 +287,19 @@ typedef struct PL_extension
 #define PL_FA_VARARGS		(0x08)	/* call using t0, ac, ctx */
 #define PL_FA_CREF		(0x10)	/* Internal: has clause-reference */
 #define PL_FA_ISO		(0x20)	/* Internal: ISO core predicate */
+#define PL_FA_META		(0x40)	/* Additional meta-argument spec */
 
 extern			PL_extension PL_extensions[]; /* not Win32! */
 PL_EXPORT(void)		PL_register_extensions(const PL_extension *e);
 PL_EXPORT(void)		PL_register_extensions_in_module(const char *module, const PL_extension *e);
 PL_EXPORT(int)		PL_register_foreign(const char *name, int arity,
-					    pl_function_t func, int flags);
+					    pl_function_t func,
+					    int flags, ...);
 PL_EXPORT(int)		PL_register_foreign_in_module(const char *module,
 						      const char *name, int arity,
-						      pl_function_t func, int flags);
+						      pl_function_t func,
+						      int flags, ...);
 PL_EXPORT(void)		PL_load_extensions(const PL_extension *e);
-
 
 		 /*******************************
 		 *	      LICENSE		*
@@ -432,6 +443,7 @@ PL_EXPORT(int)		PL_is_acyclic(term_t t);
 			/* Assign to term-references */
 PL_EXPORT(int)		PL_put_variable(term_t t);
 PL_EXPORT(int)		PL_put_atom(term_t t, atom_t a);
+PL_EXPORT(int)		PL_put_bool(term_t t, int val);
 PL_EXPORT(int)		PL_put_atom_chars(term_t t, const char *chars);
 PL_EXPORT(int)		PL_put_string_chars(term_t t, const char *chars) WUNUSED;
 PL_EXPORT(int)		PL_put_list_chars(term_t t, const char *chars) WUNUSED;
@@ -521,23 +533,24 @@ PL_EXPORT(int)		PL_get_attr(term_t v, term_t a);
 		 *	      ERRORS		*
 		 *******************************/
 
-PL_EXPORT(int) 		PL_get_atom_ex(term_t t, atom_t *a);
-PL_EXPORT(int) 		PL_get_integer_ex(term_t t, int *i);
-PL_EXPORT(int) 		PL_get_long_ex(term_t t, long *i);
-PL_EXPORT(int) 		PL_get_int64_ex(term_t t, int64_t *i);
-PL_EXPORT(int) 		PL_get_intptr_ex(term_t t, intptr_t *i);
-PL_EXPORT(int) 		PL_get_size_ex(term_t t, size_t *i);
-PL_EXPORT(int) 		PL_get_bool_ex(term_t t, int *i);
-PL_EXPORT(int) 		PL_get_float_ex(term_t t, double *f);
-PL_EXPORT(int) 		PL_get_char_ex(term_t t, int *p, int eof);
-PL_EXPORT(int) 		PL_unify_bool_ex(term_t t, int val);
-PL_EXPORT(int) 		PL_get_pointer_ex(term_t t, void **addrp);
-PL_EXPORT(int) 		PL_unify_list_ex(term_t l, term_t h, term_t t);
-PL_EXPORT(int) 		PL_unify_nil_ex(term_t l);
-PL_EXPORT(int) 		PL_get_list_ex(term_t l, term_t h, term_t t);
-PL_EXPORT(int) 		PL_get_nil_ex(term_t l);
+PL_EXPORT(int)		PL_get_atom_ex(term_t t, atom_t *a);
+PL_EXPORT(int)		PL_get_integer_ex(term_t t, int *i);
+PL_EXPORT(int)		PL_get_long_ex(term_t t, long *i);
+PL_EXPORT(int)		PL_get_int64_ex(term_t t, int64_t *i);
+PL_EXPORT(int)		PL_get_intptr_ex(term_t t, intptr_t *i);
+PL_EXPORT(int)		PL_get_size_ex(term_t t, size_t *i);
+PL_EXPORT(int)		PL_get_bool_ex(term_t t, int *i);
+PL_EXPORT(int)		PL_get_float_ex(term_t t, double *f);
+PL_EXPORT(int)		PL_get_char_ex(term_t t, int *p, int eof);
+PL_EXPORT(int)		PL_unify_bool_ex(term_t t, int val);
+PL_EXPORT(int)		PL_get_pointer_ex(term_t t, void **addrp);
+PL_EXPORT(int)		PL_unify_list_ex(term_t l, term_t h, term_t t);
+PL_EXPORT(int)		PL_unify_nil_ex(term_t l);
+PL_EXPORT(int)		PL_get_list_ex(term_t l, term_t h, term_t t);
+PL_EXPORT(int)		PL_get_nil_ex(term_t l);
 
 PL_EXPORT(int)		PL_instantiation_error(term_t culprit);
+PL_EXPORT(int)		PL_uninstantiation_error(term_t culprit);
 PL_EXPORT(int)		PL_representation_error(const char *resource);
 PL_EXPORT(int)		PL_type_error(const char *expected, term_t culprit);
 PL_EXPORT(int)		PL_domain_error(const char *expected, term_t culprit);
@@ -633,7 +646,7 @@ PL_EXPORT(int)	PL_unify_mpq(term_t t, mpq_t mpq) WUNUSED;
 PL_EXPORT(int)		PL_get_file_name(term_t n, char **name, int flags);
 PL_EXPORT(int)		PL_get_file_nameW(term_t n, wchar_t **name, int flags);
 PL_EXPORT(void)		PL_changed_cwd(void); /* foreign code changed CWD */
-PL_EXPORT(const char *) PL_cwd(void);
+PL_EXPORT(char *)	PL_cwd(char *buf, size_t buflen);
 
 
 		 /*******************************
@@ -744,7 +757,7 @@ UNICODE file functions.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #define REP_ISO_LATIN_1 0x0000		/* output representation */
-#define REP_UTF8 	0x1000
+#define REP_UTF8	0x1000
 #define REP_MB		0x2000
 #ifdef __WINDOWS__
 #define REP_FN		REP_UTF8
@@ -762,9 +775,9 @@ UNICODE file functions.
 
 					/* Make IOSTREAM known to Prolog */
 #define PL_open_stream  PL_unify_stream	/* compatibility */
-PL_EXPORT(int)  	PL_unify_stream(term_t t, IOSTREAM *s);
-PL_EXPORT(int)  	PL_get_stream_handle(term_t t, IOSTREAM **s);
-PL_EXPORT(int) 		PL_release_stream(IOSTREAM *s);
+PL_EXPORT(int)		PL_unify_stream(term_t t, IOSTREAM *s);
+PL_EXPORT(int)		PL_get_stream_handle(term_t t, IOSTREAM **s);
+PL_EXPORT(int)		PL_release_stream(IOSTREAM *s);
 PL_EXPORT(IOSTREAM *)	PL_open_resource(module_t m,
 					 const char *name,
 					 const char *rc_class,
@@ -794,6 +807,9 @@ PL_EXPORT(IOSTREAM *)*_PL_streams(void);	/* base of streams */
 	 PL_WRT_ATTVAR_WRITE | \
 	 PL_WRT_ATTVAR_PORTRAY)
 #define PL_WRT_BLOB_PORTRAY	0x400	/* Use portray to emit non-text blobs */
+#define PL_WRT_NO_CYCLES	0x800	/* Never emit @(Template,Subst) */
+#define PL_WRT_LIST	       0x1000	/* Write [...], even with ignoreops */
+#define PL_WRT_NEWLINE	       0x2000	/* Add a newline */
 
 PL_EXPORT(int) PL_write_term(IOSTREAM *s,
 			     term_t term,
@@ -855,7 +871,6 @@ PL_EXPORT(pl_wchar_t*)  PL_atom_generator_w(const pl_wchar_t *pref,
 					    pl_wchar_t *buffer,
 					    size_t buflen,
 					    int state);
-PL_EXPORT(void)		PL_clock_wait_ticks(long waited);
 
 
 		 /*******************************
@@ -863,8 +878,15 @@ PL_EXPORT(void)		PL_clock_wait_ticks(long waited);
 		 *******************************/
 
 PL_EXPORT(void *)	PL_malloc(size_t size);
+PL_EXPORT(void *)	PL_malloc_atomic(size_t size);
+PL_EXPORT(void *)	PL_malloc_uncollectable(size_t size);
+PL_EXPORT(void *)	PL_malloc_atomic_uncollectable(size_t size);
 PL_EXPORT(void *)	PL_realloc(void *mem, size_t size);
+PL_EXPORT(void *)	PL_malloc_unmanaged(size_t size);
+PL_EXPORT(void *)	PL_malloc_atomic_unmanaged(size_t size);
 PL_EXPORT(void)		PL_free(void *mem);
+PL_EXPORT(int)		PL_linger(void *mem);
+
 
 		/********************************
 		*             HOOKS		*
@@ -878,11 +900,11 @@ typedef void (*PL_abort_hook_t)(void);
 typedef void (*PL_initialise_hook_t)(int argc, char **argv);
 typedef int  (*PL_agc_hook_t)(atom_t a);
 
-PL_EXPORT(PL_dispatch_hook_t) 	PL_dispatch_hook(PL_dispatch_hook_t);
-PL_EXPORT(void)	       		PL_abort_hook(PL_abort_hook_t);
-PL_EXPORT(void)	       		PL_initialise_hook(PL_initialise_hook_t);
-PL_EXPORT(int)		      	PL_abort_unhook(PL_abort_hook_t);
-PL_EXPORT(PL_agc_hook_t)      	PL_agc_hook(PL_agc_hook_t);
+PL_EXPORT(PL_dispatch_hook_t)	PL_dispatch_hook(PL_dispatch_hook_t);
+PL_EXPORT(void)			PL_abort_hook(PL_abort_hook_t);
+PL_EXPORT(void)			PL_initialise_hook(PL_initialise_hook_t);
+PL_EXPORT(int)			PL_abort_unhook(PL_abort_hook_t);
+PL_EXPORT(PL_agc_hook_t)	PL_agc_hook(PL_agc_hook_t);
 
 
 		/********************************
@@ -896,7 +918,7 @@ PL_EXPORT(void) (*PL_signal(int sig, void (*func)(int)))(int);
 PL_EXPORT(void) PL_interrupt(int sig);
 PL_EXPORT(int)  PL_raise(int sig);
 PL_EXPORT(int)  PL_handle_signals(void);
-PL_EXPORT(int) 	PL_get_signum_ex(term_t sig, int *n);
+PL_EXPORT(int)	PL_get_signum_ex(term_t sig, int *n);
 
 
 		/********************************
@@ -916,8 +938,12 @@ PL_EXPORT(int) 	PL_get_signum_ex(term_t sig, int *n);
 #define PL_ACTION_ATTACH_CONSOLE 11	/* MT: Attach a console */
 #define PL_GMP_SET_ALLOC_FUNCTIONS 12	/* GMP: do not change allocation functions */
 
-PL_EXPORT(int)	 PL_action(int, ...);	/* perform some action */
+#define PL_BT_SAFE		0x1	/* Do not try to print goals */
+#define PL_BT_USER		0x2	/* Only show user-goals */
+
+PL_EXPORT(int)	PL_action(int, ...);	/* perform some action */
 PL_EXPORT(void) PL_on_halt(void (*)(int, void *), void *);
+PL_EXPORT(void) PL_backtrace(int depth, int flags);
 
 		/********************************
 		*         QUERY PROLOG          *
@@ -966,7 +992,7 @@ PL_EXPORT(int)	PL_thread_at_exit(void (*function)(void *),
 				  void *closure,
 				  int global);
 PL_EXPORT(int)	PL_thread_raise(int tid, int sig);
-#if defined(_WINDOWS_)			/* <windows.h> is included */
+#if defined(_WINDOWS_) || defined(_WINDOWS_H)	/* <windows.h> is included */
 PL_EXPORT(int) PL_w32thread_raise(DWORD dwTid, int sig);
 PL_EXPORT(int) PL_wait_for_console_input(void *handle);
 PL_EXPORT(int) PL_w32_wrap_ansi_console(void);
@@ -993,7 +1019,7 @@ PL_EXPORT(int)		PL_destroy_engine(PL_engine_t engine);
 		 *******************************/
 
 typedef struct
-{ int	(*unify)(term_t t, void *handle); 	/* implementation --> Prolog */
+{ int	(*unify)(term_t t, void *handle);	/* implementation --> Prolog */
   int   (*get)(term_t t, void **handle);	/* Prolog --> implementation */
   void	(*activate)(int active);		/* (de)activate */
   intptr_t	magic;					/* PROFTYPE_MAGIC */
@@ -1008,7 +1034,7 @@ PL_EXPORT(void)		PL_prof_exit(void *node);
 		 *	 WINDOWS MESSAGES	*
 		 *******************************/
 
-#ifdef _WINDOWS_			/* <windows.h> is included */
+#if defined(_WINDOWS_) || defined(_WINDOWS_H)	/* <windows.h> is included */
 #define PL_MSG_EXCEPTION_RAISED -1
 #define PL_MSG_IGNORED 0
 #define PL_MSG_HANDLED 1
@@ -1017,7 +1043,7 @@ PL_EXPORT(LRESULT)	PL_win_message_proc(HWND hwnd,
 					    UINT message,
 					    WPARAM wParam,
 					    LPARAM lParam);
-#endif /*_WINDOWS_*/
+#endif /* _WINDOWS_/_WINDOWS_H */
 
 
 		 /*******************************
@@ -1043,8 +1069,24 @@ PL_EXPORT(int) _PL_put_xpce_reference_a(term_t t, atom_t name);
 		 *         TRACE SUPPORT	*
 		 *******************************/
 
-PL_EXPORT(int) PL_walk_prolog_stack(void *ref, char* buf, size_t len, void** nextref);
+#ifndef _PL_INCLUDE_H
+typedef void *QueryFrame;
+typedef void *LocalFrame;
+typedef void *Code;
+#endif
 
+typedef struct pl_context_t
+{ PL_engine_t   ld;			/* Engine */
+  QueryFrame	qf;			/* Current query */
+  LocalFrame	fr;			/* Current localframe */
+  Code		pc;			/* Code pointer */
+  void *	reserved[10];		/* Reserved for extensions */
+} pl_context_t;
+
+PL_EXPORT(int)	PL_get_context(struct pl_context_t *c, int thead_id);
+PL_EXPORT(int)	PL_step_context(struct pl_context_t *c);
+PL_EXPORT(int)	PL_describe_context(struct pl_context_t *c,
+				    char *buf, size_t len);
 
 #ifdef __cplusplus
 }

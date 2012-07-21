@@ -142,7 +142,7 @@ namespace SbsSW.SwiPlCs
 		//private const string DllFileName = @"D:\Lesta\swi-pl\pl\bin\LibPl.dll";
         //"libpl.dll" for 5.7.8; 
         //public const string DllFileName = @"swiprolog\bin\swipl.dll";
-        public const string DllFileName = @"swipl.dll";
+        public const string DllFileName = @"libswipl.dll";
         //public const string DllFileName = @"C:\Program Files\pl\bin\swipl.dll";
         static SafeNativeMethods()
         {
@@ -163,7 +163,7 @@ namespace SbsSW.SwiPlCs
 
         public static string PlLib
         {
-            get { return @"swipl.dll"; }
+            get { return DllFileName; }
         }
 
 	    //public const string DllFileName = @"swipl.dll";

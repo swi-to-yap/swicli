@@ -144,7 +144,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;C:\Program Files\pl\lib\swipl.lib&quot;"
+				AdditionalDependencies="&quot;C:\Program Files\pl\lib\libswipl.dll.a&quot;"
+				ShowProgress="2"
 				OutputFile="&quot;C:\Program Files\pl\bin\swicli.dll&quot;"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
