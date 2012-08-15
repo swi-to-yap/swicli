@@ -154,7 +154,7 @@ namespace Swicli.Library
                     PrologEvents++;
                     if (!knownDefined && !PrologCLR.IsDefined(module, Key.Name, PrologArity))
                     {
-                        PrologCLR.Warn("Undefined Event Handler {0}:{1}/{2}", module, Key.Name, PrologArity);
+                        //PrologCLR.Warn("Undefined Event Handler {0}:{1}/{2}", module, Key.Name, PrologArity);
                         return null;
                     }
                     knownDefined = true;
