@@ -137,6 +137,7 @@ namespace Swicli.Library
             SyncLock = Delegate;
         }
 
+        private bool knownDefined = false;
         //#pragma unsafe
         public override object CallPrologFast(object[] paramz)
         {
@@ -153,8 +154,17 @@ namespace Swicli.Library
                         return PrologCLR.CallProlog(this, Key.Module, "call", PrologArity, arg1, paramz, ReturnType,
                                                        false);
                     }
-                    return PrologCLR.CallProlog(this, Key.Module ?? "user", Key.Name, PrologArity, arg1, paramz,
-                                                   ReturnType, false);
+                    string module = Key.Module ?? "user";
+                    PrologEvents++;
+                    if (!knownDefined && !PrologCLR.IsDefined(module, Key.Name, PrologArity))
+                    {
+                        PrologCLR.Warn("Undefined Delegate Handler {0}:{1}/{2}", module, Key.Name, PrologArity);
+                        return null;
+                    }
+
+                    knownDefined = true;
+                    return PrologCLR.CallProlog(this, module, Key.Name, PrologArity, arg1, paramz,
+                                                ReturnType, false);
                 }
                 catch (AccessViolationException e)
                 {

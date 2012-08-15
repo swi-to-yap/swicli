@@ -142,6 +142,7 @@ namespace Swicli.Library
             return "EventHandlerInProlog: " + Key;
         }
 
+        private bool knownDefined = false;
         //#pragma unsafe
         public override object CallPrologFast(object[] paramz)
         {
@@ -149,9 +150,16 @@ namespace Swicli.Library
             {
                 try
                 {
+                    string module = Key.Module ?? "user";
                     PrologEvents++;
-                    return PrologCLR.CallProlog(this, Key.Module ?? "user", Key.Name, PrologArity, Key.Origin, paramz,
-                                                   ReturnType, true);
+                    if (!knownDefined && !PrologCLR.IsDefined(module, Key.Name, PrologArity))
+                    {
+                        PrologCLR.Warn("Undefined Event Handler {0}:{1}/{2}", module, Key.Name, PrologArity);
+                        return null;
+                    }
+                    knownDefined = true;
+                    return PrologCLR.CallProlog(this, module, Key.Name, PrologArity, Key.Origin, paramz,
+                                                ReturnType, true);
                 }
                 catch (AccessViolationException e)
                 {

@@ -298,6 +298,28 @@ namespace Swicli.Library
             return PlTerm.PlCompound(".", term, ATOM_NIL);
         }
 
+
+        public static bool IsDefined(string module, string functor, int arity)
+        {
+            if (!ClientReady)
+            {
+                return false;
+            }
+            return PlQuery.PlCall(null, "predicate_property",
+                                  new PlTermV(ModuleTerm(module, FunctorTerm(functor, arity))));
+        }
+
+        private static PlTerm ModuleTerm(string module, PlTerm term)
+        {
+            if (module == null) return term;
+            return PlC(":", new[] {PlTerm.PlAtom(module), term});
+        }
+
+        private static PlTerm FunctorTerm(string functor, int arity)
+        {
+            return PlTerm.PlCompound(functor, new PlTermV(arity));
+        }
+
         public static object CallProlog(object target, string module, string name, int arity, object origin, object[] paramz, Type returnType, bool discard)
         {
             if (!ClientReady)
