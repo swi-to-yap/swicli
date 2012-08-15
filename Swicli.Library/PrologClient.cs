@@ -312,6 +312,7 @@ namespace Swicli.Library
         private static PlTerm ModuleTerm(string module, PlTerm term)
         {
             if (module == null) return term;
+            if (term.IsCompound && term.Arity == 2 && term.Name == ":") return term;
             return PlC(":", new[] {PlTerm.PlAtom(module), term});
         }
 
