@@ -305,8 +305,9 @@ namespace Swicli.Library
             {
                 return false;
             }
+
             return PlQuery.PlCall(null, "predicate_property",
-                                  new PlTermV(ModuleTerm(module, FunctorTerm(functor, arity))));
+                                  new PlTermV(ModuleTerm(module, FunctorTerm(functor, arity)),PlTerm.PlVar()));
         }
 
         private static PlTerm ModuleTerm(string module, PlTerm term)
