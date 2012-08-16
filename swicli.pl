@@ -26,8 +26,16 @@
           [
             module_functor/4,
             to_string/2,
-            member_elipse/2
+            member_elipse/2,
+            cli_add_event_handler/3,
+            cli_new_delegate/3,
+            cli_new_delegate_term/4
           ]).
+
+
+:-meta_predicate(cli_add_event_handler(+,+,0)).
+:-meta_predicate(cli_new_delegate(+,0,+)).
+:-meta_predicate(cli_new_delegate_term(+,0,+,-)).
 
 
 :- push_operators([op(600, fx, ('*'))]).
@@ -323,6 +331,8 @@ cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
 
 :-dynamic(cli_subproperty/2).
 :-module_transparent(cli_subproperty/2).
+:-multifile(cli_subproperty/2).
+
 
 %%  cli_is_type(+Impl,?Type).
 %
