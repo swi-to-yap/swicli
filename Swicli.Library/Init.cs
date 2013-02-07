@@ -82,7 +82,7 @@ namespace Swicli.Library
                 if (PrologIsSetup) return;
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
                 PrologIsSetup = true;
-                SafelyRun(SetupProlog0);
+                SafelyRun(SetupProlog0);               
                 SafelyRun(SetupProlog2);
                 RegisterPLCSForeigns();
             }
@@ -90,13 +90,14 @@ namespace Swicli.Library
         public static void SetupProlog0()
         {
             PrologCLR.ConsoleTrace("SetupProlog");
-          //  SafelyRun(SetupIKVM);
+            //  SafelyRun(SetupIKVM);
             if (!IsUseableSwiProlog(SwiHomeDir))
             {
                 try
                 {
                     //SwiHomeDir = System.Windows.Forms.Application.StartupPath;
-                    SwiHomeDir = Path.GetDirectoryName(Environment.CurrentDirectory);// CommandLine.Trim(' ', '"', '\''));
+                    SwiHomeDir = Path.GetDirectoryName(Environment.CurrentDirectory);
+                    // CommandLine.Trim(' ', '"', '\''));
                     if (!IsUseableSwiProlog(SwiHomeDir))
                     {
                         SwiHomeDir = null;
@@ -114,14 +115,14 @@ namespace Swicli.Library
                     SwiHomeDir = null;
                 }
             }
+            string pf = GetProgramFilesDir();
             if (!IsUseableSwiProlog(SwiHomeDir))
             {
 
-                SwiHomeDir = "c:/Program Files/pl";
-
-                if (Is64BitComputer() && !Is64BitRuntime())
+                SwiHomeDir = pf + "/pl";
+                if (!IsUseableSwiProlog(SwiHomeDir))
                 {
-                    SwiHomeDir = "c:/Program Files (x86)/pl";
+                    SwiHomeDir = pf + "/swipl";
                 }
             }
             AltSwiHomeDir = AltSwiHomeDir ?? ".";
@@ -130,6 +131,11 @@ namespace Swicli.Library
             {
                 SwiHomeDir = AltSwiHomeDir;
                 copyPlatFormVersions = true;
+                if (true)
+                {
+                    //for now never copy!
+                    copyPlatFormVersions = false;
+                }
             }
             SwiHomeDir = SwiHomeDir ?? AltSwiHomeDir;
             if (IsUseableSwiProlog(SwiHomeDir))
@@ -145,37 +151,70 @@ namespace Swicli.Library
                 destination = Path.Combine(SwiHomeDir, "lib");
                 CopyFiles(destination + platformSuffix, destination, true, "*.*", true);
             }
+
             if (IsUseableSwiProlog(SwiHomeDir))
             {
                 Environment.SetEnvironmentVariable("SWI_HOME_DIR", SwiHomeDir);
             }
-            String path = Environment.GetEnvironmentVariable("PATH");
-            if (path != null)
-                if (!path.ToLower().StartsWith(SwiHomeDir.ToLower()))
-                {
-                    Environment.SetEnvironmentVariable("PATH", SwiHomeDir + "/bin;" + IKVMHome + ";" + path);
-                }
-            libpath = "";
 
+            SafelyRun(SetupProlog1);
+        }
 
-            string swiHomeBin = SwiHomeDir + "/bin";
-            libpath += swiHomeBin;
-            if (swiHomeBin != IKVMHome)
+        private static string GetProgramFilesDir()
+        {
+            if (Is64BitComputer())
             {
-                libpath += ";";
+                if (!Is64BitRuntime())
+                {
+                    return Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+                }
+            }
+            return Environment.GetEnvironmentVariable("ProgramFiles");
+        }
+
+        private static string GetMyPathExtras()
+        {
+            if (libpath != null) return libpath;
+            string swiHomeBin = Path.Combine(SwiHomeDir, "bin");
+            libpath += swiHomeBin;
+            if (swiHomeBin != IKVMHome && !string.IsNullOrEmpty(IKVMHome))
+            {
+                libpath += Path.PathSeparator;
                 libpath += IKVMHome;
             }
-            libpath += ";";
+            libpath += Path.PathSeparator;
             libpath += ".";
-
+            return libpath;
+        }
+        /// <summary>
+        /// This after the SwiPrologDir and IKVMHome is set up will update the environment
+        /// </summary>
+        public static void SetupProlog1()
+        {             
+            string myPathExt = GetMyPathExtras();
+            String path = Environment.GetEnvironmentVariable("PATH");
+            if (path != null)
+            {
+                if (!path.ToLower().StartsWith(myPathExt.ToLower()))
+                {
+                    path = myPathExt + path;
+                    Environment.SetEnvironmentVariable("PATH", path);
+                }
+            }
+            
             string LD_LIBRARY_PATH = Environment.GetEnvironmentVariable("LD_LIBRARY_PATH");
             if (String.IsNullOrEmpty(LD_LIBRARY_PATH))
             {
                 LD_LIBRARY_PATH = libpath;
                 Environment.SetEnvironmentVariable("LD_LIBRARY_PATH", LD_LIBRARY_PATH);
             }
-           // SafelyRun(SetupProlog1);
-           // SafelyRun(SetupProlog2);
+            else if (!LD_LIBRARY_PATH.ToLower().Contains(myPathExt.ToLower()))
+            {
+                LD_LIBRARY_PATH = myPathExt + LD_LIBRARY_PATH;
+                Environment.SetEnvironmentVariable("LD_LIBRARY_PATH", LD_LIBRARY_PATH);
+            }
+            // SafelyRun(SetupProlog1);
+            // SafelyRun(SetupProlog2);
         }
 #if USE_IKVM
         public static void SetupProlog1()
@@ -260,25 +299,26 @@ namespace Swicli.Library
         {
             if (string.IsNullOrEmpty(swiHomeDir)) return false;
             if (!Directory.Exists(swiHomeDir)) return false;
-            if (File.Exists(swiHomeDir + "/bin/libpl.dll"))
+            string swibin = Path.Combine(swiHomeDir, "bin");
+            if (File.Exists(Path.Combine(swibin, "libpl.dll")))
             {
                 ConsoleTrace("SWI too old: " + swiHomeDir + "/bin/libpl.dll");
                 return false;
             }
-            if (File.Exists(swiHomeDir + "/bin/swipl.dll")) return true;
             if (!ConfirmRCFile(swiHomeDir)) return false;
+            if (File.Exists(Path.Combine(swibin, "libswipl.dll"))) return true;
+            if (File.Exists(Path.Combine(swibin, "swipl.dll"))) return true;
             return true;
         }
 
         private static bool ConfirmRCFile(string swiHomeDir)
         {
-            if (!File.Exists(swiHomeDir + "/boot32.prc") &&
-                !File.Exists(swiHomeDir + "/boot.prc") &&
-                !File.Exists(swiHomeDir + "/boot64.prc"))
+            if (!Is64BitRuntime())
             {
-                return false;
+                return File.Exists(Path.Combine(swiHomeDir, "boot32.prc")) ||
+                       File.Exists(Path.Combine(swiHomeDir, "boot.prc"));
             }
-            return true;
+            return File.Exists(Path.Combine(swiHomeDir, "boot64.prc"));
         }
 
         //FileInfo & DirectoryInfo are in System.IO
@@ -350,17 +390,17 @@ namespace Swicli.Library
                 }
             }
         }
-		
-		        //[MTAThread]
+
+        //[MTAThread]
         public static void Main0(string[] args0)
         {
             PingThreadFactories();
             bool demo = false;
             SetupProlog();
-			libpl.PL_initialise(args0.Length, args0);
-			libpl.PL_toplevel();
-		}
-		
+            libpl.PL_initialise(args0.Length, args0);
+            libpl.PL_toplevel();
+        }
+
         //[MTAThread]
         public static void Main(string[] args0)
         {
@@ -440,14 +480,14 @@ namespace Swicli.Library
             {
                 if (!PlCsDisabled)
                     // loops on exception
-                    while (!SafelyRun(()=>libpl.PL_toplevel())) ;
+                    while (!SafelyRun(() => libpl.PL_toplevel())) ;
             }
 
 
 
             ConsoleTrace("press enter to exit");
             Console.ReadLine();
-            SafelyRun(()=>PlEngine.PlCleanup());
+            SafelyRun(() => PlEngine.PlCleanup());
 
             ConsoleTrace("finshed!");
 
@@ -485,7 +525,7 @@ namespace Swicli.Library
             PlEngine.RegisterForeign(ExportModule, "cli_load_assembly", 1, new DelegateParameter1(PrologCLR.cliLoadAssembly), PlForeignSwitches.None);
             if (VerboseStartup) ConsoleWriteLine("RegisterPLCSForeigns");
             InternMethod(null, "cwl", typeof(Console).GetMethod("WriteLine", ONE_STRING));
-            
+
             Type t = typeof(PrologCLR);
             InternMethod(ExportModule, "cli_load_assembly_methods", t.GetMethod("cliLoadAssemblyMethods"));
             InternMethod(t.GetMethod("cliAddAssemblySearchPath"), "cli_");
@@ -604,10 +644,10 @@ jpl_jlist_demo :-
         }
 
 
- 
+
         public static bool JplDisabled = true;
         public static bool PlCsDisabled = false;
-        private static string _ikvmHome;
+        private static string _ikvmHome = ".";
         public static string IKVMHome
         {
             get { return _ikvmHome; }
@@ -634,7 +674,7 @@ jpl_jlist_demo :-
         }
 
 
-        public static string AltSwiHomeDir = "C:/development/opensim4opencog";// Path.Combine(".", "swiprolog");
+        public static string AltSwiHomeDir = ".";//C:/development/opensim4opencog";// Path.Combine(".", "swiprolog");
         public static bool JplSafeNativeMethodsDisabled = false;
         public static bool JplSafeNativeMethodsCalled = false;
         public static bool IsHalted = false;
