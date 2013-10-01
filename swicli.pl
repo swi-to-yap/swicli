@@ -46,17 +46,17 @@
 %=========================================
 % Load C++ DLL
 %=========================================
-:-dynamic(loadedcli_Assembly/0).
+:-dynamic(swicli_assembly_loaded/0).
 
-onWindows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
+swicli_on_windows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
 
-foName1(X):- current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli.
-foName(Y):-foName1(X), (current_prolog_flag(unix,true) -> Y= foreign(X); Y =X).
+swicli_o_name(X):- current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli.
+swicli_foriegn_name(Y):-swicli_o_name(X), (current_prolog_flag(unix,true) -> Y= foreign(X); Y =X).
 
-loadcli_Assembly:-loadedcli_Assembly,!.
-loadcli_Assembly:-assert(loadedcli_Assembly),fail.
-loadcli_Assembly:- foName(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_library(DLL).
-:-loadcli_Assembly.
+swicli_assembly_ensure_loaded:- swicli_assembly_loaded,!.
+swicli_assembly_ensure_loaded:- assert(swicli_assembly_loaded),fail.
+swicli_assembly_ensure_loaded:- swicli_foriegn_name(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_library(DLL).
+:-swicli_assembly_ensure_loaded.
 
 
 %=========================================
