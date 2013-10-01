@@ -52,10 +52,13 @@ swicli_on_windows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win'
 
 swicli_o_name(X):- current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli.
 swicli_foriegn_name(Y):-swicli_o_name(X), (current_prolog_flag(unix,true) -> Y= foreign(X); Y =X).
+swicli_foriegn_name(lib(X)):-swicli_o_name(X).
+swicli_foriegn_name(bin(X)):-swicli_o_name(X).
+swicli_foriegn_name(X):-swicli_o_name(X).
 
 swicli_assembly_ensure_loaded:- swicli_assembly_loaded,!.
-swicli_assembly_ensure_loaded:- assert(swicli_assembly_loaded),fail.
-swicli_assembly_ensure_loaded:- swicli_foriegn_name(SWICLI),strip_module(SWICLI,_,DLL),load_foreign_library(DLL).
+swicli_assembly_ensure_loaded:- swicli_foriegn_name(SWICLI),strip_module(SWICLI,_,DLL),catch(load_foreign_library(DLL),E,(writeq(E),fail)),assert(swicli_assembly_loaded),!.
+swicli_assembly_ensure_loaded:- swicli_foriegn_name(Y),throw(missing_dll(Y)).
 :-swicli_assembly_ensure_loaded.
 
 
@@ -765,7 +768,7 @@ cli_expand(Value,Value).
 cli_to_data(Term,String):- cli_new('System.Collections.Generic.List'(object),[],[],Objs),cli_to_data(Objs,Term,String).
 cli_to_data(_,Term,Term):- not(compound(Term)),!.
 %cli_to_data(_Objs,[A|B],[A|B]):-!.
-cli_to_data(_Objs,[A|B],[A|B]):- \+( \+ A=[_=_]),!.
+cli_to_data(_Objs,[A|B],[A|B]):- \+( \+(A=[_=_])),!.
 cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
 cli_to_data(Objs,Term,String):-cli_is_ref(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
 cli_to_data(Objs,Term,FAS):-Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
@@ -1353,6 +1356,7 @@ cli_docs:- cli_find_type('Swicli.Library.PrologCLR',T),
     VS==VS, %%'format'('%       Foreign call to ~w~n',[VS]),
     fail.
 
+cli_start_pldoc_server:-use_module(library(pldoc)), doc_server(57007,[workers(5)]) , portray_text(true). 
 
 /** <module> SWI-Prolog 2-Way interface to .NET/Mono
 
@@ -1402,11 +1406,6 @@ Doc root and Download will be findable from http://code.google.com/p/opensim4ope
 @author	Douglas Miles
 
 */
-
-:-use_module(library(pldoc)).
-:-doc_server(57007,[workers(5)]).
-:-portray_text(true). 
-
 
 end_of_file.
 
