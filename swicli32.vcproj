@@ -13,17 +13,14 @@
 		<Platform
 			Name="Win32"
 		/>
-		<Platform
-			Name="x64"
-		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="C:\Program Files (x86)\pl\bin"
-			IntermediateDirectory="C:\Program Files (x86)\pl\lib"
+			OutputDirectory="$(SWI_HOME_DIR)\bin"
+			IntermediateDirectory="$(SWI_HOME_DIR)\lib"
 			ConfigurationType="2"
 			CharacterSet="1"
 			ManagedExtensions="1"
@@ -66,9 +63,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;C:\Program Files (x86)\pl\lib\libswipl.dll.a&quot;"
+				AdditionalDependencies="&quot;$(SWI_HOME_DIR)\lib\libswipl.dll.a&quot;"
 				ShowProgress="2"
-				OutputFile="C:\Program Files (x86)\pl\bin\swicli.dll"
+				OutputFile="$(SWI_HOME_DIR)\bin\swicli.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
@@ -99,87 +96,9 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|x64"
-			OutputDirectory="C:\Program Files (x86)\pl\bin"
-			IntermediateDirectory="C:\Program Files (x86)\pl\lib"
-			ConfigurationType="2"
-			CharacterSet="1"
-			ManagedExtensions="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-				CommandLine=""
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				PreprocessorDefinitions="_DEBUG"
-				MinimalRebuild="false"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="3"
-				WarningLevel="3"
-				DebugInformationFormat="3"
-				CompileAs="2"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;C:\Program Files\pl\lib\swipl.lib&quot;"
-				OutputFile="C:\Program Files\pl\bin\swicli32.dll"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				AssemblyDebug="1"
-				SubSystem="2"
-				TargetMachine="1"
-				AllowIsolation="true"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="C:\Program Files (x86)\pl\bin"
-			IntermediateDirectory="C:\Program Files (x86)\pl\lib"
+			OutputDirectory="$(SWI_HOME_DIR)\bin"
+			IntermediateDirectory="$(SWI_HOME_DIR)\lib"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -221,91 +140,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;C:\Program Files (x86)\pl\lib\swipl.lib&quot;"
-				OutputFile="C:\Program Files (x86)\pl\bin\swicli.dll"
+				AdditionalDependencies="&quot;$(SWI_HOME_DIR)\lib\libswipl.dll.a&quot;"
+				OutputFile="$(SWI_HOME_DIR)\bin\swicli32.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="2"
-				WarningLevel="3"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;C:\Program Files (x86)\pl\lib\swipl.lib&quot;"
-				OutputFile="C:\Program Files (x86)\pl\bin\swicli.dll"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -338,7 +180,7 @@
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{44645676-D8D5-4A1F-9F8C-4105912CFE68}"
-			RelativePathToProject=".\sources\main\swicli\Swicli.Library\Swicli.Library.csproj"
+			RelativePathToProject=".\Swicli.Library\Swicli.Library.csproj"
 		/>
 	</References>
 	<Files>
@@ -352,14 +194,6 @@
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="2"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -397,17 +231,8 @@
 				>
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="copy swicli.pl  &quot;c:\Program Files (x86)\pl\library\&quot;&#x0D;&#x0A;"
-					Outputs=" &quot;c:\Program Files (x86)\pl\library\swicli.pl&quot;"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|x64"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					CommandLine="copy swicli.pl  &quot;c:\Program Files (x86)\pl\library\&quot;&#x0D;&#x0A;"
-					Outputs=" &quot;c:\Program Files (x86)\pl\library\swicli.pl&quot;"
+					CommandLine="copy swicli.pl  &quot;$(SWI_HOME_DIR)\library\&quot;&#x0D;&#x0A;"
+					Outputs=" &quot;$(SWI_HOME_DIR)\library\swicli.pl&quot;"
 				/>
 			</FileConfiguration>
 		</File>

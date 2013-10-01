@@ -765,7 +765,7 @@ cli_expand(Value,Value).
 cli_to_data(Term,String):- cli_new('System.Collections.Generic.List'(object),[],[],Objs),cli_to_data(Objs,Term,String).
 cli_to_data(_,Term,Term):- not(compound(Term)),!.
 %cli_to_data(_Objs,[A|B],[A|B]):-!.
-cli_to_data(_Objs,[A|B],[A|B]):-'\+' '\+' A=[_=_],!.
+cli_to_data(_Objs,[A|B],[A|B]):- \+( \+ A=[_=_]),!.
 cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
 cli_to_data(Objs,Term,String):-cli_is_ref(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
 cli_to_data(Objs,Term,FAS):-Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
