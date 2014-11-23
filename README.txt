@@ -26,6 +26,7 @@ pl/library/
 }}}
 
 === Linux OS/X _requires Mono (2.10.8+)_ ===
+Ubuntu:  apt-get install mono-devel
 Copy these two directories onto your Prolog Install Dir
 {{{
 pl/lib/  
