@@ -1,9 +1,15 @@
+/** <module> swicffi - Use C/C++ Runtimes from SWI-Prolog using only headers
+%
+% Dec 13, 2035
+% Douglas Miles
+*/
 
 :-module(swicffi,[install_cffi/2]).
 
+:- use_module(swicli). 
+
 :- style_check(-singleton).
 :- style_check(-discontiguous).
-% :- style_check(-atom).
 :- set_prolog_flag(double_quotes, codes). 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Parsing (Using LISP's CFFI File format)
