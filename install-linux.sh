@@ -10,6 +10,12 @@ fi
 
 cp pl/library/* $SWI_HOME_DIR/library/
 
+if [ -d "$SWI_HOME_DIR/lib/amd64/" ]; then
+cp pl/lib/x86_64-linux/* $SWI_HOME_DIR/lib/amd64/
+echo "installed 64bit version"
+exit 0
+fi
+
 if [ -d "$SWI_HOME_DIR/lib/x86_64-linux/" ]; then
 cp pl/lib/x86_64-linux/* $SWI_HOME_DIR/lib/x86_64-linux/ 
 echo "installed 64bit version"

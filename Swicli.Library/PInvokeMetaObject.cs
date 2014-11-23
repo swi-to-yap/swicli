@@ -72,7 +72,7 @@ public class PInvoke : DynamicObject {
     }
 }
 
-public class Tests
+public class TestsPInvokeMetaObject
 {
     public static void Main (String[] args) {
         dynamic d = new PInvoke ("libc");

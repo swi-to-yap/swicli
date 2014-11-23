@@ -26,7 +26,7 @@ pl/library/
 }}}
 
 === Linux OS/X _requires Mono (2.10.8+)_ ===
-Ubuntu:  apt-get install mono-devel
+Ubuntu:  apt-get install mono-devel libmono-system-Data-Linq4.0-cil libmono-system-xml-Linq4.0-cil libmono-microsoft-visualbasic10.0-cil
 Copy these two directories onto your Prolog Install Dir
 {{{
 pl/lib/  

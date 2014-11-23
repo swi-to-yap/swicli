@@ -179,7 +179,7 @@ run(S):-'format'('~n~s~n',[S]),run(S,V),writeq(V).
 
 
 % Append:
-    :- time(run("
+reader_tests:- time(run("
         (defun append (x y)
           (if x
               (cons (car x) (append (cdr x) y))
@@ -191,7 +191,7 @@ run(S):-'format'('~n~s~n',[S]),run(S,V),writeq(V).
     
 
 % Fibonacci, naive version:
-    :- time(run("
+reader_tests:- time(run("
         (defun fib (n)
           (if (= 0 n)
               0
@@ -205,7 +205,7 @@ run(S):-'format'('~n~s~n',[S]),run(S,V),writeq(V).
     
 
 % Fibonacci, accumulating version:
-    :- time(run("
+reader_tests:- time(run("
         (defun fib (n)
           (if (= 0 n) 0 (fib1 0 1 1 n)))
 
@@ -221,7 +221,7 @@ run(S):-'format'('~n~s~n',[S]),run(S,V),writeq(V).
     
 
 % Fibonacci, iterative version:
-    :- time(run("
+reader_tests:- time(run("
         (defun fib (n)
           (setq f (cons 0 1))
           (setq i 0)
@@ -237,7 +237,7 @@ run(S):-'format'('~n~s~n',[S]),run(S,V),writeq(V).
     
 
 % Higher-order programming and eval:
-    :- run("
+reader_tests:- run("
         (defun map (f xs)
           (if xs
               (cons (eval (list f (car xs))) (map f (cdr xs)))
@@ -249,4 +249,4 @@ run(S):-'format'('~n~s~n',[S]),run(S,V),writeq(V).
 
     %@ V = [map, plus1, [2, 3, 4]].
  
-
+cffi_tests :- 
