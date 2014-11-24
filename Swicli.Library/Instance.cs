@@ -68,8 +68,14 @@ namespace Swicli.Library
             {
                 if (classOrInstance.IsString)
                 {
+                    String str = (string)classOrInstance;
                     Debug("GetInstance(string) {0}", classOrInstance);
-                    return (string)classOrInstance;
+                    if (str.EndsWith(".so"))
+                    {
+                        str = str.Substring(0, str.Length - 3);
+                        return new PInvoke(str);
+                    }
+                    return str;
                 }
                 if (classOrInstance.IsAtom)
                 {

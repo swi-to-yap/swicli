@@ -13,7 +13,98 @@
 :- style_check(-discontiguous).
 :- set_prolog_flag(double_quotes, codes). 
 
+/*
+% TODO
 
+
+defctype(PrologName,CType,Comment)  http://common-lisp.net/project/cffi/manual/html_node/defctype.html
+
+
+6.1 Built-In Types
+
+— Foreign Type: :char
+— Foreign Type: :unsigned-char
+— Foreign Type: :short
+— Foreign Type: :unsigned-short
+— Foreign Type: :int
+— Foreign Type: :unsigned-int
+— Foreign Type: :long
+— Foreign Type: :unsigned-long
+— Foreign Type: :long-long
+— Foreign Type: :unsigned-long-long
+These types correspond to the native C integer types according to the ABI of the Lisp implementation's host system.
+
+:long-long and :unsigned-long-long are not supported natively on all implementations. However, they are emulated by mem-ref and mem-set.
+
+When those types are not available, the symbol cffi-sys::no-long-long is pushed into *features*.
+
+— Foreign Type: :uchar
+— Foreign Type: :ushort
+— Foreign Type: :uint
+— Foreign Type: :ulong
+— Foreign Type: :llong
+— Foreign Type: :ullong
+For convenience, the above types are provided as shortcuts for unsigned-char, unsigned-short, unsigned-int, unsigned-long, long-long and unsigned-long-long, respectively.
+
+— Foreign Type: :int8
+— Foreign Type: :uint8
+— Foreign Type: :int16
+— Foreign Type: :uint16
+— Foreign Type: :int32
+— Foreign Type: :uint32
+— Foreign Type: :int64
+— Foreign Type: :uint64
+Foreign integer types of specific sizes, corresponding to the C types defined in stdint.h.
+
+— Foreign Type: :float
+— Foreign Type: :double
+On all systems, the :float and :double types represent a C float and double, respectively. On most but not all systems, :float and :double represent a Lisp single-float and double-float, respectively. It is not so useful to consider the relationship between Lisp types and C types as isomorphic, as simply to recognize the relationship, and relative precision, among each respective category.
+
+— Foreign Type: :long-double
+This type is only supported on SCL.
+
+— Foreign Type: :pointer &optional type
+A foreign pointer to an object of any type, corresponding to void *. You can optionally specify type of pointer (e.g. (:pointer :char)). Although CFFI won't do anything with that information yet, it is useful for documentation purposes.
+
+— Foreign Type: :void
+No type at all. Only valid as the return type of a function.
+
+
+
+struct person { int number; char* reason; };
+  The equivalent defcstruct form follows:
+(defcstruct person (number :int) (reason :string))
+
+
+Dictionary
+
+convert-from-foreign
+convert-to-foreign
+defbitfield
+defcstruct
+defcunion
+defctype
+defcenum
+define-foreign-type
+define-parse-method
+foreign-bitfield-symbols
+foreign-bitfield-value
+foreign-enum-keyword
+foreign-enum-value
+foreign-slot-names
+foreign-slot-offset
+foreign-slot-pointer
+foreign-slot-value
+foreign-type-alignment
+foreign-type-size
+free-converted-object
+free-translated-object
+translate-from-foreign
+translate-to-foreign
+translate-into-foreign-memory
+with-foreign-slots
+
+*/
 install_cffi(_Module,File):-read_file_to_codes(File,Codes,[]),to_forms(Codes,Forms),load_forms(Forms).
 
 to_forms(String, Expr):- string(String),string_to_list(String,Codes),!,to_forms(Codes, Expr).

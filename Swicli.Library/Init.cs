@@ -392,7 +392,7 @@ namespace Swicli.Library
         }
 
         //[MTAThread]
-        public static void Main0(string[] args0)
+        public static void Main(string[] args0)
         {
             PingThreadFactories();
             bool demo = false;

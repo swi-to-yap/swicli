@@ -4,31 +4,29 @@
     <ProjectType>Local</ProjectType>
     <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{44645676-D8D5-4A1F-9F8C-4105912CFE68}</ProjectGuid>
+    <ProjectGuid>{0E03FA4A-F759-4172-80D0-9C16FDC007F9}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ApplicationIcon>
     </ApplicationIcon>
     <AssemblyKeyContainerName>
     </AssemblyKeyContainerName>
-    <AssemblyName>Swicli.Library</AssemblyName>
+    <AssemblyName>SWICFFITests</AssemblyName>
     <DefaultClientScript>JScript</DefaultClientScript>
     <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
     <DefaultTargetSchema>IE50</DefaultTargetSchema>
     <DelaySign>false</DelaySign>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <OutputType>Library</OutputType>
+    <OutputType>WinExe</OutputType>
     <AppDesignerFolder>
     </AppDesignerFolder>
-    <RootNamespace>Swicli.Library</RootNamespace>
+    <RootNamespace>SWICFFITests</RootNamespace>
     <StartupObject>
     </StartupObject>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation />
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -41,8 +39,10 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -51,7 +51,7 @@
     <ConfigurationOverrideFile>
     </ConfigurationOverrideFile>
     <DefineConstants>TRACE;VISUAL_STUDIO</DefineConstants>
-    <DocumentationFile>Swicli.Library.XML</DocumentationFile>
+    <DocumentationFile>SWICFFITests.XML</DocumentationFile>
     <DebugSymbols>False</DebugSymbols>
     <FileAlignment>4096</FileAlignment>
     <Optimize>True</Optimize>
@@ -72,7 +72,7 @@
     <ConfigurationOverrideFile>
     </ConfigurationOverrideFile>
     <DefineConstants>TRACE;DEBUG;COGBOT_LIBOMV;VISUAL_STUDIO</DefineConstants>
-    <DocumentationFile>Swicli.Library.XML</DocumentationFile>
+    <DocumentationFile>SWICFFITests.XML</DocumentationFile>
     <DebugSymbols>True</DebugSymbols>
     <FileAlignment>4096</FileAlignment>
     <Optimize>False</Optimize>
@@ -131,71 +131,15 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssemblyLoader.cs">
-    </Compile>
-    <Compile Include="ClassBuilder.cs">
-    </Compile>
-    <Compile Include="GetSet.cs" />
-    <Compile Include="IKVMClassLoader.cs" />
-    <Compile Include="Init.cs" />
-    <Compile Include="Invoke.cs" />
-    <Compile Include="Instance.cs" />
-    <Compile Include="CoercionLayout.cs" />
-    <Compile Include="Collections.cs" />
-    <Compile Include="PInvokeMetaObject.cs" />
-    <Compile Include="RuntimeTypeInfo.cs">
-    </Compile>
-    <Compile Include="DelegateObjectInProlog.cs">
-    </Compile>
-    <Compile Include="DesignByContract.cs">
-    </Compile>
-    <Compile Include="EventHandlerInProlog.cs">
-    </Compile>
-    <Compile Include="Exceptions.cs">
-    </Compile>
-    <Compile Include="ForeignMethod.cs">
-    </Compile>
-    <Compile Include="LibPl.cs">
-    </Compile>
-    <Compile Include="LockInfo.cs">
-    </Compile>
-    <Compile Include="NativeMethods.cs">
-    </Compile>
-    <Compile Include="NondetContextHandle.cs">
-    </Compile>
-    <Compile Include="Arrays.cs">
-    </Compile>
-    <Compile Include="Coercion.cs">
-    </Compile>
-    <Compile Include="Tracker.cs">
-    </Compile>
-    <Compile Include="TypeSystem.cs">
-    </Compile>
-    <Compile Include="PInvokeDLL.cs">
-    </Compile>
-    <Compile Include="PrologBackedDictionary.cs">
-    </Compile>
-    <Compile Include="PrologClient.cs">
-    </Compile>
-    <Compile Include="Threads.cs">
-    </Compile>
-    <Compile Include="PrologCLR.cs">
-    </Compile>
-    <Compile Include="PrologCLRExt.cs">
-    </Compile>
-    <Compile Include="GenericDelegate.cs">
-    </Compile>
-    <Compile Include="SWI-cs-PlQuery.cs">
-    </Compile>
-    <Compile Include="SWI-cs.cs">
-    </Compile>
-    <Compile Include="WaitUntilEvent.cs">
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
     </Compile>
+    <Compile Include="SWICFFITests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <ProjectReference Include="..\Swicli.Library\Swicli.Library.csproj">
+      <Project>{44645676-D8D5-4A1F-9F8C-4105912CFE68}</Project>
+      <Name>Swicli.Library</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <PropertyGroup>
