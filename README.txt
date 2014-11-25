@@ -34,7 +34,33 @@ pl/library/
 }}}
 
 == Running / Examples ==
+{{{
 
+root@titan:~# swipl
+Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 7.1.26)
+Copyright (c) 1990-2014 University of Amsterdam, VU Amsterdam
+SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under certain conditions.
+Please visit http://www.swi-prolog.org for details.
+
+For help, use ?- help(Topic). or ?- apropos(Word).
+
+?- use_module(library(swicffi)).
+SetupProlog
+
+Cannot install hook ThreadExit to Mono
+Swicli.Library.Embedded.install suceeded
+true.
+
+?- cli_get_dll('libc.so.6',DLL),cli_call(DLL,printf,["I have been clicked %d times\n", 2],O).
+I have been clicked 2 times
+DLL = @'C#666',
+O = @void.
+
+?-
+
+
+}}}
 {{{
 [root@titan bin]# . mono_sysvars.sh
 [root@titan bin]# swipl

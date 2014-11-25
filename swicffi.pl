@@ -4,9 +4,8 @@
 % Douglas Miles
 */
 
-:-module(swicffi,[install_cffi/2,cffi_tests/0,to_forms/2,load_forms/1]).
-
-:- use_module(swicli). 
+:- module(swicffi,[install_cffi/2,cffi_tests/0,to_forms/2,load_forms/1]).
+:- reexport(swicli). 
 
 
 :- style_check(-singleton).
@@ -280,7 +279,7 @@ cffi_tests :- forall(cffi_test,true).
 % work!
 cffi_test :- cli_get_dll('libc.so.6',DLL),cli_call(DLL,printf,["I have been clicked %d times", 2],O).
 % fixing
-cffi_test :- cli_get_dll('libc',DLL),cli_call(DLL,printf,["I have been clicked %d times", 2],O).
+cffi_test :- cli_get_dll('libc.so',DLL),cli_call(DLL,printf,["I have been clicked %d times", 2],O).
 % not impl yet
 cffi_test :- install_cffi('snake-tail','cffi-tests/swi-prolog.cffi'),module(swicffi),prolog.
 
