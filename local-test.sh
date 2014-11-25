@@ -1,3 +1,5 @@
+killall -9 swipl
+fg
 #!/bin/bash
 . ./mono_sysvars.sh
 ./make-linux.sh

@@ -398,7 +398,16 @@ namespace Swicli.Library
             bool demo = false;
             SetupProlog();
             libpl.PL_initialise(args0.Length, args0);
+            Main12(args0);
             libpl.PL_toplevel();
+        }
+
+        public static void Main12(String[] args)
+        {
+            dynamic d = new PInvoke("libc");
+
+            for (int i = 0; i < 3; ++i)
+                d.printf("Hello, World %d\n", i);
         }
 
         //[MTAThread]

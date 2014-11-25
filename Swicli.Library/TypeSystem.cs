@@ -606,13 +606,42 @@ namespace Swicli.Library
             name2 = name.Replace("cli.", "");
             if (name2 != name)
             {
-                s1 = ResolveType1(name2);
-                if (s1 != null) return s1;
+				s1 = ResolveType1(name2);
+				if (s1 != null) return s1;
             }
             return null;
         }
 
         public static Class ResolveType1(string typeName)
+        {
+            try
+            {
+                Class s1 = ResolveType2(typeName);
+                if (s1 != null) return s1;
+                return null;
+            }
+            catch (NotSupportedException e)
+            {
+                return null;
+                throw new NotSupportedException("ResolveType12", e);
+            }
+            catch (NotImplementedException e)
+            {
+                return null;
+                throw new NotSupportedException("ResolveType12", e);
+            }
+            catch (NullReferenceException e)
+            {
+                return null;
+                throw new NotSupportedException("ResolveType12", e);
+            }
+            catch (Exception e)
+            {
+                throw new NotSupportedException("ResolveType123", e);
+            }
+        }
+
+        public static Class ResolveType2(string typeName)
         {
             Type type = null;
             if (!typeName.Contains("."))

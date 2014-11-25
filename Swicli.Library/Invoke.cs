@@ -545,6 +545,16 @@ namespace Swicli.Library
             var mi = findMethodInfo(memberSpec, paramz.Length, c, ref paramz, searchFlags);
             if (mi == null)
             {
+                if (getInstance is PInvoke)
+                {
+                    PInvoke pi = getInstance as PInvoke;
+                    string mspecName = GetMemberName(memberSpec);
+                    mi = pi.GetInvoke(mspecName, paramz, typeof(void));
+                }
+
+            }
+            if (mi == null)
+            {
                 var ei = findEventInfo(memberSpec, c, ref paramz, searchFlags);
                 if (ei != null) return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, ei, c);
                 if (paramsIn.IsAtom && paramsIn.Name == "[]") return cliGetRaw(clazzOrInstance, memberSpec, valueOut);
@@ -556,6 +566,33 @@ namespace Swicli.Library
             object target = mi.IsStatic ? null : getInstance;
             object retval = InvokeCaught(mi, target, value, postCallHook);
             return valueOut.FromObject(retval ?? VoidOrNull(mi));
+        }
+
+        
+        private static string GetMemberName(PlTerm memberSpec)
+        {
+            if (memberSpec.IsVar)
+            {
+                Error("GetMemberName IsVar {0} ", memberSpec);
+                return null;
+            }
+            if (memberSpec.IsInteger)
+            {
+                Error("GetMemberName IsInteger {0} ", memberSpec);
+                return null;
+            }
+            if (IsTaggedObject(memberSpec))
+            {
+                var r = tag_to_object(memberSpec[1].Name) as string;
+                if (r != null) return r;
+            }
+            if (memberSpec.IsCompound)
+            {
+                return memberSpec.Name;
+            }
+            string fn = memberSpec.Name;
+            if (fn == "[]") fn = "Get";
+            return fn;        
         }
 
         [PrologVisible]

@@ -13,11 +13,17 @@ swipl-ld -m32 -shared -o swicli-inst/pl/lib/i386-linux/swicli32.so swicli32.c `p
 
 cp swi*.pl swicli-inst/pl/library/
 rm -f Swicli.Library.dll
-rm -f Swicli.Library.exe
+rm -f PInvokeTest.exe
 dmcs -unsafe -warn:0 Swicli.Library/*.cs -out:PInvokeTest.exe
 dmcs -unsafe -warn:0 Swicli.Library/*.cs -out:Swicli.Library.dll
+dmcs -unsafe -lib:. -reference:Swicli.Library.dll -warn:0 SWICFFITests/*.cs -out:SWICFFITests.exe
 cp Swicli.Library.dll swicli-inst/pl/lib/x86_64-linux/
-mv  Swicli.Library.dll swicli-inst/pl/lib/i386-linux/
+cp Swicli.Library/app.config swicli-inst/pl/lib/x86_64-linux/swicli.dll.config
+cp Swicli.Library/app.config swicli-inst/pl/lib/x86_64-linux/Swicli.Library.dll.config
+cp Swicli.Library/app.config swicli-inst/pl/lib/i386-linux/swicli.dll.config
+cp Swicli.Library/app.config swicli-inst/pl/lib/i386-linux/Swicli.Library.dll.config
+mv Swicli.Library.dll swicli-inst/pl/lib/i386-linux/
+
 
 cp d*.html swicli-inst/
 cp RE*.* swicli-inst/

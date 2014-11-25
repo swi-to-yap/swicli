@@ -162,6 +162,7 @@ namespace Swicli.Library
                     }
                     break;
                 case PlType.PlTerm:
+                case PlType.PlListPair:
                     {
                         var a = o.Arity;
                         var c = new jpl.Compound(o.Name, a);

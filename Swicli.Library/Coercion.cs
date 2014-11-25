@@ -417,8 +417,12 @@ namespace Swicli.Library
             return null;
         }
 
-  
         public static Object CastTerm0(PlTerm o, Type pt)
+        {
+            return CastTerm1(o, pt);
+        }
+
+        public static Object CastTerm1(PlTerm o, Type pt)
         {
             if (pt == typeof(PlTerm)) return o;
             if (pt == typeof(string))
@@ -520,6 +524,7 @@ namespace Swicli.Library
                     }
                     break;
                 case PlType.PlTerm:
+                case PlType.PlListPair:
                     {
                         lock (ToFromConvertLock)
                         {
@@ -528,7 +533,7 @@ namespace Swicli.Library
                     }
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("plType=" + plType + " " + o.GetType() + " -> " + pt);
             }
         }
 

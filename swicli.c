@@ -88,7 +88,7 @@ extern "C" {
 				mono_config_parse ("swicli.dll.config");
 
 				/*  mono_jit_init() creates a domain: each assembly is loaded and run in a MonoDomain. */
-				domain = mono_jit_init (dnamestr);
+				domain = mono_jit_init_version  (dnamestr,"v4.0.0.0");
 				if(domain==0) ;
 				/* add our special internal call, so that C# code can call us back. */
 				//mono_add_internal_call ("MonoEmbed::gimme", gimme);

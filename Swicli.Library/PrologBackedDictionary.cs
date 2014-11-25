@@ -158,7 +158,7 @@ namespace Swicli.Library
 
         protected Exception NewNotImplementedException()
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("NewNotImplementedException");
         }
 
         public abstract string ToDebugString();

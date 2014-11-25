@@ -437,7 +437,10 @@ namespace SbsSW.SwiPlCs
         /// <summary>5 - PL_STRING: A Prolog string.</summary>
         PlString = 5,
         /// <summary>6 - PL_TERM: A compound term. Note that a list is a compound term ./2.</summary>
-        PlTerm = 6
+        PlTerm = 6,
+        PlNil = (7),		/* The constant [] */
+        PlBlob = (8),		/* non-atom blob */
+        PlListPair = (9),	/* [_|_] term */
     }
 
 
@@ -904,6 +907,7 @@ namespace SbsSW.SwiPlCs
         static public PlTerm PlCompound(string functor, params PlTerm[] arg1)
         {
             PlTermV args = new PlTermV(arg1);
+            if (functor == ".") functor = "[|]";
             return PlTerm.PlCompound(functor, args);
         }
 
@@ -1942,7 +1946,7 @@ namespace SbsSW.SwiPlCs
 
         internal PlTerm[] Args
         {
-            get { throw new NotImplementedException(); }
+            get { throw new NotImplementedException("PLTerm.Args"); }
            // set { throw new NotImplementedException(); }
         }
 

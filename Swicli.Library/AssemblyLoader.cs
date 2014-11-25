@@ -136,6 +136,10 @@ namespace Swicli.Library
                     {
                         dir = dir.Substring(6);
                     }
+                    if (dir.StartsWith("file://"))
+                    {
+                        dir = dir.Substring(7);
+                    }
                     if (dir == lastTested) continue;
                     lastTested = dir;
                     if (!sp.Contains(dir)) sp.Add(dir);

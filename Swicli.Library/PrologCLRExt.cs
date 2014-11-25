@@ -251,12 +251,12 @@ namespace Swicli.Library
 
         public bool JCALL0(Term term, PrologCLR engine)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("JCALL0");
             return JCALL0(term.Name, term.Args/*ctx*/);
         }
         public bool JCALL0(String functor, Term[] args/*CONTEXT*/)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("JCALL0/2");
 #if false
             Term t0, t1;
             Object o = null;

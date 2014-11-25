@@ -1,4 +1,5 @@
 using System;
+using Swicli.Library;
 namespace SWICFFITests
 {
     public static class SWICFFITestsProgram

@@ -152,7 +152,7 @@ namespace Swicli.Library
 
         private void AddOverrides(TypeBuilder builder, Type @class)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("AddOverrides");
         }
 
         private void BuildProperty(TypeBuilder typeBuilder, string name, Type type)

@@ -22,34 +22,54 @@ namespace Swicli.Library
 
             var arg_types = new Type[args.Length];
             var arg_exps = new Expression[args.Length];
-
+        
             for (int i = 0; i < args.Length; ++i)
             {
                 arg_types[i] = args[i].LimitType;
                 arg_exps[i] = args[i].Expression;
             }
 
-            var m = pinvoke.GetInvoke(binder.Name, arg_types);
+            var m = pinvoke.GetInvoke(binder.Name, arg_types, binder.ReturnType);
+            if (m == null)
+                return base.BindInvokeMember(binder, args);
+ 
             var target = Expression.Block(
                        Expression.Call(m, arg_exps),
                        Expression.Default(typeof(object)));
             var restrictions = BindingRestrictions.GetTypeRestriction(self, typeof(PInvoke));
 
-            return new DynamicMetaObject(target, restrictions);
+            var dynamicMetaObject = new DynamicMetaObject(target, restrictions);
+
+            return dynamicMetaObject;
         }
     }
 
     public partial class PrologCLR
     {
-        static public dynamic GetDll(String s)
+        [PrologVisible]
+        static public dynamic cliGetDll(String dll)
         {
-            return new PInvoke(s);
+            return new PInvoke(dll);
+        }
+
+        [PrologVisible]
+        public static void cliDynTest1()
+        {
+            dynamic d = new PInvoke("libc");
+
+            for (int i = 0; i < 2; ++i)
+                d.printf("Hello, World %d\n", i);
+        }
+        [PrologVisible]
+        public static void cliDynTest2()
+        {
+            Debug(typeof(System.Dynamic.DynamicObject).ToString());
         }
     }
     public class PInvoke : DynamicObject
     {
         string dll;
-
+        static int clid_gen;
         AssemblyBuilder ab;
         ModuleBuilder moduleb;
         int id_gen;
@@ -64,13 +84,13 @@ namespace Swicli.Library
             return new PInvokeMetaObject(parameter, this);
         }
 
-        public MethodInfo GetInvoke(string entry_point, Type[] arg_types)
+        public MethodInfo GetInvoke(string entry_point, Type[] arg_types, Type returnType)
         {
             if (ab == null)
             {
-                AssemblyName aname = new AssemblyName("ctype");
+                AssemblyName aname = new AssemblyName("ctype" + Interlocked.Increment(ref clid_gen));
                 ab = AppDomain.CurrentDomain.DefineDynamicAssembly(aname, AssemblyBuilderAccess.Run);
-                moduleb = ab.DefineDynamicModule("ctype");
+                moduleb = ab.DefineDynamicModule("ctype" + Interlocked.Increment(ref clid_gen));
             }
 
             // Can't use DynamicMethod as they don't support custom attributes
@@ -78,25 +98,13 @@ namespace Swicli.Library
 
             tb.DefinePInvokeMethod("Invoke", dll, entry_point,
                        MethodAttributes.Static | MethodAttributes.PinvokeImpl,
-                       CallingConventions.Standard, typeof
-                       (void), arg_types,
+                       CallingConventions.Standard, returnType, arg_types,
                        CallingConvention.StdCall, CharSet.Auto);
 
             var t = tb.CreateType();
             var m = t.GetMethod("Invoke", BindingFlags.Static | BindingFlags.NonPublic);
 
             return m;
-        }
-    }
-
-    public class TestsPInvokeMetaObject
-    {
-        public static void MainMO(String[] args)
-        {
-            dynamic d = new PInvoke("libc");
-
-            for (int i = 0; i < 100; ++i)
-                d.printf("Hello, World %d\n", i);
         }
     }
 

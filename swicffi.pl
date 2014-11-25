@@ -272,6 +272,12 @@ reader_tests:- test_run("
 reader_tests:- test_run("(defcfun (:PL_query pl-query) :long (arg-1 :int))").
 reader_tests:- test_run("(defcfun (\"PL_query\" pl-query) :long (arg-1 :int))").
 
-cffi_tests :- install_cffi('snake-tail','cffi-tests/swi-prolog.cffi'),module(swicffi),prolog.
+:- set_prolog_flag(double_quotes, string). 
+
+% cffi_tests :- forall(reader_tests,true).
+cffi_tests :- forall(cffi_test,true).
+
+cffi_test :- cli_get_dll('libc',DLL),cli_call(DLL,printf,["I have been clicked %d times", 2],O).
+cffi_test :- install_cffi('snake-tail','cffi-tests/swi-prolog.cffi'),module(swicffi),prolog.
 
 

@@ -655,7 +655,7 @@ namespace Swicli.Library
                     }
                 }
             }
-            throw new NotImplementedException();
+            throw new NotImplementedException("KillPrologThreads");
         }
     }
 }
