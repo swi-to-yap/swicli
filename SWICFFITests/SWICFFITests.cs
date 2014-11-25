@@ -11,10 +11,10 @@ namespace SWICFFITests
 
         public static void Main(String[] args)
         {
-            dynamic d = new PInvoke("libc");
-
-            for (int i = 0; i < 100; ++i)
-                d.printf("Hello, World %d\n", i);
+            dynamic d = new PInvoke("glibc");
+            PrologCLR.cliDynTest_1();
+            PrologCLR.cliDynTest_3();
+            PrologCLR.cliDynTest_2();
         }
         public static void install()
         {

@@ -53,17 +53,31 @@ namespace Swicli.Library
         }
 
         [PrologVisible]
-        public static void cliDynTest1()
+        public static void cliDynTest_1()
+        {
+            Debug(typeof(System.Dynamic.DynamicObject).ToString());
+        }
+
+        [PrologVisible]
+        public static void cliDynTest_2()
         {
             dynamic d = new PInvoke("libc");
 
             for (int i = 0; i < 2; ++i)
+            {
                 d.printf("Hello, World %d\n", i);
+            }
         }
+
         [PrologVisible]
-        public static void cliDynTest2()
+        public static void cliDynTest_3()
         {
-            Debug(typeof(System.Dynamic.DynamicObject).ToString());
+            dynamic d = new PInvoke("libc");
+
+            for (int i = 0; i < 2; ++i)
+            {
+                int reallyIntReturn = d.printf("Hello, World %d\n", i);
+            }
         }
     }
     public class PInvoke : DynamicObject
