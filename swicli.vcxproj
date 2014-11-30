@@ -36,9 +36,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
-    <ReferencePath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\..\..\bin;$(SWI_HOME_DIR)\bin;$(SWI_HOME_DIR)\lib;$(ReferencePath)</ReferencePath>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SWI_HOME_DIR)\bin\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SWI_HOME_DIR)\lib\</IntDir>
+    <ReferencePath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\..\..\bin;swicli-inst\bin;swicli-inst\lib;$(ReferencePath)</ReferencePath>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">swicli-inst\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">swicli-inst\lib\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkIncremental>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
@@ -69,7 +69,7 @@
     <Link>
       <AdditionalDependencies>$(SWI_HOME_DIR)\lib\libswipl.dll.a;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerbose</ShowProgress>
-      <OutputFile>$(SWI_HOME_DIR)\bin\swicli.dll</OutputFile>
+      <OutputFile>swicli-inst\bin\swicli.dll</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AssemblyDebug>true</AssemblyDebug>
       <SubSystem>Windows</SubSystem>
