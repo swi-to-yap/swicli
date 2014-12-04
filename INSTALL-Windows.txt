@@ -1,7 +1,7 @@
 
-Copy pl\bin  to your  c:\program files[x86]\swipl\bin  Folder
-Copy pl\library  to your  c:\program files[x86]\swipl\library  Folder
+Copy   to your  c:\program files[x86]\swipl\bin  Folder
+Copy prolog\ to your  c:\program files[x86]\swipl\library  Folder
 
-Install .NET 4.0 
+Install .NET 3.5 or above
 
 And thats it!

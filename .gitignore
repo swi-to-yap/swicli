@@ -1,7 +1,13 @@
-*/obj
+**/obj/
+**/bin/
+**/vc90*
 *~
+*.dep
 *.vshost.*
 *.user
 *.ncb
-
+*.ilk
+*.obj
+*.exp
+**/BuildLog.htm
 
