@@ -1,33 +1,48 @@
 #!/bin/bash
 
-# export SWI_HOME_DIR=/usr/lib64/swipl-6.0.2
-
+export SWI_HOME_DIR=/usr/lib64/swipl-6.0.2
+export SWI_HOME_DIR=/usr/lib/swi-prolog
 if [ -z "$SWI_HOME_DIR" ]; then echo "set your SWI_HOME_DIR"; exit 1; fi
+if [ -z "$PACKSODIR" ]; then export PACKSODIR="${SWI_HOME_DIR}/lib/amd64"; fi
+if [ -z "$SCBUILDIR" ]; then export SCBUILDIR="./lib/amd64"; fi
+if [ -z "$DMCS_OPTS" ]; then DMCS_OPTS=" -lib:${SCBUILDIR} -unsafe -warn:0 -reference:System.Drawing.dll "; fi
 
-if [ -d "swicli-inst" ]; then 
-cd "swicli-inst"
+
+# remove previous system install
+rm -f ${PACKSODIR}/Swicli.*  ${PACKSODIR}/swicli*.so
+rm -f ${SWI_HOME_DIR}/library/swicli.pl
+rm -f ${SWI_HOME_DIR}/library/swicffi.pl
+
+
+# install this directly
+cp prolog/swi*.pl ${SWI_HOME_DIR}/library/
+mkdir -p ${SCBUILDIR}/
+cp -a ${SCBUILDIR}/?* ${PACKSODIR}/
+
+export UNKNOWN_SWI="Dont know the platform of SWI-Prolog"
+cp prolog/* $SWI_HOME_DIR/library/
+
+if [ -d "$PACKSODIR" ]; then
+cp lib/x86_64-linux/* $PACKSODIR
+echo "installed 64bit version into $PACKSODIR"
+export UNKNOWN_SWI=""
 fi
 
-cp pl/library/* $SWI_HOME_DIR/library/
-
-if [ -d "$SWI_HOME_DIR/lib/amd64/" ]; then
-cp pl/lib/x86_64-linux/* $SWI_HOME_DIR/lib/amd64/
-echo "installed 64bit version"
-exit 0
-fi
-
-if [ -d "$SWI_HOME_DIR/lib/x86_64-linux/" ]; then
-cp pl/lib/x86_64-linux/* $SWI_HOME_DIR/lib/x86_64-linux/ 
-echo "installed 64bit version"
-exit 0
-fi
 
 if [ -d "$SWI_HOME_DIR/lib/i386-linux/" ]; then 
-cp pl/lib/i386-linux/* $SWI_HOME_DIR/lib/i386-linux/
+cp lib/i386-linux/* $SWI_HOME_DIR/lib/i386-linux/
 echo "installed 32bit version"
-exit 0 
+export UNKNOWN_SWI=""
 fi
 
-echo "Dont know the platform of SWI-Prolog"
-exit 1
 
+if [ -d "$SWI_HOME_DIR/lib/x86_64-linux/" ]; then
+cp lib/x86_64-linux/* $SWI_HOME_DIR/lib/x86_64-linux/ 
+echo "installed 64bit version"
+export UNKNOWN_SWI=""
+fi
+
+if [ -n "$UNKNOWN_SWI" ]; then
+echo $UNKNOWN_SWI
+exit 1
+fi

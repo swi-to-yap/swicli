@@ -1,0 +1,7 @@
+
+Copy pl\bin  to your  c:\program files[x86]\swipl\bin  Folder
+Copy pl\library  to your  c:\program files[x86]\swipl\library  Folder
+
+Install .NET 4.0 
+
+And thats it!

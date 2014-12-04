@@ -10,17 +10,27 @@
 
 == Introduction ==
 
-  * Provides SWI-Prolog full control of the Common Language Infrastructure.
+  * Provides SWI-Prolog full control of the Common Language Infrastructure (.NET/Mono).
+  * Provides SWI-Prolog full control of the C/C++/Objective-C control of unmanaged Libraries
   * SwiCLI is a module that works on Linux, OS/X and MS Windows.
   * cli_ preds loosely based on jpl_ interface of JPL
-  * _Pasted much code from SwiPlCS by Uwe Lesta_
+  * Reused/_Pasted much code from SwiPlCS by Uwe Lesta_
+  * See library/swicli.pl for predicate list/documentaton
   * See library/swicli.pl for predicate list/documentaton
 
 == Installation ==
 
-=== MS windows _requires .NET 2.0 or above_ ===
+=== MS windows _requires .NET 4.0 or above_ ===
 Copy these two directories onto your Prolog Install Dir.
 {{{
+
+Copy pl\bin  to your  c:\program files[x86]\swipl\bin  Folder
+Copy pl\library  to your  c:\program files[x86]\swipl\library  Folder
+
+Install .NET 4.0 
+
+And thats it!
+
 pl//bin/   
 pl/library/
 }}}

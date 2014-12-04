@@ -1,0 +1,279 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SWICFFITests</name>
+    </assembly>
+    <members>
+        <member name="M:SWICFFITests.SWICFFITestsWindows.ShowWindow(System.IntPtr,SWICFFITests.WindowShowStyle)">
+            <summary>Enumeration of the different ways of showing a window using
+            ShowWindow</summary>
+        </member>
+        <member name="F:SWICFFITests.SWICFFITestsWindows.BITMAPINFO.bmiHeader">
+            <summary>
+            A BITMAPINFOHEADER structure that contains information about the dimensions of color format.
+            </summary>
+        </member>
+        <member name="F:SWICFFITests.SWICFFITestsWindows.BITMAPINFO.bmiColors">
+            <summary>
+            An array of RGBQUAD. The elements of the array that make up the color table.
+            </summary>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.Hide">
+            <summary>Hides the window and activates another window.</summary>
+            <remarks>See SW_HIDE</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ShowNormal">
+            <summary>Activates and displays a window. If the window is minimized
+            or maximized, the system restores it to its original size and
+            position. An application should specify this flag when displaying
+            the window for the first time.</summary>
+            <remarks>See SW_SHOWNORMAL</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ShowMinimized">
+            <summary>Activates the window and displays it as a minimized window.</summary>
+            <remarks>See SW_SHOWMINIMIZED</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ShowMaximized">
+            <summary>Activates the window and displays it as a maximized window.</summary>
+            <remarks>See SW_SHOWMAXIMIZED</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.Maximize">
+            <summary>Maximizes the specified window.</summary>
+            <remarks>See SW_MAXIMIZE</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ShowNormalNoActivate">
+            <summary>Displays a window in its most recent size and position.
+            This value is similar to "ShowNormal", except the window is not
+            actived.</summary>
+            <remarks>See SW_SHOWNOACTIVATE</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.Show">
+            <summary>Activates the window and displays it in its current size
+            and position.</summary>
+            <remarks>See SW_SHOW</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.Minimize">
+            <summary>Minimizes the specified window and activates the next
+            top-level window in the Z order.</summary>
+            <remarks>See SW_MINIMIZE</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ShowMinNoActivate">
+            <summary>Displays the window as a minimized window. This value is
+            similar to "ShowMinimized", except the window is not activated.</summary>
+            <remarks>See SW_SHOWMINNOACTIVE</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ShowNoActivate">
+            <summary>Displays the window in its current size and position. This
+            value is similar to "Show", except the window is not activated.</summary>
+            <remarks>See SW_SHOWNA</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.Restore">
+            <summary>Activates and displays the window. If the window is
+            minimized or maximized, the system restores it to its original size
+            and position. An application should specify this flag when restoring
+            a minimized window.</summary>
+            <remarks>See SW_RESTORE</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ShowDefault">
+            <summary>Sets the show state based on the SW_ value specified in the
+            STARTUPINFO structure passed to the CreateProcess function by the
+            program that started the application.</summary>
+            <remarks>See SW_SHOWDEFAULT</remarks>
+        </member>
+        <member name="F:SWICFFITests.WindowShowStyle.ForceMinimized">
+            <summary>Windows 2000/XP: Minimizes a window, even if the thread
+            that owns the window is hung. This flag should only be used when
+            minimizing windows from a different thread.</summary>
+            <remarks>See SW_FORCEMINIMIZE</remarks>
+        </member>
+        <member name="T:SWICFFITests.AVISTREAMINFO">
+            <summary>
+            Structure, which contains information for a single stream .
+            </summary>
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.type">
+             <summary>
+             Four-character code indicating the stream type.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.handler">
+             <summary>
+             Four-character code of the compressor handler that will compress this video stream when it is saved.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.flags">
+             <summary>
+             Applicable flags for the stream.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.Capabilities">
+             <summary>
+             Capability flags; currently unused.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.priority">
+             <summary>
+             Priority of the stream.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.language">
+             <summary>
+             Language of the stream.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.scale">
+             <summary>
+             Time scale applicable for the stream.
+             </summary>
+            
+             <remarks>Dividing <b>rate</b> by <b>scale</b> gives the playback rate in number of samples per second.</remarks>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.rate">
+             <summary>
+             Rate in an integer format.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.start">
+             <summary>
+             Sample number of the first frame of the AVI file.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.length">
+             <summary>
+             Length of this stream.
+             </summary>
+            
+             <remarks>The units are defined by <b>rate</b> and <b>scale</b>.</remarks>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.initialFrames">
+             <summary>
+             Audio skew. This member specifies how much to skew the audio data ahead of the video frames in interleaved files.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.suggestedBufferSize">
+             <summary>
+             Recommended buffer size, in bytes, for the stream.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.quality">
+             <summary>
+             Quality indicator of the video data in the stream.
+             </summary>
+            
+             <remarks>Quality is represented as a number between 0 and 10,000.</remarks>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.sampleSize">
+             <summary>
+             Size, in bytes, of a single data sample.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.rectFrame">
+             <summary>
+             Dimensions of the video destination rectangle.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.editCount">
+             <summary>
+             Number of times the stream has been edited.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.formatChangeCount">
+             <summary>
+             Number of times the stream format has changed.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVISTREAMINFO.name">
+             <summary>
+             Description of the stream.
+             </summary>
+            
+        </member>
+        <member name="T:SWICFFITests.AVICOMPRESSOPTIONS">
+            <summary>
+            Structure, which contains information about a stream and how it is compressed and saved.
+            </summary>
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.type">
+             <summary>
+             Four-character code indicating the stream type.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.handler">
+             <summary>
+             Four-character code for the compressor handler that will compress this video stream when it is saved.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.keyFrameEvery">
+             <summary>
+             Maximum period between video key frames.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.quality">
+             <summary>
+             Quality value passed to a video compressor.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.bytesPerSecond">
+             <summary>
+             Video compressor data rate.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.flags">
+             <summary>
+             Flags used for compression.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.format">
+             <summary>
+             Pointer to a structure defining the data format.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.formatSize">
+             <summary>
+             Size, in bytes, of the data referenced by <b>format</b>.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.parameters">
+             <summary>
+             Video-compressor-specific data; used internally.
+             </summary>
+            
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.parametersSize">
+            <summary>
+            Size, in bytes, of the data referenced by <b>parameters</b>.
+            </summary>
+        </member>
+        <member name="F:SWICFFITests.AVICOMPRESSOPTIONS.interleaveEvery">
+             <summary>
+             Interleave factor for interspersing stream data with data from the first stream.
+             </summary>
+            
+        </member>
+    </members>
+</doc>
