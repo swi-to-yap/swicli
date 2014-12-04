@@ -466,7 +466,7 @@ namespace Swicli.Library
             }
         }
 
-        private static bool DoQuery(string query)
+        public static bool DoQuery(string query)
         {
             if (JplDisabled) return PlCall(query);
 #if USE_IKVM
@@ -587,7 +587,7 @@ namespace Swicli.Library
         }
 
 
-        private static string ToCSString(PlTermV termV)
+        public static string ToCSString(PlTermV termV)
         {
             int s = termV.Size;
 
@@ -601,7 +601,7 @@ namespace Swicli.Library
             return "";
         }
 
-        private static void PlAssert(string s)
+        public static void PlAssert(string s)
         {
             if (PlCsDisabled)
             {

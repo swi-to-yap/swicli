@@ -1,6 +1,7 @@
 **/obj/
 **/bin/
 **/vc90*
+*.suo
 *~
 *.dep
 *.vshost.*
@@ -14,4 +15,13 @@ lib/amd64/swicli.dll
 lib/amd64/swicli.pdb
 lib/amd64/swicli32.dll
 lib/amd64/swicli32.pdb
-
+lib/i386-linux/swicli.dll
+lib/i386-linux/swicli.pdb
+lib/i386-linux/swicli32.dll
+lib/i386-linux/swicli32.pdb
+lib/x86_64-linux/swicli.dll
+lib/x86_64-linux/swicli.pdb
+lib/x86_64-linux/swicli32.dll
+lib/x86_64-linux/swicli32.pdb
+lib/**
+*.dll
