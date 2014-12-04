@@ -11,6 +11,9 @@
 *.obj
 *.exp
 **/BuildLog.htm
+c/SWICLI.sln.cache
+lib/i386-win32/Swicli.Library.pdb
+null
 lib/amd64/swicli.dll
 lib/amd64/swicli.pdb
 lib/amd64/swicli32.dll
@@ -23,5 +26,3 @@ lib/x86_64-linux/swicli.dll
 lib/x86_64-linux/swicli.pdb
 lib/x86_64-linux/swicli32.dll
 lib/x86_64-linux/swicli32.pdb
-lib/**
-*.dll

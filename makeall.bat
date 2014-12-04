@@ -11,9 +11,10 @@ PATH=%FrameworkDir%64\v3.5;%FrameworkDir%\v3.5;%FrameworkDir%64\v4.0;~f%Framewor
 
 @echo PATH=%PATH%
 
-VCBuild > null
+VCBuild > VCBuildNull
 IF '%errorlevel%' == '1' GOTO GOTIT
 
+del VCBuildNull
 echo =======================================
 echo Make sure MSBuild.exe is in your PATH 
 echo run VCVARS.BAT from VisualStudio 2008 or above
@@ -25,6 +26,7 @@ GOTO DONE
 
 
 :GOTIT
+del VCBuildNull
 
 IF NOT EXIST "%SWI_HOME_DIR%" (
 echo =======================================
@@ -33,9 +35,13 @@ echo =======================================
 GOTO DONE
 )
 
-set SWICLIPROJ=SWICLI32.sln
+set SWICLIPROJ=c\SWICLI.sln
 echo %SWI_HOME_DIR% | FINDSTR.EXE "86"
-if %errorlevel%==1 set SWICLIPROJ=SWICLI.sln
+if %errorlevel%==1 set SWICLIPROJ=c\SWICLI.sln
+
+del /s /q lib\x64-win64\
+del /s /q lib\i386-win64\
+del /s /q lib\amd64\
 msbuild %SWICLIPROJ%
 
 :DONE
