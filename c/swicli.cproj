@@ -20,14 +20,14 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug</OutputPath>
+    <OutputPath>..\..\lib\amd64</OutputPath>
     <DefineSymbols>DEBUG MONODEVELOP</DefineSymbols>
     <SourceDirectory>.</SourceDirectory>
     <OutputName>swicli</OutputName>
     <CompileTarget>SharedLibrary</CompileTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutputPath>bin\Release</OutputPath>
+    <OutputPath>..\..\lib\amd64</OutputPath>
     <DefineSymbols>MONODEVELOP</DefineSymbols>
     <SourceDirectory>.</SourceDirectory>
     <OptimizationLevel>3</OptimizationLevel>
@@ -35,6 +35,6 @@
     <CompileTarget>SharedLibrary</CompileTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="swicli.c" />
+    <Compile Include="swicli/swicli.c" />
   </ItemGroup>
 </Project>

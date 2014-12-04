@@ -10,4 +10,8 @@
 *.obj
 *.exp
 **/BuildLog.htm
+lib/amd64/swicli.dll
+lib/amd64/swicli.pdb
+lib/amd64/swicli32.dll
+lib/amd64/swicli32.pdb
 

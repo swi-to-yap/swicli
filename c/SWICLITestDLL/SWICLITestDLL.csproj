@@ -141,6 +141,10 @@
       <Project>{44645676-D8D5-4A1F-9F8C-4105912CFE68}</Project>
       <Name>Swicli.Library</Name>
     </ProjectReference>
+    <ProjectReference Include="..\swicli32.vcproj">
+      <Project>{F957BFA7-8955-450D-89BC-5F2AAA5A4684}</Project>
+      <Name>swicli32</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <PropertyGroup>

@@ -138,6 +138,18 @@
       <Project>{44645676-D8D5-4A1F-9F8C-4105912CFE68}</Project>
       <Name>Swicli.Library</Name>
     </ProjectReference>
+    <ProjectReference Include="..\swicli.vcproj">
+      <Project>{03BC6175-CC46-44EB-B731-A15AD348832F}</Project>
+      <Name>swicli</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\swicli32.vcproj">
+      <Project>{F957BFA7-8955-450D-89BC-5F2AAA5A4684}</Project>
+      <Name>swicli32</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SWICLITestDLL\SWICLITestDLL.csproj">
+      <Project>{E8ED0021-C042-40EB-AFA6-19E1577820A1}</Project>
+      <Name>SWICLITestDLL</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
