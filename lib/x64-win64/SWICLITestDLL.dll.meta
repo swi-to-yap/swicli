@@ -1,0 +1,39 @@
+Assembly SWICLITestDLL, Version=1.0.*, Culture=Invariant Language (Invariant Country): 
+	hash=SHA1, flags=PublicKey
+Assembly mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=SHA1, flags=None
+Assembly Swicli.Library, Version=1.0.*, Culture=Invariant Language (Invariant Country): 
+	hash=SHA1, flags=None
+Class SWICLITestDLL.SWICLITestClass: AutoLayout, AnsiClass, Class, Public, Abstract, Sealed
+  Methods:
+    install(): PrivateScope, Public, Static, HideBySig
+    Main(String[]): PrivateScope, Public, Static, HideBySig
+Class SWICLITestDLL.OpImplTest: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+Struct SWICLITestDLL.NonDetTest: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+  Fields:
+    Int32 start : Public
+    Int32 stop : Public
+    UInt32 fid : Public
+Class SWICLITestDLL.NonDetExample: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Fields:
+    Swicli.Library.AbstractNondetMethod Fn015 : Public, Static
+  Properties:
+    System.String Item [Int32] 'get set' : 
+  Methods:
+    get_Item(Int32): PrivateScope, Public, HideBySig, SpecialName
+    set_Item(Int32, String): PrivateScope, Public, HideBySig, SpecialName
+    LoadNonDetExamples(): PrivateScope, Public, Static, HideBySig
+    Foo(PlTerm, PlTerm, IntPtr): PrivateScope, Public, Static, HideBySig
+    FooTwo(PlTerm, PlTerm, IntPtr): PrivateScope, Public, Static, HideBySig
+    FooThree(PlTerm, Int32, IntPtr): PrivateScope, Public, Static, HideBySig
+Class SWICLITestDLL.ForNext: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+  :Swicli.Library.AbstractNondetMethod
+    Void .ctor(Int32, Int32): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Methods:
+    Clone(): PrivateScope, Public, Virtual, HideBySig
+    Setup(PlTermV): PrivateScope, Public, Virtual, HideBySig
+    Call(PlTermV): PrivateScope, Public, Virtual, HideBySig
+    Close(PlTermV): PrivateScope, Public, Virtual, HideBySig
+    HasMore(): PrivateScope, Public, Virtual, HideBySig
