@@ -48,6 +48,13 @@ And you are good to go.
 
 
 %=========================================
+% so we dont have to export MONO_PATH=/usr/lib/swi-prolog/lib/amd64
+%=========================================
+
+update_mono_path_swicli_library_dll:- ((getenv('MONO_PATH',Y),atom_length(Y,L),L>1) ->  true; (findall(D,file_alias_path(foreign,D),L),concat_atom(L,':',ForiegnDir),setenv('MONO_PATH',ForiegnDir))).
+:- update_mono_path_swicli_library_dll.
+
+%=========================================
 % Load C++ DLL
 %=========================================
 :-dynamic(swicli_assembly_loaded/0).
@@ -63,6 +70,7 @@ swicli_foriegn_name(X):-swicli_o_name(X).
 swicli_assembly_ensure_loaded:- swicli_assembly_loaded,!.
 swicli_assembly_ensure_loaded:- swicli_foriegn_name(SWICLI),strip_module(SWICLI,_,DLL),catch(load_foreign_library(DLL),E,(writeq(E),fail)),assert(swicli_assembly_loaded),!.
 swicli_assembly_ensure_loaded:- swicli_foriegn_name(Y),throw(missing_dll(Y)).
+
 :-swicli_assembly_ensure_loaded.
 
 
@@ -137,7 +145,6 @@ cli_lib_type('Swicli.Library.PrologCLR').
 %  _Windows_: adding to %PATH%
 %  _Linux_:  adding to $MONO_PATH
 %
-
 
 %=========================================
 % Term/Reference Inspection

@@ -289,3 +289,54 @@ cffi_test:- cli_memb(int,M),cli_compile_member(M,_Out),fail.
 cffi_test :- install_cffi('snake-tail','cffi-tests/swi-prolog.cffi'),module(swicffi),prolog.
 
 
+end_of_file.
+
+root@titan:/mnt/i7d/swicli# swipl
+Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 7.1.26)
+Copyright (c) 1990-2014 University of Amsterdam, VU Amsterdam
+SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under certain conditions.
+Please visit http://www.swi-prolog.org for details.
+
+For help, use ?- help(Topic). or ?- apropos(Word).
+
+?- use_module(library(swicffi)).
+ERROR: No assembly found named Swicli.Library
+Warning: /usr/lib/swi-prolog/library/swicli.pl:86:
+        Goal (directive) failed: swicli:cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded',install)
+ERROR: /usr/lib/swi-prolog/library/swicli.pl:106:
+        catch/3: Undefined procedure: swicli:cli_load_assembly/1
+Warning: /usr/lib/swi-prolog/library/swicli.pl:106:
+        Goal (directive) failed: swicli:cli_load_assembly('Swicli.Library')
+ERROR: /usr/lib/swi-prolog/library/swicffi.pl:8:
+        Exported procedure swicli:cli_new_delegate/3 is not defined
+ERROR: /usr/lib/swi-prolog/library/swicffi.pl:8:
+        Exported procedure swicli:cli_add_event_handler/3 is not defined
+ERROR: /usr/lib/swi-prolog/library/swicffi.pl:8:
+        Exported procedure swicli:cli_new_delegate_term/4 is not defined
+true.
+
+?-
+% halt
+root@titan:/mnt/i7d/swicli# . ./
+c/                   doc/                 .gitignore           install-linux.sh     lib/                 makeall.bat          make-linux.sh        pack.pl              README.txt
+cffi-tests/          .git/                .ignore-on-commit    INSTALL-Windows.txt  local-test.sh        Makefile             mono_sysvars.sh      prolog/              TempAssembly.dll
+root@titan:/mnt/i7d/swicli# . ./mono_sysvars.sh
+root@titan:/mnt/i7d/swicli# swipl
+Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 7.1.26)
+Copyright (c) 1990-2014 University of Amsterdam, VU Amsterdam
+SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under certain conditions.
+Please visit http://www.swi-prolog.org for details.
+
+For help, use ?- help(Topic). or ?- apropos(Word).
+
+?- use_module(library(swicffi)).
+SetupProlog
+
+Cannot install hook ThreadExit to Mono
+Swicli.Library.Embedded.install suceeded
+true.
+
+?- cli_memb(string,M),cli_compile_member(M,_Out),fail.
+

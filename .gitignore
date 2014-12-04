@@ -5,6 +5,7 @@
 *~
 *.dep
 *.vshost.*
+*TempAssembly*
 *.user
 *.ncb
 *.ilk
