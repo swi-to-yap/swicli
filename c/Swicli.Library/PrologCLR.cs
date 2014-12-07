@@ -131,7 +131,7 @@ namespace Swicli.Library
         public static void Debug(string text, params object[] ps)
         {
             text = PlStringFormat(text, ps);
-            System.Console.Error.WriteLine(text.ToString());
+            System.Console.Error.WriteLine(text);
         }
 
         [PrologVisible]

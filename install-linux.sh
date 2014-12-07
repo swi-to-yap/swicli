@@ -3,7 +3,6 @@
 export SWI_HOME_DIR=/usr/lib64/swipl-6.0.2
 export SWI_HOME_DIR=/usr/lib/swi-prolog
 if [ -z "$SWI_HOME_DIR" ]; then echo "set your SWI_HOME_DIR"; exit 1; fi
-if [ -z "$PACKSODIR" ]; then export PACKSODIR="${SWI_HOME_DIR}/lib/amd64"; fi
 if [ -z "$SCBINDIR" ]; then export SCBINDIR="./bin"; fi
 if [ -z "$DMCS_OPTS" ]; then DMCS_OPTS=" -lib:${SCBINDIR} -unsafe -warn:0 -reference:System.Drawing.dll "; fi
 

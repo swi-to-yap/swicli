@@ -105,6 +105,7 @@ extern "C" {
 			MonoImageOpenStatus status = MONO_IMAGE_OK;
 
 			MonoAssembly* assembly = mono_assembly_load_with_partial_name (anamestr, &status);
+			if (!assembly) assembly = mono_assembly_open (anamestr, &status);
 			if (!assembly) return PL_warning("No assembly found named %s", anamestr);
 
 			MonoImage* image = mono_assembly_get_image(assembly);

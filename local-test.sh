@@ -1,12 +1,12 @@
 #!/bin/bash
 cls
-#killall -9 swipl
-#fg
-#fg
+# killall -9 swipl
+# fg
+# fg
 
 . ./mono_sysvars.sh
 ./make-linux.sh
-./install-linux.sh
+% ./install-linux.sh
 
 echo PATH=$PATH
 echo MONO_PATH=$MONO_PATH

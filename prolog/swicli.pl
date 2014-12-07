@@ -50,7 +50,7 @@ cli_nodebug:- nodebug(swicli), set_prolog_flag(verbose_file_search,false), set_p
 
 memberchk_same(X, [Y|Ys]) :- (   X =@= Y ->  (var(X) -> X==Y ; true) ;   memberchk_same(X, Ys) ).
 :- meta_predicate no_repeats(0).
-no_repeats(Call):- term_variables(Call,Vs), CONS = [_], Call, (( \+ memberchk_same(Vs,CONS), copy_term(Vs,CVs), CONS=[_|T], nb_setarg(2, CONS, [CVs|T]))).
+no_repeats(Call):- term_variables(Call,Vs), CONS = [_],!, Call, (( \+ memberchk_same(Vs,CONS), copy_term(Vs,CVs), CONS=[_|T], nb_setarg(2, CONS, [CVs|T]))).
 
 debug_call(Call):- catch((Call,debug(swicli,'SUCCEED: ~q.~n',[Call])),E,(debug(swicli), debug(swicli,'ERROR: ~q.~n',[E=Call]))) *-> true; debug(swicli,'FAILED: ~q.~n',[Call]) .
 

@@ -26,7 +26,7 @@ dmcs ${DMCS_OPTS} c/Swicli.Library/?*.cs -out:${SCBINDIR}/PInvokeTest.exe
 dmcs ${DMCS_OPTS} c/Swicli.Library/?*.cs -out:${SCBINDIR}/Swicli.Library.dll
 dmcs ${DMCS_OPTS} c/SWICLITestDLL/?*.cs  -reference:${SCBINDIR}/Swicli.Library.dll -out:${SCBINDIR}/SWICLITestDLL.dll
 dmcs ${DMCS_OPTS} c/SWICFFITests/?*.cs -out:${SCBINDIR}/SWICFFITests.exe -reference:${SCBINDIR}/Swicli.Library.dll
-mcs c/Example4SWICLI/?*.cs -out:${SCBINDIR}/Example4SWICLI.dll
+mcs -lib:/usr/lib/mono/2.0 -pkg:dotnet c/Example4SWICLI/?*.cs -out:${SCBINDIR}/Example4SWICLI.dll
 
 
 

@@ -2478,6 +2478,7 @@ namespace SbsSW.SwiPlCs
         /// Dictionary to pin foriegn method delegates so that are not GC'd
         /// </summary>
         public static readonly Dictionary<string, Delegate> SavedRegisterForeign = new Dictionary<string, Delegate>();
+        public static readonly List<Delegate> MoreSavedDelegates = new List<Delegate>();
 
         public static bool SaveRegisterForeign(string module, string name, int arity, Delegate method)
         {
@@ -2491,6 +2492,18 @@ namespace SbsSW.SwiPlCs
                     SavedRegisterForeign[key] = method;
                     return true;
                 }
+            }
+            if (prev == method)
+            {
+                return true;
+            }
+            if (true)
+            {
+                MoreSavedDelegates.Add(method);
+                if (false)
+                    PrologCLR.Debug("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
+                                    " as " + method.GetType().Name);
+                return true;
             }
             PrologCLR.ConsoleWriteLine("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
                                     " as " + method.GetType().Name);
