@@ -18,7 +18,7 @@ vc100.pdb
 temp/
 **/BuildLog.htm
 c/SWICLI.sln.cache
-cffi-tests/PInvokeSignatureGeneratorSource/
+PInvokeSignatureGeneratorSource/
 null
 lib/amd64/swicli.dll
 lib/amd64/swicli.pdb
