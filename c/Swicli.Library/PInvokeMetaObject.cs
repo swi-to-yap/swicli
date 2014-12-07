@@ -151,7 +151,7 @@ namespace Swicli.Library
             {
                 if (assembName.ToLower().EndsWith(clip)) assembName = assembName.Substring(0, assembName.Length - clip.Length);
             }
-            _hLibrary = LoadUnmanagedLibrary(_dllName, true);
+            //_hLibrary = NativeMethods.LoadUnmanagedLibrary(_dllName, true);
             assembName = "dynlib_0" + Interlocked.Increment(ref clid_gen) + "_" + assembName;
             EnsureBuilders();
         }
@@ -168,44 +168,7 @@ namespace Swicli.Library
             }
         }
 
-        public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName)
-        {
-            return LoadUnmanagedLibrary(fileName, true);
-        }
-        public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName, bool throwOnInvalid)
-        {
-            SafeLibraryHandle localHLibrary;
-            if (PrologCLR.IsLinux)
-            {
-                localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
-                if (!localHLibrary.IsInvalid)
-                {
-                    return localHLibrary;
-                }
-                PrologCLR.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
-            }
-            localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
-            if (localHLibrary.IsInvalid)
-            {
-                int hr = Marshal.GetHRForLastWin32Error();
-                if (throwOnInvalid) Marshal.ThrowExceptionForHR(hr);
-            }
-            return localHLibrary;
-        }
-
-        public void UnLoadUnmanagedLibrary()
-        {
-#if USESAFELIB
-            if (_hLibrary != null && !_hLibrary.IsClosed)
-            {
-                _hLibrary.Close();
-                _hLibrary.UnLoad();
-                _hLibrary.Dispose();
-                _hLibrary = null;
-            }
-#endif
-        }
-
+ 
 
         private void EnsureBuilders()
         {
@@ -223,8 +186,8 @@ namespace Swicli.Library
             if (_pInvokeDll != null)
                 return _pInvokeDll.CreateDelegate(funcName, delegateType);
             IntPtr _hDLL = _hLibrary.DangerousGetHandle();
-            IntPtr funcPtr = ExactSpellingGetProcAddress.GetProcAddress(_hDLL, funcName);
-            if (funcPtr.Equals(IntPtr.Zero)) funcPtr = InExactSpellingGetProcAddress.GetProcAddress(_hDLL, funcName);
+            IntPtr funcPtr = NativeMethodsWindows.GetProcAddress(_hLibrary, funcName);
+            if (funcPtr.Equals(IntPtr.Zero)) funcPtr = NativeMethodsLinux.GetProcAddress(_hLibrary, funcName);
             if (funcPtr.Equals(IntPtr.Zero)) return null;
             return Marshal.GetDelegateForFunctionPointer(funcPtr, delegateType);
         }
@@ -290,18 +253,6 @@ namespace Swicli.Library
             return m;
         }
 
-        private static class ExactSpellingGetProcAddress
-        {
-            [DllImport("kernel32", EntryPoint = "GetProcAddress", CharSet = CharSet.Ansi, ExactSpelling = true,
-                SetLastError = true)]
-            public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-        }
-        private static class InExactSpellingGetProcAddress
-        {
-            [DllImport("kernel32", EntryPoint = "GetProcAddress", CharSet = CharSet.Ansi, ExactSpelling = false,
-                SetLastError = true)]
-            public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-        }
 
         #endregion
 
@@ -503,6 +454,19 @@ namespace Swicli.Library
 
         }
 #endif
+
+        public void UnLoadUnmanagedLibrary()
+        {
+#if USESAFELIB
+            if (_hLibrary != null && !_hLibrary.IsClosed)
+            {
+                _hLibrary.Close();
+                _hLibrary.UnLoad();
+                _hLibrary.Dispose();
+                _hLibrary = null;
+            }
+#endif
+        }
     }
     // #if NET40
     /*

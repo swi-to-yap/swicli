@@ -79,9 +79,51 @@ namespace SbsSW.SwiPlCs
 
 	}
 
+    static class NativeMethods
+    {
+        public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName)
+        {
+            return LoadUnmanagedLibrary(fileName, true);
+        }
+
+        public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName, bool throwOnInvalid)
+        {
+            SafeLibraryHandle localHLibrary;
+            if (PrologCLR.IsLinux)
+            {
+
+                localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
+                if (!localHLibrary.IsInvalid)
+                {
+                    return localHLibrary;
+                }
+                PrologCLR.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
+            }
+            localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
+            if (localHLibrary.IsInvalid)
+            {
+                int hr = Marshal.GetHRForLastWin32Error();
+                if (throwOnInvalid) Marshal.ThrowExceptionForHR(hr);
+            }
+            return localHLibrary;
+        }
+
+        static public void UnLoadUnmanagedLibrary(SafeHandleZeroOrMinusOneIsInvalid _hLibrary)
+        {
+#if USESAFELIB && false
+            if (_hLibrary != null && !_hLibrary.IsClosed)
+            {
+                _hLibrary.Close();
+                _hLibrary.UnLoad();
+                _hLibrary.Dispose();
+                _hLibrary = null;
+            }
+#endif
+        }
+    }
 	static class NativeMethodsWindows
 	{
-		const string SKernel = "kernel32";
+		const string SKernel = "kernel32.dll";
 		[DllImport(SKernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
 		public static extern SafeLibraryHandle LoadLibrary(string fileName);
 
@@ -94,13 +136,14 @@ namespace SbsSW.SwiPlCs
         [DllImport(SKernel, CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true)]
         internal static extern IntPtr GetProcAddress(SafeLibraryHandle hModule, String procname);
 	}
+
     static class NativeMethodsLinux
     {
         public static SafeLibraryHandle LoadLibrary(string fileName)
         {
             return dlopen(fileName);
         }
-        const string SKernel = "kernel32";
+        const string SKernel = "libdl.so";
         [DllImport(SKernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
         public static extern SafeLibraryHandle dlopen(string fileName);
 
@@ -110,8 +153,9 @@ namespace SbsSW.SwiPlCs
         public static extern bool FreeLibrary(IntPtr hModule);
 
         // see: http://blogs.msdn.com/jmstall/archive/2007/01/06/Typesafe-GetProcAddress.aspx
-        [DllImport(SKernel, CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true)]
+        [DllImport(SKernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
         internal static extern IntPtr GetProcAddress(SafeLibraryHandle hModule, String procname);
+
     }
 	#endregion // Safe Handles and Native imports
 #endif
