@@ -528,16 +528,20 @@ namespace Swicli.Library
             return false;
         }
 
-
         [PrologVisible]
         public static bool cliCallRaw(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut)
         {
-            BindingFlags searchFlags = BindingFlagsALL;
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
-                return cliCallRaw(clazzOrInstance, memberSpec, paramsIn, plvar) && SpecialUnify(valueOut, plvar);
+                Type returnTypeHint = GuessReturnType(valueOut, typeof(void));
+                return cliCallRawForVar(clazzOrInstance, memberSpec, paramsIn, plvar, returnTypeHint) && SpecialUnify(valueOut, plvar);
             }
+            return cliCallRawForVar(clazzOrInstance, memberSpec, paramsIn, valueOut, typeof(void));
+        }
+        public static bool cliCallRawForVar(PlTerm clazzOrInstance, PlTerm memberSpec, PlTerm paramsIn, PlTerm valueOut, Type returnTypeHint)
+        {
+            BindingFlags searchFlags = BindingFlagsALL;
             object getInstance;
             Type c;
             if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
@@ -551,11 +555,11 @@ namespace Swicli.Library
             var mi = findMethodInfo(memberSpec, paramz.Length, c, ref paramz, searchFlags);
             if (mi == null)
             {
-                if (getInstance is IPInvoke)
+                if (getInstance is PInvokeMetaObject)
                 {
-                    IPInvoke pi = getInstance as IPInvoke;
+                    PInvokeMetaObject pi = getInstance as PInvokeMetaObject;
                     string mspecName = GetMemberName(memberSpec);
-                    mi = pi.GetInvoke(mspecName, paramz, typeof(void));
+                    mi = pi.GetInvoke(mspecName, paramz, returnTypeHint);
                 }
 
             }
@@ -570,8 +574,16 @@ namespace Swicli.Library
             Action postCallHook;
             object[] value = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook);
             object target = mi.IsStatic ? null : getInstance;
-            object retval = InvokeCaught(mi, target, value, postCallHook);
+            object retval = InvokeCaught0(mi, target, value, postCallHook);
             return valueOut.FromObject(retval ?? VoidOrNull(mi));
+        }
+
+        private static Type GuessReturnType(PlTerm valueOut, Type type)
+        {
+            if (valueOut.IsVar) return type;
+            Type guess = GetType(valueOut, true);
+            if (guess != null) return guess;
+            return type;
         }
 
         

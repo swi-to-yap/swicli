@@ -21,7 +21,7 @@
 The easiest way to install on SWI is via the package manager. 
 Simply do:
 ==
-     ?- pack_install( prosqlite ).
+     ?- pack_install( swicli ).
 ==
 And you are good to go.
 *********************************************************/
@@ -30,10 +30,7 @@ And you are good to go.
           [
             module_functor/4,
             to_string/2,
-            member_elipse/2,
-            cli_add_event_handler/3,
-            cli_new_delegate/3,
-            cli_new_delegate_term/4
+            member_elipse/2
           ]).
 
 
@@ -43,43 +40,132 @@ And you are good to go.
 
 
 :- push_operators([op(600, fx, ('*'))]).
-:- push_operators([op(600, fx, ('@'))]).
+:- push_operators([op(600, fx, ('@'))]). 
 :- set_prolog_flag(double_quotes,string).
 
 
-%=========================================
-% so we dont have to export MONO_PATH=/usr/lib/swi-prolog/lib/amd64
-%=========================================
+cli_debug:- debug(swicli), set_prolog_flag(verbose_file_search,true), set_prolog_flag(swicli_debug,true).
+cli_nodebug:- nodebug(swicli), set_prolog_flag(verbose_file_search,false), set_prolog_flag(swicli_debug,false).
 
-update_mono_path_swicli_library_dll:- ((getenv('MONO_PATH',Y),atom_length(Y,L),L>1) ->  true; (findall(D,file_alias_path(foreign,D),L),concat_atom(L,':',ForiegnDir),setenv('MONO_PATH',ForiegnDir))).
-:- update_mono_path_swicli_library_dll.
+
+memberchk_same(X, [Y|Ys]) :- (   X =@= Y ->  (var(X) -> X==Y ; true) ;   memberchk_same(X, Ys) ).
+:- meta_predicate no_repeats(0).
+no_repeats(Call):- term_variables(Call,Vs), CONS = [_], Call, (( \+ memberchk_same(Vs,CONS), copy_term(Vs,CVs), CONS=[_|T], nb_setarg(2, CONS, [CVs|T]))).
+
+debug_call(Call):- catch((Call,debug(swicli,'SUCCEED: ~q.~n',[Call])),E,(debug(swicli), debug(swicli,'ERROR: ~q.~n',[E=Call]))) *-> true; debug(swicli,'FAILED: ~q.~n',[Call]) .
+
+cli_tests:- debugging(swicli),!,forall(clause(swicli_test,Call),Call).
+cli_tests:- cli_debug,forall(clause(swicli_test,Call),debug_call(Call)),cli_nodebug.
+
+:- discontiguous(swicli_test/0).
+
+swicli_test :- cli_debug.
 
 %=========================================
 % Load C++ DLL
 %=========================================
-:-dynamic(swicli_assembly_loaded/0).
+:-dynamic(swicli_so_loaded/1).
 
-swicli_on_windows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH).
+cli_is_windows:-current_prolog_flag(unix,true),!,fail.
+cli_is_windows:-current_prolog_flag(windows, true),!.
+cli_is_windows:-current_prolog_flag(shared_object_extension,dll),!.
+cli_is_windows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH),!.
 
-swicli_o_name(X):- current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli.
-swicli_foriegn_name(Y):-swicli_o_name(X), (current_prolog_flag(unix,true) -> Y= foreign(X); Y =X).
-swicli_foriegn_name(lib(X)):-swicli_o_name(X).
-swicli_foriegn_name(bin(X)):-swicli_o_name(X).
-swicli_foriegn_name(X):-swicli_o_name(X).
+swicli_so_name(X):- current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli.
 
-swicli_assembly_ensure_loaded:- swicli_assembly_loaded,!.
-swicli_assembly_ensure_loaded:- swicli_foriegn_name(SWICLI),strip_module(SWICLI,_,DLL),catch(load_foreign_library(DLL),E,(writeq(E),fail)),assert(swicli_assembly_loaded),!.
-swicli_assembly_ensure_loaded:- swicli_foriegn_name(Y),throw(missing_dll(Y)).
+swicli_foreign_name(foreign(X)):-swicli_so_name(X).
+swicli_foreign_name(lib(X)):-swicli_so_name(X).
+swicli_foreign_name(bin(X)):-swicli_so_name(X).
+swicli_foreign_name(X):-swicli_so_name(X).
 
-:-swicli_assembly_ensure_loaded.
+cli_ensure_so_loaded:- swicli_so_loaded(_),!.
+cli_ensure_so_loaded:- swicli_so_name(FO), load_foreign_library(foreign(FO),install),assert(swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- swicli_foreign_name(Y),throw(missing_dll(Y)).
 
+:-cli_ensure_so_loaded.
+
+swicli_test :- debug_call(swicli_so_loaded(_)).
+
+
+%=========================================
+% Assembly Searchpath
+%=========================================
+
+%% cli_add_swicli_assembly_search_path(+Path).
+%% cli_remove_swicli_assembly_search_path(+Path).
+%  Add or remove directories to the search path
+% ==
+% ?- cli_add_swicli_assembly_search_path('c:/myproj/bin').
+%
+% ?- cli_remove_swicli_assembly_search_path('c:/myproj/bin').
+% ==
+%
+% This now makes the System assembly resolver see Assemblies in that directory
+%
+%  Simular to
+%  _Windows_: adding to %PATH%
+%  _Linux_:  adding to $MONO_PATH
+%
+
+path_sep(';'):-cli_is_windows,!.
+path_sep(':').
+
+
+cli_path(ASSEMBLY,PATHO):- absolute_file_name(ASSEMBLY,PATH),exists_file(PATH),!,prolog_to_os_filename(PATH,PATHO).
+cli_path(ASSEMBLY,PATHO):- cli_path(ASSEMBLY,['.exe','.dll',''],PATHO).
+cli_path(ASSEMBLY,ExtList,PATHO):- cli_os_dir(DIR),member(Ext,ExtList),concat_atom([ASSEMBLY,Ext],ADLL),  
+      absolute_file_name(ADLL,PATH,[relative_to(DIR)]),exists_file(PATH),!,prolog_to_os_filename(PATH,PATHO).
+
+cli_os_dir(OS):- cli_search(gac,DIR),absolute_file_name(DIR,ABS),prolog_to_os_filename(ABS,OS).
+
+
+
+cli_search(VAR,DIR):- no_repeats((user:file_search_path(VAR, FROM), user:expand_file_search_path(FROM,DIR))).
+
+:- multifile(user:file_search_path/2).
+
+user:file_search_path(gac, DIR):- user:expand_file_search_path(pack(swicli/bin),DIR),exists_directory(DIR).
+user:file_search_path(gac, DIR):- cli_search(lib,DIR),exists_directory(DIR).
+user:file_search_path(gac, DIR):- '$pack':pack_dir(swicli, _, DIR).
+user:file_search_path(gac, DIR):- env_path_elements('MONO_PATH', DIR).
+user:file_search_path(gac, DIR):- env_path_elements('PATH', DIR).
+user:file_search_path(gac, DIR):- env_path_elements('LD_LIBRARY_PATH', DIR).
+
+env_path_elements(VAR,DIR):- getenv(VAR,VAL),path_sep(Sep),atomic_list_concat(DIRS, Sep, VAL),!, no_repeats('$member'(DIR,DIRS)).
+
+remove_zero_codes(WAZ,WAS):-member(M,['a\000\n\000\/.','\a;','\\\\000','\\000','\\\\C','\\C',';;']),concat_atom([W,A|ZL],M,WAZ),concat_atom([W,A|ZL],';',WAZ0),!,remove_zero_codes(WAZ0,WAS),!.
+remove_zero_codes(WAS,WAS).
+
+% sometimes usefull
+swicli_test :-getenv('PATH',WAZ),remove_zero_codes(WAZ,WAS),setenv('PATH',WAS).
+
+append_env_var(Var,Path):-getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (concat_atom([_,_|_],Path,WAS)->true;((path_sep(Sep),concat_atom([WAS,Sep,Path],'',NEW),setenv(Var,NEW)))).
+append_env_var(Var,Path):-setenv(Var,Path).
+prepend_env_var(Var,Path):-getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (concat_atom([_,_|_],Path,WAS)->true;((path_sep(Sep),concat_atom([Path,Sep,WAS],'',NEW),setenv(Var,NEW)))).
+prepend_env_var(Var,Path):-setenv(Var,Path).
+
+% so we dont have to export MONO_PATH=/usr/lib/swi-prolog/lib/amd64
+cli_update_paths:- forall( user:file_alias_path(foreign,D),
+  ((append_env_var('PATH',D),append_env_var('MONO_PATH',D),append_env_var('LD_LIBRARY_PATH',D)))).
+
+% sometimes usefull
+swicli_test :- cli_update_paths.
+
+getenv_safe(N,V,ELSE):-getenv(N,V)->true;V=ELSE.
+cli_env(N):-getenv_safe(N,V,'(missing)'),format('~q.~n',[N=V]).
+cli_env:- cli_env('LD_LIBRARY_PATH'),cli_env('MONO_PATH'),cli_env('PATH').  
+
+% sometimes usefull
+swicli_test :- cli_env.
 
 %=========================================
 % Library Loading
 %=========================================
 
-%% cli_load_lib(+AppDomainName, +AssemblyPartialName, +FullClassName, +StaticMethodName).
+%% cli_load_lib(+AppDomainName, +AssemblyPartialName_Or_FullPath, +FullClassName, +StaticMethodName).
 %  Loads an assembly into AppDomainName
+%
+% :- cli_load_lib('Example4SWICLIClass','Example4SWICLI','Example4SWICLI.Example4SWICLIClass','install'),!.
 %
 %  cli_load_lib/4 is what was used to bootstrap SWICLI 
 %  (it defined the next stage where cli_load_assembly/1) became present
@@ -88,10 +174,15 @@ swicli_assembly_ensure_loaded:- swicli_foriegn_name(Y),throw(missing_dll(Y)).
 %
 % in swicli.pl we called:
 % ==
-% :- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
+% :- cli_load_lib_safe('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
 % ==
 
-:- cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded','install').
+swicli_cs_assembly('Swicli.Library').
+
+cli_load_lib_safe(DOMAIN,ASSEMBLY,CLASS,METHOD):-cli_path(ASSEMBLY,PATH),cli_load_lib(DOMAIN,PATH,CLASS,METHOD).
+
+:- swicli_cs_assembly(ASSEMBLY),cli_load_lib_safe('SWIProlog',ASSEMBLY,'Swicli.Library.Embedded','install').
+
 
 %% cli_lib_type(-LibTypeName).
 % LibTypeName is an atom that denotes the implementation class SWICLI uses
@@ -111,40 +202,33 @@ cli_lib_type('Swicli.Library.PrologCLR').
 % ?- cli_load_assembly('Swicli.Library').
 % ==
 % The uncaught version allows exception to come from .NET
-:- cli_load_assembly('Swicli.Library').
+% (We use the caugth version)
+:- swicli_cs_assembly(SWICLI_DOT_LIBRARY),cli_load_assembly(SWICLI_DOT_LIBRARY).
 
+swicli_test:- cli_load_assembly('Example4SWICLI').
 
 %% cli_load_assembly_methods(+AssemblyPartialNameOrPath, +OnlyPrologVisible, +StringPrefixOrNull).
-% Loads foriegn predicates from Assembly 
+% Loads foreign predicates from Assembly 
 % ==
 % ?- cli_load_assembly_methods('Swicli.Library', @false, "cli_").
 % ==
 
+cli_load_assembly_methods_safe(A,B,C):- cli_path(A,AP),cli_load_assembly_methods(AP,B,C).
+
+% A test
+swicli_test:- cli_load_assembly_methods_safe('Example4SWICLI',@false, "excli_").
+swicli_test:- listing(excli_install).
+
 %% cli_add_foreign_methods(+Type, +OnlyPrologVisible, +StringPrefixOrNull).
-% Loads foriegn predicates from Type 
+% Loads foreign predicates from Type 
+
+% A test
+swicli_test:- cli_add_foreign_methods('Example4SWICLI.Example4SWICLIClass',@false,'foo_').
+swicli_test:- listing(foo_main/1).
 
 % Install our .NET GC Hook
 :- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
 
-%=========================================
-% Assembly Searchpath
-%=========================================
-
-%% cli_add_assembly_search_path(+Path).
-%% cli_remove_assembly_search_path(+Path).
-%  Add or remove directories to the search path
-% ==
-% ?- cli_add_assembly_search_path('c:/myproj/bin').
-%
-% ?- cli_remove_assembly_search_path('c:/myproj/bin').
-% ==
-%
-% This now makes the System assembly resolver see Assemblies in that directory
-%
-%  Simular to
-%  _Windows_: adding to %PATH%
-%  _Linux_:  adding to $MONO_PATH
-%
 
 %=========================================
 % Term/Reference Inspection
@@ -938,7 +1022,9 @@ cli_call(Obj,CallTerm,Out):-CallTerm=..[MethodName|Args],cli_call(Obj,MethodName
 
 % arity 4
 cli_call(Obj,[Prop|CallTerm],Params,Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Params,Out).
-cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
+
+% cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
+cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out).
 
 
 %=========================================
@@ -1062,11 +1148,11 @@ hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
 % Adds a new Event to the ManualResetEvent (WaitOn) created by cli_new_event_waiter/3
 
 %% cli_block_until_event(+WaitOn,+Time,+Lambda).
-% Calls (foriegnly defined) cli_block_until_event/4 and then cleansup the .NET objects.
+% Calls (foreignly defined) cli_block_until_event/4 and then cleansup the .NET objects.
 cli_block_until_event(WaitOn,Time,Lambda):-setup_call_cleanup(true,cli_block_until_event(WaitOn,Time,Lambda,_),cli_call(WaitOn,'Dispose',_)).
 
 %% cli_block_until_event(+WaitOn,+MaxTime,+TestVarsCode,-ExitCode).
-% foriegnly defined tododocs
+% foreignly defined tododocs
 
 
 %% cli_new_delegate(+DelegateClass,+PrologPred,-Value).
@@ -1259,6 +1345,15 @@ cli_demo(PBC,PBD):- asserta(( add_new_flag(Flag) :- create_prolog_flag(Flag,_,[a
    cli_new('Swicli.Library.PrologBackedDictionary'(string,string),0,[Module,current_prolog_flag,PBC,set_prolog_flag,@(null),@(null)],PBD).
 
 
+:- meta_predicate swicli:cli_with_lock(*,0).
+:- meta_predicate swicli:cli_with_gc(0).
+:- meta_predicate swicli:cli_preserve(*,0).
+:- meta_predicate swicli:debug_call(0).
+:- meta_predicate swicli:cli_eval_hook(*,0,0).
+% Restarting analysis ...
+% Found new meta-predicates in iteration 2 (0.016 sec)
+:- meta_predicate swicli:cli_eval(*,0,0).
+
 %=========================================
 % Module Utils
 %=========================================
@@ -1355,11 +1450,39 @@ cli_notrace(Call):-call(Call).
 
 :-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
 
+
+cap_word(In,Out):-atom_codes(In,[L|Rest]),code_type(U,to_upper(L)),atom_codes(Out,[U|Rest]).
+
+ppList2Args(PP,Args):-ppList2Args0(PP,Args).
+
+ppList2Args0([],[]):-!.
+ppList2Args0([P|PP],[A|Args]):-
+   ppList2Arg(P,A),
+   ppList2Args0(PP,Args).
+
+ppList2Arg('PlTerm':A,AA):-!,ppList2Arg(A,AA).
+ppList2Arg('Int32':A,AA):-!,ppList2Arg(A,AA).
+ppList2Arg(A:B,AA):-ppList2Arg(A,A1),ppList2Arg(B,B1),atom_concat(A1,B1,AB),!,ppList2Arg(AB,AA).
+ppList2Arg(F,B):-compound(F),F=..List,concat_atom(List,A),!,ppList2Arg(A,B).
+ppList2Arg(A,BB):- concat_atom([B,''],"Out",A),!,cap_word(B,BB1),concat_atom([-,BB1],'',BB).
+ppList2Arg(A,BB):- concat_atom([B,''],"In",A),!,cap_word(B,BB1),concat_atom([+,BB1],'',BB).
+ppList2Arg(A,BB):- concat_atom([_,_|_],"Byref",A),!,A=B,cap_word(B,BB1),concat_atom([?,BB1],'',BB).
+ppList2Arg(A,BB):- concat_atom([_,_|_],"Out",A),!,A=B,cap_word(B,BB1),concat_atom([-,BB1],'',BB).
+ppList2Arg(A,BB):- concat_atom([_,_|_],"In",A),A=B,!,cap_word(B,BB1),concat_atom([+,BB1],'',BB).
+ppList2Arg(A,BB):-concat_atom([A],'',B),cap_word(B,BB).
+
+
+bot_params_to_list(PPs,PNs):-findall(T:N,(cli_col(PPs,PI),bot_param(PI,T,N)),PNs).
+
+bot_param(PI,T,N):-cli_get(PI,'ParameterType',TR),cli_type_to_typespec(TR,T),cli_get(PI,'Name',N).
+
+
 % cli_docs:- predicate_property(swicli:P,file(_)),P=P,!.
 cli_docs:- cli_find_type('Swicli.Library.PrologCLR',T),
    cli_get(static(T),'AutoDocInfos',SRF),cli_map(SRF,K,V),P=V,cli_get(P,'GetParameters',PPs),
-   bot_params_to_list(PPs,PP),cli_member_doc(P,_Doc,_XML),
-    concat_atom([FC,AC],"/",K),atom_number(AC,A),string_to_atom(FC,F),
+   bot_params_to_list(PPs,PP),
+   cli_member_doc(P,_Doc,_XML),
+   concat_atom([FC,AC],"/",K),atom_number(AC,A),string_to_atom(FC,F),
     ppList2Args(PP,Args),PRED=..[F|Args],A=A,
     cli_to_str(V,VS),
    %% cli_to_str(F/A=eval(cli_get(V,name)):PRED:Doc,TSTR),
@@ -1718,6 +1841,7 @@ end_of_file.
 %    cli_find_type('ABuildStartup.Program',Y),cli_to_str(Y,W).
 %    
 %    
+
 
 end_of_file.
 

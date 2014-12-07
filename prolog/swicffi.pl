@@ -4,7 +4,7 @@
 % Douglas Miles
 */
 
-:- module(swicffi,[install_cffi/2,cffi_tests/0,to_forms/2,load_forms/1]).
+:- module(swicffi,[install_cffi/2,cffi_tests/0,to_forms/2,cffi_eval/1,cffi_test/1]).
 :- reexport(swicli). 
 
 
@@ -71,7 +71,9 @@ No type at all. Only valid as the return type of a function.
 
 
 struct person { int number; char* reason; };
+
   The equivalent defcstruct form follows:
+
 (defcstruct person (number :int) (reason :string))
 
 
@@ -104,15 +106,27 @@ translate-into-foreign-memory
 with-foreign-slots
 
 */
-install_cffi(_Module,File):-read_file_to_codes(File,Codes,[]),to_forms(Codes,Forms),load_forms(Forms).
+install_cffi(_Module,File):-read_file_to_codes(File,Codes,[]),to_forms(Codes,Forms),cffi_eval(Forms).
 
-to_forms(String, Expr):- string(String),string_to_list(String,Codes),!,to_forms(Codes, Expr).
-to_forms(Source,Program):-white(Source,Start), sexprs(Program,Start,[]),!.
+:- meta_predicate debug_call(0).
 
-test_run(Code):-to_forms(Code,Forms),load_forms(Forms).
+char_atom(S):-atom(S),atom_length(S,1).
 
-load_forms(Forms):-forall(member(F,Forms),(writeq(F),nl)).
+to_forms(Atom, Expr):- atom(Atom),!,atom_codes(Atom,String),!,cto_forms(String, Expr).
+to_forms(String, Expr):- string(String),string_codes(String,Codes),!,cto_forms(Codes, Expr).
+to_forms([S|Source],Expr):-char_atom(S),atom_chars(Atom,[S|Source]),!,to_forms(Atom,Expr).
+to_forms([S|Source],Expr):-integer(S),cto_forms([S|Source],Expr).
+to_forms(O,O).
 
+cto_forms(Source,Expr):-white(Source,Start), sexprs(Expr,Start,[]),!.
+
+cffi_test(Code):-to_forms(Code,Forms),cffi_eval(Forms).
+echo_forms(Code):-to_forms(Code,Forms),portray(echo_forms:-Forms).
+
+cffi_eval(Forms):-is_list(Forms),last(Forms,LL),is_list(LL),!,forall(member(F,Forms),cffi_eval1(F)).
+cffi_eval(Forms):-is_list(Forms),to_forms(Forms,Next), Forms \=@= Next, !, cffi_eval(Next).
+cffi_eval(Forms):-to_forms(Forms,Next), Forms \=@= Next, !, cffi_eval(Next).
+cffi_eval(F):-cffi_eval1(F).
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Parsing (Using LISPy CFFI File format)
@@ -146,7 +160,7 @@ sexpr([unquote,E])            --> ",", !, white, sexpr(E).
 sexpr(E)                      --> sym_or_num(E), white.
 
 sexpr_list([]) --> ")", !.
-sexpr_list(_) --> ".", [C], {\+ sym_char(C)}, !, fail.
+sexpr_list(_) --> ".", [C], {\+ sym_char(C), !, fail}.
 sexpr_list([Car|Cdr]) --> sexpr(Car), !, sexpr_rest(Cdr).
 
 sexpr_rest([]) --> ")", !.
@@ -187,8 +201,11 @@ sexpr(E,C,X,Z) :- white([C|X],Y), sexpr(E,Y,Z).
 sym_char(C) :- C > 32, \+ member(C,";()#""',`").
 
 string_to_atom(S,N) :- number(N,S,[]), !.
-string_to_atom(S,I) :- lowcase(S,L), name(I,L).
+string_to_atom(S,O) :- lowcase(S,L), name(I,L),trim_left(I,'cffi:',O).
 
+trim_left(All,Left,Right):-atom_concat(Left,Right,All)->true;All=Right.
+
+lowcase(C,C).
 lowcase([],[]).
 lowcase([C1|T1],[C2|T2]) :- lowercase(C1,C2), lowcase(T1,T2).
 
@@ -196,51 +213,29 @@ lowercase(C1,C2) :- C1 >= 65, C1 =< 90, !, C2 is C1+32.
 lowercase(C,C).
 
 
+reader_tests:- cffi_test("(defcfun (:PL_query pl-query) :long (arg-1 :int))").
 % Append:
-reader_tests:- (test_run("
-        (defun append (x y)
+reader_tests:- 
+   echo_forms("
+      (  (defun append (x y)
           (if x
               (cons (car x) (append (cdr x) y))
             y))
 
-        (append '(a b) '(3 4 5))")).
+        (append '(a b) '(3 4 5))
 
-    %@ V = [append, [a, b, 3, 4, 5]].
-    
-
-% Fibonacci, naive version:
-reader_tests:- (test_run("
         (defun fib (n)
-          (if (= 0 n)
-              0
+          (if (= 0 n) 0
             (if (= 1 n)
                 1
               (+ (fib (- n 1)) (fib (- n 2))))))
-        (fib 24)")).
+        (fib 24)
 
-    %@ % 14,255,802 inferences, 3.71 CPU in 3.87 seconds (96% CPU, 3842534 Lips)
-    %@ V = [fib, 46368].
-    
+        (defun fib (n) (if (= 0 n) 0 (fib1 0 1 1 n)))
 
-% Fibonacci, accumulating version:
-reader_tests:- (test_run("
-        (defun fib (n)
-          (if (= 0 n) 0 (fib1 0 1 1 n)))
-
-        (defun fib1 (f1 f2 i to)
-          (if (= i to)
-              f2
-            (fib1 f2 (+ f1 f2) (+ i 1) to)))
-
-        (fib 250)")).
-
-    %@ % 39,882 inferences, 0.010 CPU in 0.013 seconds (80% CPU, 3988200 Lips)
-    %@ V = [fib, fib1, 7896325826131730509282738943634332893686268675876375].
-    
-
-% Fibonacci, iterative version:
-reader_tests:- (test_run("
-        (defun fib (n)
+        (defun fib1 (f1 f2 i to) (if (= i to) f2 (fib1 f2 (+ f1 f2) (+ i 1) to)))
+        (fib 250)
+  ( (defun fib (n)
           (setq f (cons 0 1))
           (setq i 0)
           (while (< i n)
@@ -248,50 +243,135 @@ reader_tests:- (test_run("
             (setq i (+ i 1)))
           (car f))
 
-        (fib 350)")).
+        (fib 350)
 
-    %@ % 34,233 inferences, 0.010 CPU in 0.010 seconds (98% CPU, 3423300 Lips)
-    %@ V = [fib, 6254449428820551641549772190170184190608177514674331726439961915653414425].
-    
-
-% Higher-order programming and eval:
-reader_tests:- test_run("
         (defun map (f xs)
           (if xs
               (cons (eval (list f (car xs))) (map f (cdr xs)))
-            ()))
+            ())))
  ;;
         (defun plus1 (x) (+ 1 x))
 
-        (map 'plus1 '(1 2 3))").
+        (map 'plus1 '(1 2 3)))
+      "
+      ).
+/*
+// int printf( const char *format [, argument]... )
 
-    %@ V = [map, plus1, [2, 3, 4]].
+[DllImport("msvcrt.dll", CharSet=CharSet.Ansi, CallingConvention=CallingConvention.Cdecl)]
+public static extern int printf(String format, int i, double d); 
+
+[DllImport("msvcrt.dll", CharSet=CharSet.Ansi, CallingConvention=CallingConvention.Cdecl)]
+public static extern int printf(String format, int i, String s); 
+}
+*/
+reader_tests:- cffi_test("(defcfun (\"PL_query\" pl-query) :long (arg-1 :int))").
 
 
-reader_tests:- test_run("(defcfun (:PL_query pl-query) :long (arg-1 :int))").
-reader_tests:- test_run("(defcfun (\"PL_query\" pl-query) :long (arg-1 :int))").
+:-set_prolog_flag(double_quotes, string). 
 
-:- set_prolog_flag(double_quotes, string). 
 
-% cffi_tests :- forall(reader_tests,true).
+debug_call(Call):- catch((Call,debug(swicffi,'SUCCEED: ~q.~n',[Call])),E,(debug(swicffi), debug(swicffi,'ERROR: ~q.~n',[E=Call]),throw(E))) *-> true; debug(swicffi,'FAILED: ~q.~n',[Call]) .
+:-debug(swicffi).
+
+cffi_eval1(F):-debug_call(cffi_eval2(F)).
+
+cffi_eval2([F,Unmanaged0|Fields]):-once(cffi_to_keyword(Unmanaged0,Unmanaged)),Unmanaged0 \=@= Unmanaged,cffi_eval2([F,Unmanaged|Fields]).
+cffi_eval2([defcstruct,Unmanaged0|Fields]):-cffi_to_keyword(Unmanaged0,Unmanaged),cffi_to_args(Fields,ParamTypes),!,
+   cli_compile_cstruct(Unmanaged,ParamTypes,ResultCode).
+cffi_eval2([defcfun,[Unmanaged0,Managed0]|ReturnTypeArgs]):-maplist(cffi_to_keyword,[Unmanaged0,Managed0],[Unmanaged,Managed]), cffi_to_args(ReturnTypeArgs,[ReturnType|ParamTypes]),!,
+   cli_compile_cfun(Unmanaged,Managed,ReturnType,ParamTypes,ResultCode).
+cffi_eval2(F):-is_list(F),C=..F,cffi_eval3(C).
+cffi_eval2(F):-cffi_eval3(F).
+
+cffi_eval3(F):-predicate_property(F,visible),format(':-~q. ~n',[F]),!,debug_call(F),cffi_db_assert(F),!.
+cffi_eval3(F):-cffi_eval4(F),!.
+
+cffi_eval4(F):-predicate_property(F,visible),format(':-~q. ~n',[F]),cffi_db_assert(F).
+cffi_eval4(F):-format('delay:- ~q.~n',[F]),cffi_db_assert(F).
+
+cffi_db_assert(C):-C=..[F|ARGS],functor(C,F,A),atom_concat('cdb_',F,DBF),asserta_new(cdb_definer(DBF,A,F)),DB=..[DBF|ARGS],asserta_new(DB).
+
+asserta_new(DB):-functor(DB,F,A),dynamic(F/A),ignore(retract(DB)),asserta(DB).
+
+
+:-dynamic(cdb_defctype/2).
+
+cffi_to_args(List,Out):-maplist(cffi_to_param,List,Out).
+
+
+cffi_to_keyword(str(S),A):-atom_string(A,S),!.
+cffi_to_keyword(A,A).
+
+cffi_to_param([N0,T],p(O,N)):-cffi_to_keyword(N0,N),cffi_to_param(T,O),!.
+cffi_to_param(str(S),O):-atom_string(A,S),!,cffi_to_param(A,O),!.
+cffi_to_param(T,T):-cdb_defctype(T,':pointer'),!.
+cffi_to_param(T,T):-cdb_defctype(_,T),!.
+cffi_to_param(T,O):-cdb_defctype(T,B),!,cffi_to_param(B,O),!.
+cffi_to_param(T,O):-cffi_to_keyword(T,O),!.
+
+
+cli_compile_cfun(Unmanaged,Managed,ReturnType,ParamTypes,ResultCode):-cffi_eval4(cli_compile_cfun(Unmanaged,Managed,ReturnType,ParamTypes,ResultCode)).
+cli_compile_cstruct(Unmanaged,ParamTypes,ResultCode):-cffi_eval4(cli_compile_cstruct(Unmanaged,ParamTypes,ResultCode)).
+'load-foreign-library'(Str):-cffi_eval4(cli_get_dll(Str,R)).
+defctype(Managed,Unmanaged):-asserta(cdb_defctype(Managed,Unmanaged)).
+
+
 cffi_tests :- forall(cffi_test,true).
 
-% work!
-cffi_test :- cli_get_dll('libc.so.6',DLL),cli_call(DLL,printf,["I have been clicked %d times", 2],O).
-% fixing
-%  cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,PP),\+ contains_var(static(true),PP),cli_cast(PP,'System.Reflection.MemberInfo',MI),cli_get(MI,['DeclaringType','Namespace'],DT),DT\="System",DT\="System.Reflection".
-cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,PP),\+ contains_var(static(true),PP),cli_cast(PP,'System.Reflection.MemberInfo',MI).
-cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,M),writeq(M),nl,fail.
-cffi_test:- cli_memb(string,M),cli_compile_member(M,_Out),fail.
-cffi_test:- cli_memb(int,M),cli_compile_member(M,_Out),fail.
-% cffi_test :- cli_get_dll('libc.so',DLL),cli_call(DLL,printf,["I have been clicked %d times", 2],O).
-% not impl yet
-cffi_test :- install_cffi('snake-tail','cffi-tests/swi-prolog.cffi'),module(swicffi),prolog.
+cffi_test:-cffi_test('
 
+(defcenum my-boolean
+    :no
+    :yes)
+
+ (ql:quickload :cffi)
+
+(defcstruct person (number :int) (reason :string))
+
+(cffi:load-foreign-library "user32.dll")
+ 
+(cffi:defctype hwnd :unsigned-int)
+ 
+(cffi:defcfun ("MessageBoxA" message-box) :int
+  (wnd     hwnd)
+  (text    :string)
+  (caption :string)
+  (type    :unsigned-int))
+
+(message-box 0 "hello" "world" 0)  
+
+   (define-foreign-type my-string-type ()
+    ((encoding :reader string-type-encoding :initarg :encoding))
+    (:actual-type :pointer))
+
+ (foreign-funcall "getenv" :string "SHELL" :string)
+
+ (with-foreign-string (str "abcdef")
+          (foreign-funcall "strlen" :string str :int))
+').
+
+
+% cffi_test :- forall(reader_tests,true).
+% works!
+cffi_test :- \+ cli_is_windows, cli_get_dll('libc.so.6',DLL),cli_call(DLL,printf,["Linux I have been clicked %d times", 2],O).
+cffi_test :- cli_is_windows, cli_get_dll('msvcrt',DLL), cli_cast(0,int,Zero), cli_call(DLL,printf,["Win32 I have been clicked %d times", 2],Zero).
+% cffi_test :- cli_is_windows, cli_get_dll('msvcrt',DLL), cli_cast(0,int,Zero), cli_call(DLL,mspec(printf(':string',':int'),int),["Win32 I have been clicked %d times", 2],Zero).
+
+% cffi_test :- install_cffi('snake-tail',pack('swicli/cffi-tests/swi-prolog.cffi')),module(swicffi),prolog.
+% cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,M),writeq(M),nl,fail.
+% cffi_test:- cli_memb(string,M),cli_compile_member(M,_Out),fail.
+% cffi_test:- cli_memb(int,M),cli_compile_member(M,_Out),fail.
+
+% cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,PP),\+ contains_var(static(true),PP),cli_cast(PP,'System.Reflection.MemberInfo',MI),cli_get(MI,['DeclaringType','Namespace'],DT),DT\="System",DT\="System.Reflection".
+% cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,PP),\+ contains_var(static(true),PP),cli_cast(PP,'System.Reflection.MemberInfo',MI).
+
+:-dynamic(cdb_definer/3).
+% cffi_test:-listing(cdb_definer/3).
 
 end_of_file.
 
-root@titan:/mnt/i7d/swicli# swipl
+root@titan:/mnt/i7d/swicffi# swipl
 Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 7.1.26)
 Copyright (c) 1990-2014 University of Amsterdam, VU Amsterdam
 SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,
@@ -302,27 +382,27 @@ For help, use ?- help(Topic). or ?- apropos(Word).
 
 ?- use_module(library(swicffi)).
 ERROR: No assembly found named Swicli.Library
-Warning: /usr/lib/swi-prolog/library/swicli.pl:86:
-        Goal (directive) failed: swicli:cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded',install)
-ERROR: /usr/lib/swi-prolog/library/swicli.pl:106:
-        catch/3: Undefined procedure: swicli:cli_load_assembly/1
-Warning: /usr/lib/swi-prolog/library/swicli.pl:106:
-        Goal (directive) failed: swicli:cli_load_assembly('Swicli.Library')
+Warning: /usr/lib/swi-prolog/library/swicffi.pl:86:
+        Goal (directive) failed: swicffi:cli_load_lib('SWIProlog','Swicli.Library','Swicli.Library.Embedded',install)
+ERROR: /usr/lib/swi-prolog/library/swicffi.pl:106:
+        catch/3: Undefined procedure: swicffi:cli_load_assembly/1
+Warning: /usr/lib/swi-prolog/library/swicffi.pl:106:
+        Goal (directive) failed: swicffi:cli_load_assembly('Swicli.Library')
 ERROR: /usr/lib/swi-prolog/library/swicffi.pl:8:
-        Exported procedure swicli:cli_new_delegate/3 is not defined
+        Exported procedure swicffi:cli_new_delegate/3 is not defined
 ERROR: /usr/lib/swi-prolog/library/swicffi.pl:8:
-        Exported procedure swicli:cli_add_event_handler/3 is not defined
+        Exported procedure swicffi:cli_add_event_handler/3 is not defined
 ERROR: /usr/lib/swi-prolog/library/swicffi.pl:8:
-        Exported procedure swicli:cli_new_delegate_term/4 is not defined
+        Exported procedure swicffi:cli_new_delegate_term/4 is not defined
 true.
 
 ?-
 % halt
-root@titan:/mnt/i7d/swicli# . ./
+root@titan:/mnt/i7d/swicffi# . ./
 c/                   doc/                 .gitignore           install-linux.sh     lib/                 makeall.bat          make-linux.sh        pack.pl              README.txt
 cffi-tests/          .git/                .ignore-on-commit    INSTALL-Windows.txt  local-test.sh        Makefile             mono_sysvars.sh      prolog/              TempAssembly.dll
-root@titan:/mnt/i7d/swicli# . ./mono_sysvars.sh
-root@titan:/mnt/i7d/swicli# swipl
+root@titan:/mnt/i7d/swicffi# . ./mono_sysvars.sh
+root@titan:/mnt/i7d/swicffi# swipl
 Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 7.1.26)
 Copyright (c) 1990-2014 University of Amsterdam, VU Amsterdam
 SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,

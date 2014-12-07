@@ -56,7 +56,7 @@ namespace SbsSW.SwiPlCs
 	#region Safe Handles and Native imports
 	// See http://msdn.microsoft.com/msdnmag/issues/05/10/Reliability/ for more about safe handles.
 	[SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
-	sealed class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
+	public sealed class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
 	{
 		private SafeLibraryHandle() : base(true) { }
 
@@ -81,17 +81,17 @@ namespace SbsSW.SwiPlCs
 
 	static class NativeMethodsWindows
 	{
-		const string s_kernel = "kernel32";
-		[DllImport(s_kernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
+		const string SKernel = "kernel32";
+		[DllImport(SKernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
 		public static extern SafeLibraryHandle LoadLibrary(string fileName);
 
 		[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-		[DllImport(s_kernel, SetLastError = true)]
+		[DllImport(SKernel, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool FreeLibrary(IntPtr hModule);
 
         // see: http://blogs.msdn.com/jmstall/archive/2007/01/06/Typesafe-GetProcAddress.aspx
-        [DllImport(s_kernel, CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true)]
+        [DllImport(SKernel, CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true)]
         internal static extern IntPtr GetProcAddress(SafeLibraryHandle hModule, String procname);
 	}
     static class NativeMethodsLinux
@@ -100,17 +100,17 @@ namespace SbsSW.SwiPlCs
         {
             return dlopen(fileName);
         }
-        const string s_kernel = "kernel32";
-        [DllImport(s_kernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
+        const string SKernel = "kernel32";
+        [DllImport(SKernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
         public static extern SafeLibraryHandle dlopen(string fileName);
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [DllImport(s_kernel, SetLastError = true)]
+        [DllImport(SKernel, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool FreeLibrary(IntPtr hModule);
 
         // see: http://blogs.msdn.com/jmstall/archive/2007/01/06/Typesafe-GetProcAddress.aspx
-        [DllImport(s_kernel, CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true)]
+        [DllImport(SKernel, CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true)]
         internal static extern IntPtr GetProcAddress(SafeLibraryHandle hModule, String procname);
     }
 	#endregion // Safe Handles and Native imports

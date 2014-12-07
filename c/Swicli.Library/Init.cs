@@ -394,6 +394,19 @@ namespace Swicli.Library
         //[MTAThread]
         public static void Main(string[] args0)
         {
+            while (false)
+            {
+                System.Diagnostics.Process process = new System.Diagnostics.Process();
+                System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+                startInfo.UseShellExecute = false;
+                startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Maximized;
+                startInfo.FileName = @"c:\pf\swipl\bin\swipl-win.exe";
+                startInfo.Arguments = "winapi_dll.pl";
+                startInfo.WorkingDirectory = @"C:\Users\Administrator\AppData\Roaming\SWI-Prolog\pack\swicli\cffi-tests";
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+            }
             PingThreadFactories();
             bool demo = false;
             SetupProlog();

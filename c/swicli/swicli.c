@@ -20,7 +20,7 @@ Windows: remember "Not Using Precompiled Headers"
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
 
-    This library is distributed in the hope that it will be useful,
+    This library is distributed in	 the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
@@ -48,7 +48,7 @@ typedef char gchar;
 
 #include "stdafx.h"
 #include <SWI-Prolog.h>
-
+//#include <exception>
 
 #ifdef WINDOWS_CPP
 extern "C" {
@@ -68,7 +68,14 @@ extern "C" {
 		if ( PL_get_atom_chars(dname, &dnamestr) && PL_get_atom_chars(aname, &anamestr) && PL_get_atom_chars(cname, &cnamestr) && PL_get_atom_chars(mname, &mnamestr) )
 		{
 #ifdef WINDOWS_CPP
-			System::Reflection::Assembly^ assembly = System::Reflection::Assembly::Load(gcnew System::String(anamestr));
+
+
+			System::Reflection::Assembly^assembly = nullptr;
+			try {
+				if (assembly == nullptr) assembly = System::Reflection::Assembly::LoadFrom(gcnew System::String(anamestr));
+			} catch (...) {
+				if (assembly == nullptr) assembly = System::Reflection::Assembly::Load(gcnew System::String(anamestr));
+			}
 			if (assembly == nullptr) return PL_warning("No assembly found named %s", anamestr);
 			System::Type^ type = assembly->GetType(gcnew System::String(cnamestr));
 			if (type == nullptr) return PL_warning("No type found named %s", cnamestr);
@@ -133,6 +140,10 @@ extern "C" {
 	install_t install()
 	{
 		PL_register_foreign("cli_load_lib", 4, (pl_function_t)cli_load_lib, 0);
+	}
+	install_t swicli_install()
+	{
+		install();
 	}
 
 #ifdef WINDOWS_CPP

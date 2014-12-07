@@ -1,68 +1,45 @@
+/*  $Id$
+*  
+*  Project: Swicli.Library - Two Way Interface for .NET and MONO to SWI-Prolog
+*  Author:        Douglas R. Miles
+*  E-mail:        logicmoo@gmail.com
+*  WWW:           http://www.logicmoo.com
+*  Copyright (C):  2010-2012 LogicMOO Developement
+*
+*  This library is free software; you can redistribute it and/or
+*  modify it under the terms of the GNU Lesser General Public
+*  License as published by the Free Software Foundation; either
+*  version 2.1 of the License, or (at your option) any later version.
+*
+*  This library is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+*  Lesser General Public License for more details.
+*
+*  You should have received a copy of the GNU Lesser General Public
+*  License along with this library; if not, write to the Free Software
+*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*
+*********************************************************/
+#define USESAFELIB
 using System;
 #if NET40
 using System.Dynamic;
 #endif
+
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Linq.Expressions;
+//using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.IO;
 // See http://tirania.org/blog/archive/2009/Aug-11.html
+using SbsSW.SwiPlCs;
+
 namespace Swicli.Library
 {
-    // #if NET40
-    public class PInvokeMetaObject
 
-#if NET40
-        : DynamicMetaObject
-#endif
-    {
-        public PInvokeMetaObject(Expression parameter, object o)
-#if NET40
-
-            :            base(parameter, BindingRestrictions.Empty, o) { } 
-#else
-        {
-            i_parameter = parameter;
-            i_Obj = o;
-        }
-        Expression i_parameter;
-        Object i_Obj;
-#endif
-#if NET40
-        public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
-        {
-
-            var self = this.Expression;
-            var pinvoke = (PInvoke)base.Value;
-
-            var arg_types = new Type[args.Length];
-            var arg_exps = new Expression[args.Length];
-        
-            for (int i = 0; i < args.Length; ++i)
-            {
-                arg_types[i] = args[i].LimitType;
-                arg_exps[i] = args[i].Expression;
-            }
-
-            var m = pinvoke.GetInvoke(binder.Name, arg_types, binder.ReturnType);
-            if (m == null)
-                return base.BindInvokeMember(binder, args);
- 
-            var target = Expression.Block(
-                       Expression.Call(m, arg_exps),
-                       Expression.Default(typeof(object)));
-            var restrictions = BindingRestrictions.GetTypeRestriction(self, typeof(PInvoke));
-
-            var dynamicMetaObject = new DynamicMetaObject(target, restrictions);
-
-            return dynamicMetaObject;
-        }
-    
-#endif
-    }
     public partial class PrologCLR
     {
         [PrologVisible]
@@ -70,11 +47,11 @@ namespace Swicli.Library
 #if NET40
          dynamic
 #else
- IPInvoke
+ PInvokeMetaObject
 #endif
  cliGetDll(String dll)
         {
-            return new PInvoke(dll);
+            return new PInvokeMetaObject(dll);
         }
 
         [PrologVisible]
@@ -115,12 +92,8 @@ namespace Swicli.Library
             }
             return was;
         }
-    }
-    public class PInvoke : IPInvoke
-#if NET40
-        , DynamicObject
-#endif
-    {
+
+
         public static void MainLinux(String[] args)
         {
             var d = PrologCLR.cliGetDll("libc");
@@ -135,8 +108,205 @@ namespace Swicli.Library
                 d.GetInvoke("printf", new Type[] { typeof(String) }, null).Invoke(d, new object[] { "Hello GetInvoke.Invoke: %d\n", i });
             }
         }
+    }
 
-        public T Invoke<T>(string mspecName, Type[] paramz, Type returnType, Object targetIn, object[] args)
+
+
+
+
+
+
+
+
+
+    #region P/Invoke
+    // Adapted from http://tirania.org/blog/archive/2009/Aug-11.html
+    // This is a hack to work around Linux not being able to use libld.so to dynamically
+    // load .so modules...
+    public partial class PInvokeMetaObject
+#if NET40
+        , DynamicObject
+#endif
+    {
+        static int clid_gen;
+        string assembName = "ctype_";
+        
+
+        private PInvokeMetaObject _pInvokeDll = null;
+        private SafeLibraryHandle _hLibrary; 
+        // private IntPtr _hDLL;
+        private string _dllName;
+        private AssemblyBuilder _assemblyBuilder;
+        private ModuleBuilder _moduleBuilder;
+        int _idGen;
+        public override string ToString()
+        {
+            return assembName;
+        }
+        public PInvokeMetaObject(string name)
+        {
+            _dllName = name;
+            assembName = _dllName;
+            foreach (string clip in new String[] { ".dll", ".so", ".exe", ".dynlib" })
+            {
+                if (assembName.ToLower().EndsWith(clip)) assembName = assembName.Substring(0, assembName.Length - clip.Length);
+            }
+            _hLibrary = LoadUnmanagedLibrary(_dllName, true);
+            assembName = "dynlib_0" + Interlocked.Increment(ref clid_gen) + "_" + assembName;
+            EnsureBuilders();
+        }
+
+        public bool IsLibraryValid
+        {
+            get
+            {
+#if USESAFELIB                
+                return _hLibrary != null && !_hLibrary.IsInvalid;
+#else
+                return true;
+#endif
+            }
+        }
+
+        public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName)
+        {
+            return LoadUnmanagedLibrary(fileName, true);
+        }
+        public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName, bool throwOnInvalid)
+        {
+            SafeLibraryHandle localHLibrary;
+            if (PrologCLR.IsLinux)
+            {
+                localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
+                if (!localHLibrary.IsInvalid)
+                {
+                    return localHLibrary;
+                }
+                PrologCLR.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
+            }
+            localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
+            if (localHLibrary.IsInvalid)
+            {
+                int hr = Marshal.GetHRForLastWin32Error();
+                if (throwOnInvalid) Marshal.ThrowExceptionForHR(hr);
+            }
+            return localHLibrary;
+        }
+
+        public void UnLoadUnmanagedLibrary()
+        {
+#if USESAFELIB
+            if (_hLibrary != null && !_hLibrary.IsClosed)
+            {
+                _hLibrary.Close();
+                _hLibrary.UnLoad();
+                _hLibrary.Dispose();
+                _hLibrary = null;
+            }
+#endif
+        }
+
+
+        private void EnsureBuilders()
+        {
+            if (_assemblyBuilder == null)
+            {
+                AssemblyName aname = new AssemblyName(assembName);
+                _assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(aname, AssemblyBuilderAccess.RunAndSave);
+                _moduleBuilder = _assemblyBuilder.DefineDynamicModule(assembName);
+            }
+            
+        }
+
+        private Delegate GetNativeDelegate(string funcName, Type delegateType)
+        {
+            if (_pInvokeDll != null)
+                return _pInvokeDll.CreateDelegate(funcName, delegateType);
+            IntPtr _hDLL = _hLibrary.DangerousGetHandle();
+            IntPtr funcPtr = ExactSpellingGetProcAddress.GetProcAddress(_hDLL, funcName);
+            if (funcPtr.Equals(IntPtr.Zero)) funcPtr = InExactSpellingGetProcAddress.GetProcAddress(_hDLL, funcName);
+            if (funcPtr.Equals(IntPtr.Zero)) return null;
+            return Marshal.GetDelegateForFunctionPointer(funcPtr, delegateType);
+        }
+
+        public Delegate CreateDelegate(string entry_point, Type delegateType)
+        {
+            MethodInfo methodInfo = delegateType.GetMethod("Invoke");
+            MethodInfo returnMethodInfo //
+                = CreateMethodInfoForDelegate(entry_point, methodInfo);
+            return Delegate.CreateDelegate(delegateType, returnMethodInfo);
+        }
+        public MethodInfo CreateMethodInfoForDelegate(string entry_point, MethodInfo methodInfo)
+        {
+            // Get parameter signature information from delegate Invokation
+            ParameterInfo returnParameter = methodInfo.ReturnParameter;
+            ParameterInfo[] parameters = methodInfo.GetParameters();
+            Type[] parameterTypes = new Type[parameters.Length];
+            Type[][] parameterTypeRequiredCustomModifiers = new Type[parameters.Length][];
+            Type[][] parameterTypeOptionalCustomModifiers = new Type[parameters.Length][];
+            for (int i = 0; i < parameters.Length; ++i)
+            {
+                parameterTypes[i] = parameters[i].ParameterType;
+                parameterTypeRequiredCustomModifiers[i] = parameters[i].GetRequiredCustomModifiers();
+                parameterTypeOptionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
+            }
+
+
+            EnsureBuilders();
+
+            TypeBuilder typeBuilder = _moduleBuilder.DefineType(assembName + Interlocked.Increment(ref _idGen) + "_" + entry_point);
+
+            MethodBuilder mb = typeBuilder.DefinePInvokeMethod("Invoke", _dllName, entry_point,
+               MethodAttributes.Static | MethodAttributes.PinvokeImpl, CallingConventions.Standard,
+               returnParameter.ParameterType, returnParameter.GetRequiredCustomModifiers(), returnParameter.GetOptionalCustomModifiers(),
+               parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
+               CallingConvention.StdCall, CharSet.Auto);
+
+            Type builtType = typeBuilder.CreateType();
+            MethodInfo returnMethodInfo = builtType.GetMethod("Invoke", BindingFlags.Static | BindingFlags.NonPublic) ??
+                                          builtType.GetMethod("Invoke", BindingFlags.Static | BindingFlags.Public);
+
+            return returnMethodInfo;
+        }
+
+        public MethodInfo GetInvoke(string entry_point, Type[] arg_types, Type returnType)
+        {
+            EnsureBuilders();
+
+            String entry_point_invoke = assembName + "_ctype_" + Interlocked.Increment(ref _idGen) + "_" + entry_point;
+
+
+            // Can't use DynamicMethod as they don't support custom attributes
+            TypeBuilder typeBuilder = _moduleBuilder.DefineType(entry_point_invoke);
+
+            MethodBuilder mb = typeBuilder.DefinePInvokeMethod(entry_point_invoke, _dllName, entry_point,
+                       MethodAttributes.Static | MethodAttributes.PinvokeImpl, CallingConventions.Standard, 
+                       returnType, arg_types,
+                       CallingConvention.StdCall, CharSet.Auto);
+
+            var t = typeBuilder.CreateType();
+            var m = t.GetMethod(entry_point_invoke, BindingFlags.Static | BindingFlags.NonPublic);
+
+            return m;
+        }
+
+        private static class ExactSpellingGetProcAddress
+        {
+            [DllImport("kernel32", EntryPoint = "GetProcAddress", CharSet = CharSet.Ansi, ExactSpelling = true,
+                SetLastError = true)]
+            public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+        }
+        private static class InExactSpellingGetProcAddress
+        {
+            [DllImport("kernel32", EntryPoint = "GetProcAddress", CharSet = CharSet.Ansi, ExactSpelling = false,
+                SetLastError = true)]
+            public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+        }
+
+        #endregion
+
+
+        public T Invoke<T>(string mspecName, Type[] paramz, Type returnType, Object targetIn, params object[] args)
         {
             if (paramz == null) paramz = PrologCLR.GetObjectTypes(args, null);
             var mi = GetInvoke(mspecName, paramz, returnType);
@@ -144,16 +314,6 @@ namespace Swicli.Library
             return (T)mi.Invoke(target, args);
         }
 
-        string dll;
-        static int clid_gen;
-        AssemblyBuilder ab;
-        ModuleBuilder moduleb;
-        int id_gen;
-
-        public PInvoke(string dll)
-        {
-            this.dll = dll;
-        }
 
 #if NET40
         public override DynamicMetaObject GetMetaObject(Expression parameter)
@@ -161,30 +321,8 @@ namespace Swicli.Library
             return new PInvokeMetaObject(parameter, this);
         }
 #endif
-        public MethodInfo GetInvoke(string entry_point, Type[] arg_types, Type returnType)
-        {
-            if (ab == null)
-            {
-                AssemblyName aname = new AssemblyName("ctype" + Interlocked.Increment(ref clid_gen));
-                ab = AppDomain.CurrentDomain.DefineDynamicAssembly(aname, AssemblyBuilderAccess.Run);
-                moduleb = ab.DefineDynamicModule("ctype" + Interlocked.Increment(ref clid_gen));
-            }
 
-            // Can't use DynamicMethod as they don't support custom attributes
-            var tb = moduleb.DefineType("ctype_" + Interlocked.Increment(ref id_gen) + "_" + entry_point);
-            String entry_point_invoke = entry_point;
-            tb.DefinePInvokeMethod(entry_point_invoke, dll, entry_point,
-                       MethodAttributes.Static | MethodAttributes.PinvokeImpl,
-                       CallingConventions.Standard, returnType, arg_types,
-                       CallingConvention.StdCall, CharSet.Auto);
-
-            var t = tb.CreateType();
-            var m = t.GetMethod(entry_point_invoke, BindingFlags.Static | BindingFlags.NonPublic);
-
-            return m;
-        }
-
-        #region IPInvoke Members
+        #region PInvokeMetaObject Members
 
 
         public T InvokeDLL<T>(string mspecName, params object[] args)
@@ -193,13 +331,13 @@ namespace Swicli.Library
         }
 
         #endregion
-
+#if DEAD
 
         //
         // Our factory method
         //
 
-        public static T Create<T>(string modulePath) where T : INativeImport
+        public static T CreateZZZ<T>(string modulePath) where T : INativeImport
         {
             AssemblyName aName = new AssemblyName(Guid.NewGuid().ToString());
             AssemblyBuilder aBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Run);
@@ -246,7 +384,7 @@ namespace Swicli.Library
                     moduleName = attr.ModuleName;
 
                 //
-                // Define PInvoke method
+                // Define PInvokeMetaObject method
                 //
                 MethodBuilder pInvokeMethod = DefinePInvokeMethod(tBuilder, methodInfo.Name, moduleName,
                     attr.CallingConvention, attr.CharSet,
@@ -364,6 +502,59 @@ namespace Swicli.Library
             return proxyMethod;
 
         }
+#endif
     }
+    // #if NET40
+    /*
+    public class PInvokeMetaObject
+
+#if NET40
+        : DynamicMetaObject
+#endif
+    {
+        public PInvokeMetaObject(Expression parameter, object o)
+#if NET40
+
+            :            base(parameter, BindingRestrictions.Empty, o) { } 
+#else
+        {
+            i_parameter = parameter;
+            i_Obj = o;
+        }
+        Expression i_parameter;
+        Object i_Obj;
+#endif
+#if NET40
+        public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
+        {
+
+            var self = this.Expression;
+            var pinvoke = (PInvokeMetaObject)base.Value;
+
+            var arg_types = new Type[args.Length];
+            var arg_exps = new Expression[args.Length];
+        
+            for (int i = 0; i < args.Length; ++i)
+            {
+                arg_types[i] = args[i].LimitType;
+                arg_exps[i] = args[i].Expression;
+            }
+
+            var m = pinvoke.GetInvoke(binder.Name, arg_types, binder.ReturnType);
+            if (m == null)
+                return base.BindInvokeMember(binder, args);
+ 
+            var target = Expression.Block(
+                       Expression.Call(m, arg_exps),
+                       Expression.Default(typeof(object)));
+            var restrictions = BindingRestrictions.GetTypeRestriction(self, typeof(PInvokeMetaObject));
+
+            var dynamicMetaObject = new DynamicMetaObject(target, restrictions);
+
+            return dynamicMetaObject;
+        }
+    
+#endif
+    }*/
 
 }

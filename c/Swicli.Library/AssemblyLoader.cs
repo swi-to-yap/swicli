@@ -253,7 +253,8 @@ namespace Swicli.Library
         public static List<string> AssemblySearchPaths = new List<string>();
         public static List<Assembly> AssembliesLoaded = new List<Assembly>();
         public static List<string> AssembliesLoading = new List<string>();
-        public static List<Type> TypesLoaded = new List<Type>();
+        //public static List<Type> TypesLoaded = new List<Type>();
+        public static List<Type> TypesMethodsLoaded = new List<Type>();
         public static List<Type> TypesLoading = new List<Type>();
 
         public static bool ResolveAssembly(Assembly assembly)

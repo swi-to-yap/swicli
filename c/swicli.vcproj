@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="9.00"
 	Name="swicli"
-	ProjectGUID="{03BC6175-CC46-44EB-B731-A15AD348832F}"
+	ProjectGUID="{F957BFA7-8955-450D-89BC-5F2AAA5A4666}"
 	RootNamespace="DummyLibraryUsage"
 	Keyword="Win32Proj"
 	AssemblyReferenceSearchPaths="&quot;..\..\..\bin&quot;;&quot;$(SWI_HOME_DIR)\bin&quot;;&quot;$(SWI_HOME_DIR)\lib&quot;"
@@ -20,7 +20,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="..\lib\x64-win64"
-			IntermediateDirectory="..\lib\x64-win64"
+			IntermediateDirectory="..\obj\x64-win64"
 			ConfigurationType="2"
 			CharacterSet="1"
 			ManagedExtensions="1"
@@ -98,19 +98,6 @@
 		</Configuration>
 	</Configurations>
 	<References>
-		<AssemblyReference
-			RelativePath="System.dll"
-			AssemblyName="System, Version=2.0.0.0, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL"
-			MinFrameworkVersion="131072"
-		/>
-		<ProjectReference
-			ReferencedProjectIdentifier="{44645676-D8D5-4A1F-9F8C-4105912CFE68}"
-			RelativePathToProject=".\Swicli.Library\Swicli.Library.csproj"
-		/>
-		<ProjectReference
-			ReferencedProjectIdentifier="{E8ED0021-C042-40EB-AFA6-19E1577820A1}"
-			RelativePathToProject=".\SWICLITestDLL\SWICLITestDLL.csproj"
-		/>
 	</References>
 	<Files>
 		<Filter

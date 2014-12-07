@@ -125,7 +125,7 @@ namespace Swicli.Library
                     }
                 } else
                 {
-                    Debug("Cannot install hook ThreadExit to Mono");
+                    Debug("Not installing ThreadExit hook to System.Windows.Forms.Application");
                 }
                 var t = Thread.CurrentThread.ManagedThreadId;
                 //libpl.PL_thread_at_exit((DelegateParameter0)PrologThreadAtExitGlobal, IntPtr.Zero, 1);
@@ -135,7 +135,7 @@ namespace Swicli.Library
             }
         }
 
-        public static bool NoTestThreadFActory = false;
+        public static bool NoTestThreadFActory = true;
         public static void PingThreadFactories()
         {
             try

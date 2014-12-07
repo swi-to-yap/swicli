@@ -32,7 +32,7 @@ using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
 using SbsSW.SwiPlCs.Exceptions;
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-
+//using Func = Swicli.Library.Func;
 namespace Swicli.Library
 {
     /*
@@ -144,22 +144,29 @@ typedef struct // define a context structure  { ... } context;
         [PrologVisible]
         private static void AddForeignMethods(Type t, bool onlyAttributed, string requiredPrefix)
         {
-            lock (TypesLoaded)
+            lock (TypesMethodsLoaded)
             {
-                if (TypesLoaded.Contains(t) || TypesLoading.Contains(t)) return;
+                if (TypesLoading.Contains(t)) return;
+                if (TypesMethodsLoaded.Contains(t))
+                {
+                    return;
+                }
                 TypesLoading.Add(t);
                 AddForeignMethods0(t, onlyAttributed, requiredPrefix);
-                TypesLoading.Remove(t);
-                TypesLoaded.Add(t);
+                TypesLoading.Remove(t);                
             }
         }
         private static void AddForeignMethods0(Type t, bool onlyAttributed, string requiredPrefix)
         {
+            if (!onlyAttributed)
+            {
+                TypesMethodsLoaded.Add(t);
+            }
             MethodInfo[] methods = t.GetMethods(BindingFlagsJustStatic);
             foreach (var m in methods)
             {
                 object[] f = m.GetCustomAttributes(typeof(PrologVisible), false);
-                if (f == null || f.Length == 0) continue;
+                if (onlyAttributed) if (f == null || f.Length == 0) continue;
                 InternMethod(m, requiredPrefix);
             }
             foreach (var m in methods)
@@ -371,42 +378,42 @@ typedef struct // define a context structure  { ... } context;
                     {
                         case 0:
                             {
-                                d = new DelegateParameter0(() => (bool)InvokeCaught(minfo, null, ZERO_OBJECTS));
+                                d = new DelegateParameter0(() => (bool)InvokeCaughtB(minfo, null, ZERO_OBJECTS));
                                 PlEngine.RegisterForeign(module, pn, paramlen, d, PlForeignSwitches.None);
                                 return;
                             }
                         case 1:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter1(
-                                                         (p1) => (bool)InvokeCaught(minfo, null, new object[] { p1 })),
+                                                         (p1) => (bool)InvokeCaughtB(minfo, null, new object[] { p1 })),
                                                      PlForeignSwitches.None);
                             return;
                         case 2:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter2(
                                                          (p1, p2) =>
-                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2 })),
+                                                         (bool)InvokeCaughtB(minfo, null, new object[] { p1, p2 })),
                                                      PlForeignSwitches.None);
                             return;
                         case 3:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter3(
                                                          (p1, p2, p3) =>
-                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2, p3 })),
+                                                         (bool)InvokeCaughtB(minfo, null, new object[] { p1, p2, p3 })),
                                                      PlForeignSwitches.None);
                             return;
                         case 4:
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter4(
                                                          (p1, p2, p3, p4) =>
-                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2, p3, p4 })),
+                                                         (bool)InvokeCaughtB(minfo, null, new object[] { p1, p2, p3, p4 })),
                                                      PlForeignSwitches.None);
                             return;
                         case -5: // use the default please
                             PlEngine.RegisterForeign(module, pn, paramlen,
                                                      new DelegateParameter5(
                                                          (p1, p2, p3, p4, p5) =>
-                                                         (bool)InvokeCaught(minfo, null, new object[] { p1, p2, p3, p4, p5 })),
+                                                         (bool)InvokeCaughtB(minfo, null, new object[] { p1, p2, p3, p4, p5 })),
                                                      PlForeignSwitches.None);
                             return;
                         default:
@@ -514,7 +521,7 @@ typedef struct // define a context structure  { ... } context;
                 int tvargnum = isStatic ? 0 : 1;
                 object[] newVariable = PlListToCastedArray(tvargnum, termVector, list.GetParameters(),
                                                            out postCallHook);
-                object result = InvokeCaught(list, target, newVariable, postCallHook);
+                object result = InvokeCaught0(list, target, newVariable, postCallHook);
 
                 if (isbool)
                 {
@@ -532,15 +539,29 @@ typedef struct // define a context structure  { ... } context;
 
         private static object InvokeCaught(MethodInfo info, object o, object[] os)
         {
-            return InvokeCaught(info, o, os, Do_NOTHING);
+            return InvokeCaught0(info, o, os, Do_NOTHING);
+        }
+        private static bool InvokeCaughtB(MethodInfo info, object o, object[] os)
+        {
+            Object obj = InvokeCaught0(info, o, os, Do_NOTHING);
+            if (obj == null)
+            {
+                return false;
+            }
+            return (bool)obj;
         }
         private static object InvokeCaught(MethodInfo info, object o, object[] os, Action todo)
         {
             return InvokeCaught0(info, o, os, todo);
         }
+
         private static object InvokeCaught0(MethodInfo info, object o, object[] os, Action todo)
         {
-			if (!ClientReady) return null;
+            if (!ClientReady)
+            {
+                Warn("Client not Ready");
+                return null;
+            }
             Thread threadCurrentThread = Thread.CurrentThread;
             bool add1FrameCount = false;
             bool openFFI = false;
@@ -593,7 +614,9 @@ typedef struct // define a context structure  { ... } context;
                 CommitPostCall(todo);
                 if (ret == null)
                 {
-                    //return VoidOrNull(info);
+                    if (info.ReturnType == typeof(void)) return null;
+                    Warn("VoidOrNull " + info);
+                    return VoidOrNull(info);
                 }
                 return ret;
             }

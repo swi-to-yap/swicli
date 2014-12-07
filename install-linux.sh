@@ -4,8 +4,8 @@ export SWI_HOME_DIR=/usr/lib64/swipl-6.0.2
 export SWI_HOME_DIR=/usr/lib/swi-prolog
 if [ -z "$SWI_HOME_DIR" ]; then echo "set your SWI_HOME_DIR"; exit 1; fi
 if [ -z "$PACKSODIR" ]; then export PACKSODIR="${SWI_HOME_DIR}/lib/amd64"; fi
-if [ -z "$SCBUILDIR" ]; then export SCBUILDIR="./lib/amd64"; fi
-if [ -z "$DMCS_OPTS" ]; then DMCS_OPTS=" -lib:${SCBUILDIR} -unsafe -warn:0 -reference:System.Drawing.dll "; fi
+if [ -z "$SCBINDIR" ]; then export SCBINDIR="./bin"; fi
+if [ -z "$DMCS_OPTS" ]; then DMCS_OPTS=" -lib:${SCBINDIR} -unsafe -warn:0 -reference:System.Drawing.dll "; fi
 
 
 # remove previous system install
@@ -16,8 +16,8 @@ rm -f ${SWI_HOME_DIR}/library/swicffi.pl
 
 # install this directly
 cp prolog/swi*.pl ${SWI_HOME_DIR}/library/
-mkdir -p ${SCBUILDIR}/
-cp -a ${SCBUILDIR}/?* ${PACKSODIR}/
+mkdir -p ${SCBINDIR}/
+cp -a ${SCBINDIR}/?* ${PACKSODIR}/
 
 export UNKNOWN_SWI="Dont know the platform of SWI-Prolog"
 cp prolog/* $SWI_HOME_DIR/library/

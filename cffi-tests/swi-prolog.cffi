@@ -19,10 +19,10 @@
 
 (in-package :swi-prolog-ffi)
 
-(cffi:define-foreign-library libpl
-  (t (:default "libpl")))
+(cffi:define-foreign-library libswipl
+  (t (:default "libswipl")))
 
-(cffi:use-foreign-library libpl)
+(cffi:use-foreign-library libswipl)
 
 (defctype atom-t :unsigned-long
   "Prolog atom")

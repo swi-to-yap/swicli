@@ -13,7 +13,7 @@ defcfun just puts a convenient façade on foreign-funcall.1 Our earlier call to c
   cffi-user> (foreign-funcall "curl_global_init" :long 0 curl-code)
   => 0
 
-/*
+*/
 
 
   (define-foreign-library libcurl

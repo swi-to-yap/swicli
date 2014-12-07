@@ -36,6 +36,104 @@ using SbsSW.SwiPlCs;
 
 namespace Swicli.Library
 {
+#if NET20
+    public abstract class HashSet<T, TDictionary> : ICollection<T>  where TDictionary : IDictionary<T, byte>
+    {
+        protected TDictionary _internalDictionary;
+
+        protected HashSet(TDictionary dictionary)
+        {
+            _internalDictionary = dictionary;
+        }
+
+        // implement the ICollection<T> interface
+        // using your internal dictionary's Keys property
+
+        // for example:
+        public bool Add(T value)
+        {
+            if (!_internalDictionary.ContainsKey(value))
+            {
+                _internalDictionary.Add(value, 0);
+                return true;
+            }
+            return false;
+        }
+
+        // etc.
+
+
+        #region ICollection<T> Members
+
+        void ICollection<T>.Add(T item)
+        {
+            throw new NotImplementedException();
+        }
+
+        void ICollection<T>.Clear()
+        {
+            throw new NotImplementedException();
+        }
+
+        bool ICollection<T>.Contains(T item)
+        {
+            throw new NotImplementedException();
+        }
+
+        void ICollection<T>.CopyTo(T[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        int ICollection<T>.Count
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        bool ICollection<T>.IsReadOnly
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        bool ICollection<T>.Remove(T item)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region IEnumerable<T> Members
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+    }
+
+    public class HashSet<T> : HashSet<T, Dictionary<T, byte>>
+    {
+
+        public HashSet() : base(new Dictionary<T, byte>()) { }
+
+
+        internal bool Contains(string s)
+        {
+            throw new NotImplementedException();
+        }
+    }
+#endif
+
     public partial class PrologCLR
     {
         [ThreadStatic]
@@ -116,7 +214,7 @@ namespace Swicli.Library
         public static object tag_to_object(string s, bool allowConstants)
         {
             if (s == "true") return true;
-            if (s == "false") return true;
+            if (s == "false") return false;
             if (s == "null") return null;
             if (string.IsNullOrEmpty(s) || s == "void" /*|| !s.StartsWith("C#")*/)
             {

@@ -14,9 +14,12 @@ namespace SWICFFITests
         
         public static void Main(String[] args)
         {
+            PrologCLR.ClientReady = true;
+            PrologCLR.Main(args);
+            return;
             SWICFFITestsWindows.WinMain(args);
         #if NET40
-            dynamic d = new PInvoke("glibc");
+            dynamic d = new PInvokeMetaObject("glibc");
         #endif
             PrologCLR.cliDynTest_1();
            // PrologCLR.cliDynTest_3<String>();
@@ -56,7 +59,7 @@ namespace SWICFFITests
 
         public static void WinMain(String[] args)
         {
-            IPInvoke pi = PrologCLR.cliGetDll("user32.dll");
+            PInvokeMetaObject pi = PrologCLR.cliGetDll("user32.dll");
             pi.Invoke<int>("MessageBox",
                 new Type[] { typeof(IntPtr), typeof(String), typeof(String), typeof(uint) },
                  typeof(int),

@@ -38,9 +38,17 @@ using SbsSW.SwiPlCs;
 using Class = System.Type;
 #endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
+using OBJ_TO_OBJ = System.Func<object, object>;
 
 namespace Swicli.Library
 {
+ /*   public delegate void Action();
+    public delegate void Action<T>(T arg);
+    public delegate TResult Func<TResult>();
+    public delegate TResult Func<T, TResult>(T arg);
+    public delegate TResult Func_22<T, TResult>(T arg);
+    public delegate object OBJ_TO_OBJ(object from);
+    */
     public partial class PrologCLR
     {
 
@@ -93,8 +101,8 @@ namespace Swicli.Library
             return RecastObject(pt, r, fr);
         }
 
-        public static readonly Dictionary<string, List<Func<object, object>>> convertCache =
-            new Dictionary<string, List<Func<object, object>>>();
+        public static readonly Dictionary<string, List<OBJ_TO_OBJ>> convertCache =
+            new Dictionary<string, List<OBJ_TO_OBJ>>();
         private static object RecastObject(Type pt, object r, Type fr)
         {
             Exception ce = null;
@@ -166,17 +174,17 @@ namespace Swicli.Library
             return r;
         }
 
-        private static List<Func<object, object>> GetConvertCache(Type from, Type to)
+        private static List<OBJ_TO_OBJ> GetConvertCache(Type from, Type to)
         {
             string key = "" + from + "->" + to;
-            List<Func<object, object>> found;
+            List<OBJ_TO_OBJ> found;
             bool wasNew = true;
             lock (convertCache)
             {
                 wasNew = !convertCache.TryGetValue(key, out found);
                 if (wasNew)
                 {
-                    found = convertCache[key] = new List<Func<object, object>>();
+                    found = convertCache[key] = new List<OBJ_TO_OBJ>();
                 }
             }
             if (wasNew)
@@ -196,16 +204,16 @@ namespace Swicli.Library
             {
                 from = (converterMethod.GetParameters()[fromArg]).ParameterType;
             }
-            Func<object, object> meth = (a) => converterMethod.Invoke(null, new[] { a });
+            OBJ_TO_OBJ meth = (a) => converterMethod.Invoke(null, new[] { a });
             string key = "" + from + "->" + to;
-            List<Func<object, object>> found;
+            List<OBJ_TO_OBJ> found;
             bool wasNew = true;
             lock (convertCache)
             {
                 wasNew = !convertCache.TryGetValue(key, out found);
                 if (wasNew)
                 {
-                    found = convertCache[key] = new List<Func<object, object>>();
+                    found = convertCache[key] = new List<OBJ_TO_OBJ>();
                 }
                 found.Add(meth);
             }
@@ -236,16 +244,16 @@ namespace Swicli.Library
             }
         }
 
-        private static Func<object, object> findConversions(Type from, Type to, ICollection<Func<object, object>> allMethods)
+        private static OBJ_TO_OBJ findConversions(Type from, Type to, ICollection<OBJ_TO_OBJ> allMethods)
         {
-            Func<object, object> meth;
+            OBJ_TO_OBJ meth;
             if (to.IsAssignableFrom(from))
             {
                 meth = (r) => r;
                 if (allMethods != null) allMethods.Add(meth);
                 else return meth;
             }
-            Func<object, object> sysmeth = (r) =>
+            OBJ_TO_OBJ sysmeth = (r) =>
                                                {
                                                    CheckMI();
                                                    if (r == null)
@@ -418,9 +426,9 @@ namespace Swicli.Library
         /// <param name="allMethods"></param>
         /// <param name="onlyConverionAttribute"></param>
         /// <returns></returns>
-        private static Func<object, object> SomeConversionStaticMethod(Type to, Type srch, Type from, ICollection<Func<object, object>> allMethods, bool onlyConverionAttribute)
+        private static OBJ_TO_OBJ SomeConversionStaticMethod(Type to, Type srch, Type from, ICollection<OBJ_TO_OBJ> allMethods, bool onlyConverionAttribute)
         {
-            Func<object, object> meth;
+            OBJ_TO_OBJ meth;
             foreach (MethodInfo mi in srch.GetMethods(BindingFlagsJustStatic))
             {
                 if (mi.IsStatic)
@@ -544,8 +552,11 @@ namespace Swicli.Library
                                 {
                                     return m.Invoke(null, new object[] { s });
                                 }
-                                catch (Exception)
+                                catch (Exception la)
                                 {
+                                    Exception why = cliInnerException(la, -1);
+                                    var issue = "Cast failed converion " + why;
+                                    Debug(issue);
                                     continue;
                                 }
                             }
@@ -565,6 +576,21 @@ namespace Swicli.Library
                 default:
                     throw new ArgumentOutOfRangeException("plType=" + plType + " " + o.GetType() + " -> " + pt);
             }
+        }
+
+        public static Exception cliInnerException(Exception la, int depth)
+        {
+            Exception why = la.InnerException;
+            if (why == null) return la;
+            if (why != la)
+            {
+                if (depth < -0 || depth > 0)
+                {
+                    depth--;
+                    return cliInnerException(why, depth);
+                }
+            }
+            return why;
         }
 
         private static int ToVMNumber(object o, PlTerm term)

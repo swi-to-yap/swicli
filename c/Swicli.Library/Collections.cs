@@ -36,7 +36,7 @@ using Class = System.Type;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+//using System.Linq;
 using SbsSW.SwiPlCs;
 
 using PlTerm = SbsSW.SwiPlCs.PlTerm;

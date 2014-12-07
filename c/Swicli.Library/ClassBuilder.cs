@@ -39,9 +39,9 @@ using PlTerm = SbsSW.SwiPlCs.PlTerm;
 namespace Swicli.Library
 {
 
+
     partial class PrologCLR
     {
-
         [PrologVisible]
         public static void CreateEnumClassTest()
         {
@@ -59,12 +59,12 @@ namespace Swicli.Library
             // Create a dynamic assembly in the current application domain,  
             // and allow it to be executed and saved to disk.
             AssemblyName aName = new AssemblyName("TempAssembly");
-            AssemblyBuilder ab = currentDomain.DefineDynamicAssembly(
+            AssemblyBuilder m_assemblyBuilder = currentDomain.DefineDynamicAssembly(
                 aName, AssemblyBuilderAccess.RunAndSave);
 
             // Define a dynamic module in "TempAssembly" assembly. For a single-
             // module assembly, the module has the same name as the assembly.
-            ModuleBuilder mb = ab.DefineDynamicModule(aName.Name, aName.Name + ".dll");
+            ModuleBuilder mb = m_assemblyBuilder.DefineDynamicModule(aName.Name, aName.Name + ".dll");
 
             // Define a public enumeration with the name "Elevation" and an 
             // underlying type of Integer.
@@ -99,10 +99,10 @@ namespace Swicli.Library
                 //fb.SetCustomAttribute(new CustomAttributeBuilder
             }
 
-           
+
             // Create the type and save the assembly.
             Type finished = typeBuilder.CreateType();
-            ab.Save(aName.Name + ".dll");
+            m_assemblyBuilder.Save(aName.Name + ".dll");
 
             foreach (object o in Enum.GetValues(finished))
             {
@@ -137,12 +137,12 @@ namespace Swicli.Library
             // Create a dynamic assembly in the current application domain,  
             // and allow it to be executed and saved to disk.
             AssemblyName aName = new AssemblyName("TempAssembly");
-            AssemblyBuilder ab = currentDomain.DefineDynamicAssembly(
+            AssemblyBuilder m_assemblyBuilder = currentDomain.DefineDynamicAssembly(
                 aName, AssemblyBuilderAccess.RunAndSave);
 
             // Define a dynamic module in "TempAssembly" assembly. For a single-
             // module assembly, the module has the same name as the assembly.
-            ModuleBuilder mb = ab.DefineDynamicModule(aName.Name, aName.Name + ".dll");
+            ModuleBuilder mb = m_assemblyBuilder.DefineDynamicModule(aName.Name, aName.Name + ".dll");
 
             // Define a public enumeration with the name "Elevation" and an 
             // underlying type of Integer.
@@ -173,7 +173,7 @@ namespace Swicli.Library
 
             // Create the type and save the assembly.
             Type finished = typeBuilder.CreateType();
-            ab.Save(aName.Name + ".dll");
+            m_assemblyBuilder.Save(aName.Name + ".dll");
 
             foreach (var o in finished.GetMembers(BindingFlagsALL3))
             {
@@ -184,7 +184,8 @@ namespace Swicli.Library
         [PrologVisible]
         public static object cliCompileMember(PlTerm memberTerm)
         {
-            return cliCompileMember(memberTerm, null);
+            var cm = cliCompileMember(memberTerm, null);
+            return cm;
         }
         [PrologVisible]
         public static object cliCompileMember(PlTerm memberTerm, TypeBuilder typeBuilder)
@@ -232,6 +233,7 @@ namespace Swicli.Library
                             paramTypes_RCM, paramTypes_OCM);
                         */
                         var cb = typeBuilder.DefineMethod(memberName, PrologCLR.getMethodAttributes(access_pafv), rt, paramTypes);
+                        //cb.DefineParameter
                         return cb;
                     }
                 case "e/8":
@@ -293,12 +295,12 @@ namespace Swicli.Library
             // Create a dynamic assembly in the current application domain,  
             // and allow it to be executed and saved to disk.
             AssemblyName aName = new AssemblyName("TempAssembly_" + typeName);
-            AssemblyBuilder ab = currentDomain.DefineDynamicAssembly(
+            AssemblyBuilder m_assemblyBuilder = currentDomain.DefineDynamicAssembly(
                 aName, AssemblyBuilderAccess.RunAndSave);
 
             // Define a dynamic module in "TempAssembly" assembly. For a single-
             // module assembly, the module has the same name as the assembly.
-            ModuleBuilder mb = ab.DefineDynamicModule(aName.Name, aName.Name + ".dll");
+            ModuleBuilder mb = m_assemblyBuilder.DefineDynamicModule(aName.Name, aName.Name + ".dll");
 
             return mb.DefineType(typeName);
         }
@@ -336,7 +338,7 @@ namespace Swicli.Library
             if (plTerm.IsCompound) return cliIsFlagTrue(plTerm.Arg(0));
             return false;
         }
-  
+
         [PrologVisible]
         public static CustomAttributeBuilder cliCustomAttributeBuilder(PlTerm plattr)
         {
@@ -369,10 +371,9 @@ namespace Swicli.Library
 
         private static bool IsEmpty(PlTerm plattr)
         {
-            return (plattr.IsVar || plattr.IsNil);
+            return (plattr.IsVar || plattr.IsNil || plattr.ToString() == "@null");
         }
 
-        
         public static Attribute cliAsAttibute(PlTerm plattr)
         {
             if (plattr.IsCompound)
@@ -404,7 +405,7 @@ namespace Swicli.Library
 
             foreach (var fi in tdict.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public /*do NOT| BindingFlags.DeclaredOnly*/))
             {
-                dict[fi] = fi.GetValue(attr,null);
+                dict[fi] = fi.GetValue(attr, null);
             }
             return dict;
         }
@@ -413,7 +414,7 @@ namespace Swicli.Library
         {
             if (nextVal == null) return null;
             Type type = nextVal.GetType();
-            return RecastObject(nextVal.GetType(), ((int)RecastObject(typeof(int), nextVal,typeof(int))) + 1,type);
+            return RecastObject(nextVal.GetType(), ((int)RecastObject(typeof(int), nextVal, typeof(int))) + 1, type);
         }
     }
     /// <summary>
@@ -473,7 +474,7 @@ namespace Swicli.Library
                 var r_CM = parameters.Select(p => p.GetRequiredCustomModifiers()).ToArray();
                 var o_CM = parameters.Select(p => p.GetOptionalCustomModifiers()).ToArray();
 
-                var ctor = builder.DefineConstructor(MethodAttributes.Public, constructor.CallingConvention, parameterTypes,r_CM,o_CM);
+                var ctor = builder.DefineConstructor(MethodAttributes.Public, constructor.CallingConvention, parameterTypes, r_CM, o_CM);
                 for (var i = 0; i < parameters.Length; ++i)
                 {
                     var parameter = parameters[i];
@@ -534,7 +535,7 @@ namespace Swicli.Library
 
         private void BuildProperty(TypeBuilder typeBuilder, string name, Type type)
         {
-            FieldBuilder field = typeBuilder.DefineField("m" + name, type, FieldAttributes.Private);
+            FieldBuilder field = typeBuilder.DefineField("m_" + name, type, FieldAttributes.Private);
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(name, PropertyAttributes.None, type, null);
 
             //MethodAttributes getSetAttr = MethodAttributes.Public | MethodAttributes.HideBySig;

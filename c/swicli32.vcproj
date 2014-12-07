@@ -6,7 +6,6 @@
 	ProjectGUID="{F957BFA7-8955-450D-89BC-5F2AAA5A4684}"
 	RootNamespace="DummyLibraryUsage"
 	Keyword="Win32Proj"
-	AssemblyReferenceSearchPaths="&quot;..\..\..\bin&quot;"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -20,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\lib\i386-win32"
-			IntermediateDirectory="..\lib\i386-win32"
+			IntermediateDirectory="..\obj\i386-win32"
 			ConfigurationType="2"
 			CharacterSet="1"
 			ManagedExtensions="1"
@@ -44,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\Program Files\swipl\include;$(SWI_HOME_DIR)\include;$(SWI_HOME_DIR32)\include"
-				PreprocessorDefinitions="_DEBUG"
+				AdditionalIncludeDirectories="$(SWI_HOME_DIR32)\include;$(SWI_HOME_DIR)\include;C:\Program Files\swipl\include"
+				PreprocessorDefinitions="NDEBUG"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
@@ -64,15 +63,15 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="&quot;$(SWI_HOME_DIR32)\lib\libswipl.dll.a&quot;"
 				ShowProgress="2"
 				OutputFile="..\lib\i386-win32\swicli32.dll"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
 				SubSystem="2"
 				TargetMachine="1"
-				AllowIsolation="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -98,8 +97,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SWI_HOME_DIR)\bin"
-			IntermediateDirectory="$(SWI_HOME_DIR)\lib"
+			OutputDirectory="..\lib\i386-win32"
+			IntermediateDirectory="$(SWI_HOME_DIR32)\lib"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -141,8 +140,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;$(SWI_HOME_DIR)\lib\libswipl.dll.a&quot;"
-				OutputFile="$(SWI_HOME_DIR)\bin\swicli32.dll"
+				AdditionalDependencies="&quot;$(SWI_HOME_DIR32)\lib\libswipl.dll.a&quot;"
+				OutputFile="..\lib\i386-win32\swicli32.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -174,15 +173,6 @@
 		</Configuration>
 	</Configurations>
 	<References>
-		<AssemblyReference
-			RelativePath="System.dll"
-			AssemblyName="System, Version=2.0.0.0, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL"
-			MinFrameworkVersion="131072"
-		/>
-		<ProjectReference
-			ReferencedProjectIdentifier="{44645676-D8D5-4A1F-9F8C-4105912CFE68}"
-			RelativePathToProject=".\Swicli.Library\Swicli.Library.csproj"
-		/>
 	</References>
 	<Files>
 		<Filter
@@ -199,12 +189,6 @@
 			Name="Headers"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
-		</Filter>
-		<Filter
-			Name="Resources"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
 	</Files>

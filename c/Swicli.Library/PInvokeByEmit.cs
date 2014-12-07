@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+//using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
@@ -11,15 +11,9 @@ using System.Text;
 namespace Swicli.Library
 {
 
-    public interface IPInvoke
-    {
-        MethodInfo GetInvoke(string mspecName, Type[] paramz, Type returnType);
-        T Invoke<T>(string mspecName, Type[] paramz, Type returnType, object target, params object[] args);
-
-        T InvokeDLL<T>(string mspecName, params object[] args);
-    }
 
 
+#if false
     //
     // Base interface definition
     //
@@ -27,7 +21,6 @@ namespace Swicli.Library
     {
 
     }
-
     //
     // Attribute class definition
     //
@@ -290,4 +283,5 @@ namespace Swicli.Library
         }
 
     }
+#endif
 }
