@@ -213,7 +213,7 @@ lowercase(C1,C2) :- C1 >= 65, C1 =< 90, !, C2 is C1+32.
 lowercase(C,C).
 
 
-reader_tests:- cffi_test("(defcfun (:PL_query pl-query) :long (arg-1 :int))").
+reader_tests:- cffi_test("()").
 % Append:
 reader_tests:- 
    echo_forms("
@@ -265,8 +265,6 @@ public static extern int printf(String format, int i, double d);
 public static extern int printf(String format, int i, String s); 
 }
 */
-reader_tests:- cffi_test("(defcfun (\"PL_query\" pl-query) :long (arg-1 :int))").
-
 
 :-set_prolog_flag(double_quotes, string). 
 
@@ -311,15 +309,29 @@ cffi_to_param(T,O):-cdb_defctype(T,B),!,cffi_to_param(B,O),!.
 cffi_to_param(T,O):-cffi_to_keyword(T,O),!.
 
 
-cli_compile_cfun(Unmanaged,Managed,ReturnType,ParamTypes,ResultCode):-cffi_eval4(cli_compile_cfun(Unmanaged,Managed,ReturnType,ParamTypes,ResultCode)).
+cli_compile_cfun(Unmanaged,Managed,ReturnType,ParamTypes,ResultCode):-cdb_cli_get_dll(DLL,_),cffi_eval4(cfun(DLL,Unmanaged,Managed,ReturnType,ParamTypes)).
 cli_compile_cstruct(Unmanaged,ParamTypes,ResultCode):-cffi_eval4(cli_compile_cstruct(Unmanaged,ParamTypes,ResultCode)).
 'load-foreign-library'(Str):-cffi_eval4(cli_get_dll(Str,R)).
 defctype(Managed,Unmanaged):-asserta(cdb_defctype(Managed,Unmanaged)).
 
 
+display_class(O):- forall((cli_memb(O,PP),\+ contains_var(static(true),PP),cli_cast(PP,'System.Reflection.MemberInfo',MI),
+  cli_get(MI,['DeclaringType','Namespace'],DT)   % DT\="System", DT\="System.Reflection",
+  ),writeln(cli_memb(O,PP))).
+
 cffi_tests :- forall(cffi_test,true).
 
+cffi_test :- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),display_class(O).
+cffi_test :- cli_compile_type_raw([],[],"MyType",[f('Low',int(0),[],[]),f('High',int(100),['Static'],[])],['FlagsAttribute'],O),display_class(O).
+cffi_test_disabled :- cli_compile_type([int],[],"MyType",[f('Low'(0)),f('High'(100))],['FlagsAttribute'],_).
+
+cffi_test_disabled :- cli_compile_type(class([f(intValue,int(3))],foo,[]),NewClass),cli_new(NewClass,[],Instance),cli_get(Instance,intValue,Out).  %  it will return Out = 3.
+
 cffi_test:-cffi_test('
+
+  (defcunion uint32-bytes
+    (int-value :unsigned-int)
+    (bytes :unsigned-char :count 4))
 
 (defcenum my-boolean
     :no
@@ -363,8 +375,8 @@ cffi_test :- cli_is_windows, cli_get_dll('msvcrt',DLL), cli_cast(0,int,Zero), cl
 % cffi_test:- cli_memb(string,M),cli_compile_member(M,_Out),fail.
 % cffi_test:- cli_memb(int,M),cli_compile_member(M,_Out),fail.
 
-% cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,PP),\+ contains_var(static(true),PP),cli_cast(PP,'System.Reflection.MemberInfo',MI),cli_get(MI,['DeclaringType','Namespace'],DT),DT\="System",DT\="System.Reflection".
-% cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),cli_memb(O,PP),\+ contains_var(static(true),PP),cli_cast(PP,'System.Reflection.MemberInfo',MI).
+% cffi_test:- cli_compile_enum(int,'MyEnum',['Low'(0),'High'(100)],[],O),display_class(O).
+
 
 :-dynamic(cdb_definer/3).
 % cffi_test:-listing(cdb_definer/3).

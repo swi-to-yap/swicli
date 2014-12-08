@@ -200,7 +200,7 @@ namespace Swicli.Library
                 }
                 if (type == null)
                 {
-                    type = PrologCLR.getPrimitiveType(typeName);
+                    type = PrologCLR.GetPrimitiveType(typeName);
                 }               
                 if (type == null)
                 {

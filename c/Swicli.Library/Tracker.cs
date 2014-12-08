@@ -293,9 +293,9 @@ namespace Swicli.Library
 
         public static bool MakeArrayImmediate = false;           
         [ThreadStatic]
-        public static bool MakeNoRefs = false;
+        public static bool MakeNoRefs;
         [ThreadStatic]
-        public static bool MadeARef = false;
+        public static bool MadeARef;
 
         public static string object_to_tag(object o)
         {
@@ -528,8 +528,8 @@ namespace Swicli.Library
         /// This is no longer needed since we use atom GC (maybe)
         /// </summary>
         public static bool AlwaysUsePerThreadObjectTracker = true;
-        [ThreadStatic]
-        public static int ThisThreadTracked = 0;
+
+        [ThreadStatic] public static int ThisThreadTracked;// = 0;
 
         public static bool UsePerThreadObjectTracker
         {

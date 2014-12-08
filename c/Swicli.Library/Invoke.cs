@@ -43,15 +43,22 @@ namespace Swicli.Library
 {
     public partial class PrologCLR
     {
+
+        private static Type[] GetParamSpecFromObjects(PlTerm[] objectList)
+        {
+            if (objectList.Length == 0) return Type.EmptyTypes;
+            return GetParamSpec(ToTermArray(objectList), true);
+        }
+
         private static Type[] GetParamSpec(PlTerm memberSpec)
+        {
+            if (memberSpec.IsNil) return new Type[0]; 
+            return memberSpec.IsCompound ? GetParamSpec(ToTermArray(memberSpec), false) : null;
+        }
+        private static Type[] GetParamSpecFromObjects(PlTerm memberSpec)
         {
             if (memberSpec.IsNil) return new Type[0];
             return memberSpec.IsCompound ? GetParamSpec(ToTermArray(memberSpec), false) : null;
-        }
-
-        private static Type[][] GetGenericParamSpec(PlTerm memberSpec)
-        {
-            return null;// return memberSpec.IsCompound ? GetParamSpec(ToTermArray(memberSpec), false) : null;
         }
 
         private static Type[] GetParamSpec(PlTerm[] memberSpec, bool isObjects)
@@ -391,13 +398,33 @@ namespace Swicli.Library
             if (c == null)
             {
                 Error("Cant resolve clazzSpec {0}", clazzSpec);
+                {
+
+                    return false;
+                }
+            }
+            Action postCallHook;
+            object res;
+            if (!TryConstructObject(c, memberSpec, paramsIn, out postCallHook, out res))
+            {
                 return false;
             }
+            var ret = valueOut.FromObject(res);
+            CommitPostCall(postCallHook);
+            return ret;
+        }
+
+        private static bool TryConstructObject(Type c, PlTerm memberSpec, PlTerm paramsIn, //PlTerm valueOut,
+            out Action postCallHook, out object res)
+        {
+            // res = null;
+            postCallHook = null;
+
             Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             PlTerm[] paramIn = ToTermArray(paramsIn);
             if (paramz.Length == 0 && paramIn.Length > paramz.Length)
             {
-                paramz = GetParamSpec(paramIn, true);
+                paramz = GetParamSpecFromObjects(paramIn);
             }
             MethodBase mi = null;
             if (!c.IsAbstract) mi = findConstructorInfo(memberSpec, c, ref paramz);
@@ -408,18 +435,21 @@ namespace Swicli.Library
                 if (arity == 1)
                 {
                     mi = c.GetMethod("op_Implicit", (BindingFlags.Public | BindingFlags.Static), null, paramz,
-                                     new ParameterModifier[0]);
+                        new ParameterModifier[0]);
                     if (mi == null)
                     {
                         mi = c.GetMethod("op_Explicit", (BindingFlags.Public | BindingFlags.Static), null, paramz,
-                                         new ParameterModifier[0]);
+                            new ParameterModifier[0]);
                     }
                     if (mi == null)
                     {
                         if (c.IsPrimitive)
                         {
                             //Warn("Trying to constuct a primitive type");
-                            return valueOut.FromObject(Convert.ChangeType(GetInstance(paramIn[0]), c));
+                            {
+                                res = Convert.ChangeType(GetInstance(paramIn[0]), c);
+                                if (res != null) return true;
+                            }
                         }
                     }
                 }
@@ -432,12 +462,14 @@ namespace Swicli.Library
             if (mi == null)
             {
                 Error("Cant find constructor {0} on {1}", memberSpec, c);
-                return false;
-            }
-            Action postCallHook;
-            object[] values = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook);
-            object res;
 
+                res = null;
+                return false;
+
+            }
+
+
+            object[] values = PlListToCastedArray(paramIn, mi.GetParameters(), out postCallHook);
             // mono doesnt mind..
             //  typeof(System.Text.StringBuilder).GetConstructor(new[]{typeof(System.String)}).Invoke(null,new object[]{"hi there"}).ToString();
             // .NET doesnt
@@ -449,12 +481,10 @@ namespace Swicli.Library
             {
                 res = mi.Invoke(null, values);
             }
-            var ret = valueOut.FromObject(res);
-            CommitPostCall(postCallHook);
-            return ret;
+            return false;
         }
 
-        private static MethodBase BestMethod(Type[] paramz, MethodInfo[] members, Type returnType, bool mustStatic)
+        private static MethodBase BestMethod(Type[] paramz, IEnumerable<MethodInfo> members, Type returnType, bool mustStatic)
         {
             var maybes = new MethodBase[2];
             foreach (var infos in members)
@@ -550,7 +580,7 @@ namespace Swicli.Library
             PlTerm[] paramIn = ToTermArray(paramsIn);
             if (paramz.Length == 0 && paramIn.Length > paramz.Length)
             {
-                paramz = GetParamSpec(paramIn, true);
+                paramz = GetParamSpecFromObjects(paramIn);
             }
             var mi = findMethodInfo(memberSpec, paramz.Length, c, ref paramz, searchFlags);
             if (mi == null)
@@ -631,7 +661,7 @@ namespace Swicli.Library
             PlTerm[] paramIn = ToTermArray(paramsIn);
             if (paramz.Length == 0 && paramIn.Length > paramz.Length)
             {
-                paramz = GetParamSpec(paramIn, true);
+                paramz = GetParamSpecFromObjects(paramIn);
             }
             EventInfo evi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, evi, c);

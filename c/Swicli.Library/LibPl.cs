@@ -135,22 +135,30 @@ namespace SbsSW.SwiPlCs
             }
         }
 
-        public static void LoadUnmanagedLibrary(string fileName)
+        public static void LoadUnmanagedPrologLibrary(string fileName)
         {
 #if USESAFELIB
             if (m_hLibrary == null)
             {
                 if (PrologCLR.IsLinux)
-                {				
-                    m_hLibrary = NativeMethodsLinux.LoadLibrary("/lib64/pl-6.0.3/lib/x86_64/libswipl.so");
+                {
+                    if (fileName.EndsWith("libswipl.dll"))
+                    {
+                        fileName = "/usr/lib/swi-prolog/libswipl.so";
+                    }
+                    m_hLibrary = NativeMethodsLinux.LoadLibrary(fileName);
                     if (m_hLibrary.IsInvalid)
                     {
                         PrologCLR.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
-                       // int hr = Marshal.GetHRForLastWin32Error();
-                       // Marshal.ThrowExceptionForHR(hr);
+                        // int hr = Marshal.GetHRForLastWin32Error();
+                        // Marshal.ThrowExceptionForHR(hr);
                     }
                 }
-                else 
+                else
+                {
+                    fileName = fileName.Replace('/', '\\');
+                }
+                 
                 {
                     m_hLibrary = NativeMethodsWindows.LoadLibrary(fileName);
                     if (m_hLibrary.IsInvalid)
@@ -260,7 +268,7 @@ namespace SbsSW.SwiPlCs
             try
             {
                 TryLoadedLibPl = true;
-                LoadUnmanagedLibrary(SafeNativeMethods.DllFileName1);
+                LoadUnmanagedPrologLibrary(SafeNativeMethods.SwiplConstLibswiplDllFileName);
                 LoadedLibPl = true;
             }
             catch (Exception ex)

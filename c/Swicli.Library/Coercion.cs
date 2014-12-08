@@ -284,7 +284,9 @@ namespace Swicli.Library
                                {
                                    return null;
                                }
-                               return Enum.Parse(to, r.ToString());
+                               string rs = r.ToString();
+                               if (rs.Length == 0) return null;
+                               return Enum.Parse(to, rs);
                            };
                 if (allMethods != null) allMethods.Add(meth);
                 else return meth;
@@ -527,6 +529,7 @@ namespace Swicli.Library
                     }
                     break;
                 case PlType.PlAtom:
+                case PlType.PlNil:
                 case PlType.PlString:
                     {
                         if (plType == PlType.PlAtom && o.Name == "[]")
@@ -936,11 +939,11 @@ namespace Swicli.Library
             }
             return null;
         }
-
-        [ThreadStatic]
-        static Dictionary<string, object> threadLocaldict = new Dictionary<string, object>();
+        
+        [ThreadStatic] private static Dictionary<string, object> threadLocaldict;
         private static Dictionary<string, object> cliTLMem()
         {
+            if (threadLocaldict==null) threadLocaldict = new Dictionary<string, object>();
             return threadLocaldict;
         }
 

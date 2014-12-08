@@ -20,7 +20,7 @@
  */
 
 namespace Swicli.Library {
-
+    
     public enum MemberAccess {
         Public,
         Protected,

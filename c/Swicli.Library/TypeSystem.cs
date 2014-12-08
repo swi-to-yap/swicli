@@ -21,6 +21,8 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+
+using System.Linq;
 #if USE_IKVM
 using ikvm.extensions;
 using IKVM.Internal;
@@ -69,6 +71,7 @@ namespace Swicli.Library
         {
             return GetType(clazzSpec, false);
         }
+        
         public static Class GetType(PlTerm clazzSpec, bool canBeObjects)
         {
             if (clazzSpec.IsVar)
@@ -654,14 +657,11 @@ namespace Swicli.Library
                     }
                 }
             }
-            type = type ?? Type.GetType(typeName, false, false) ?? Type.GetType(typeName, false, true);
+            
             if (type == null)
             {
-                foreach (Assembly loaded in AssembliesLoaded)
-                {
-                    Type t = loaded.GetType(typeName, false);
-                    if (t != null) return t;
-                }
+                type = ResolveTypeInNameSpaces(typeName, false) ?? ResolveTypeInNameSpaces(typeName, true);
+
                 Type obj = null;
 #if USE_IKVM
                 try
@@ -679,9 +679,10 @@ namespace Swicli.Library
                     type = ikvm.runtime.Util.getInstanceTypeFromClass((Class)obj);
                 }
 #endif
+// ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (type == null)
                 {
-                    type = getPrimitiveType(typeName);
+                    type = GetPrimitiveType(typeName);
                 }
                 if (type == null)
                 {
@@ -700,7 +701,42 @@ namespace Swicli.Library
             return type;
         }
 
-        public static Class getPrimitiveType(String name)
+        public static Type ResolveTypeInNameSpaces(string typeName, bool ignoreCase)
+        {
+            string name0 = typeName;
+            Type t = Type.GetType(typeName, false, ignoreCase) ??
+                     AssembliesLoaded.Select(loaded => loaded.GetType(name0, false, ignoreCase))
+                         .FirstOrDefault(tt => tt != null);
+            if (t != null) return t;
+
+            System.Diagnostics.Debug.Assert(PrefixStrings != null, "PrefixStrings != null");
+            if (PrefixStrings != null && PrefixStrings.Count != 0)
+                foreach (string prefix0 in PrefixStrings)
+                {
+                    string typeName0 = prefix0 + typeName;
+                    t = Type.GetType(typeName0, false, ignoreCase);
+                    if (t != null) return t;
+                    foreach (Assembly loaded in AssembliesLoaded)
+                    {
+                        t = loaded.GetType(typeName0, false, ignoreCase);
+                        if (t != null)
+                        {
+                            return t;
+                        }
+
+                    }
+                }
+            return null;
+        }
+
+        [ThreadStatic] public static List<string> _PrefixStrings;
+        public static List<string> PrefixStrings
+        {
+            get { return _PrefixStrings ?? (_PrefixStrings = new List<string>() {"System."}); }
+        }
+
+
+        public static Class GetPrimitiveType(String name)
         {
             if (name.StartsWith("["))
             {
@@ -710,13 +746,16 @@ namespace Swicli.Library
             switch (name)
             {
                 case "byte":
+                case ":byte":
                 case "B":
                 case "uint8":
                 case "ubyte":
+                case ":unsigned-byte":
                     return typeof(byte);
                 case "int16":
                     return typeof(Int16);
                 case "int":
+                case ":int":
                 case "int32":
                 case "I":
                     return typeof(int);
@@ -731,6 +770,7 @@ namespace Swicli.Library
                 case "int8":
                     return typeof(sbyte);
                 case "uint":
+                case ":unsigned-int":
                 case "uint32":
                     return typeof(uint);
                 case "uint16":

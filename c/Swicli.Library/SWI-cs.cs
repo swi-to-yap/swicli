@@ -1099,7 +1099,10 @@ namespace SbsSW.SwiPlCs
 
         /// <summary>Return true if <see cref="PlTerm"/> is a compound term with functor ./2 or the atom [].</summary>
         /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
-        public bool IsNewList { get { return IsCompound && Arity == 2 && Name == LIST_FUNCTOR_NAME; } }
+        public bool IsNewList { get
+        {
+            return (PlType == PlType.PlListPair) || (IsCompound && Arity == 2 && Name == LIST_FUNCTOR_NAME);
+        } }
 
         /// <summary>Return true if <see cref="PlTerm"/> is atomic (not variable or compound).</summary>
         /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
@@ -1111,7 +1114,7 @@ namespace SbsSW.SwiPlCs
 
         /// <summary>Return true if <see cref="PlTerm"/> is an empty list or nil.</summary>
         /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
-        public bool IsNil { get { return IsAtom &&  0 != libpl.PL_get_nil(this.TermRef); } }
+        public bool IsNil { get { return  0 != libpl.PL_get_nil(this.TermRef); } }
 
         #endregion
 

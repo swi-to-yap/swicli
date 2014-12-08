@@ -10,6 +10,8 @@
 
 :- cffi_tests.
 
+% :- cli_compile_type([int],[],"MyType",['Low'(0),'High'(100)],['FlagsAttribute'],O).
+
 end_of_file.
 
 :- load_forms(['in-package',':swi-prolog-ffi']).
