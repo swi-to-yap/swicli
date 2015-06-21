@@ -528,8 +528,9 @@ namespace Swicli.Library
                         }
                     }
                     break;
-                case PlType.PlAtom:
                 case PlType.PlNil:
+                       return CastCompoundTerm(o.Name, o.Arity, o, o, pt);
+                case PlType.PlAtom:
                 case PlType.PlString:
                     {
                         if (plType == PlType.PlAtom && o.Name == "[]")
