@@ -21,51 +21,51 @@ defctype(PrologName,CType,Comment)  http://common-lisp.net/project/cffi/manual/h
 
 6.1 Built-In Types
 
-— Foreign Type: :char
-— Foreign Type: :unsigned-char
-— Foreign Type: :short
-— Foreign Type: :unsigned-short
-— Foreign Type: :int
-— Foreign Type: :unsigned-int
-— Foreign Type: :long
-— Foreign Type: :unsigned-long
-— Foreign Type: :long-long
-— Foreign Type: :unsigned-long-long
+â€” Foreign Type: :char
+â€” Foreign Type: :unsigned-char
+â€” Foreign Type: :short
+â€” Foreign Type: :unsigned-short
+â€” Foreign Type: :int
+â€” Foreign Type: :unsigned-int
+â€” Foreign Type: :long
+â€” Foreign Type: :unsigned-long
+â€” Foreign Type: :long-long
+â€” Foreign Type: :unsigned-long-long
 These types correspond to the native C integer types according to the ABI of the Lisp implementation's host system.
 
 :long-long and :unsigned-long-long are not supported natively on all implementations. However, they are emulated by mem-ref and mem-set.
 
 When those types are not available, the symbol cffi-sys::no-long-long is pushed into *features*.
 
-— Foreign Type: :uchar
-— Foreign Type: :ushort
-— Foreign Type: :uint
-— Foreign Type: :ulong
-— Foreign Type: :llong
-— Foreign Type: :ullong
+â€” Foreign Type: :uchar
+â€” Foreign Type: :ushort
+â€” Foreign Type: :uint
+â€” Foreign Type: :ulong
+â€” Foreign Type: :llong
+â€” Foreign Type: :ullong
 For convenience, the above types are provided as shortcuts for unsigned-char, unsigned-short, unsigned-int, unsigned-long, long-long and unsigned-long-long, respectively.
 
-— Foreign Type: :int8
-— Foreign Type: :uint8
-— Foreign Type: :int16
-— Foreign Type: :uint16
-— Foreign Type: :int32
-— Foreign Type: :uint32
-— Foreign Type: :int64
-— Foreign Type: :uint64
+â€” Foreign Type: :int8
+â€” Foreign Type: :uint8
+â€” Foreign Type: :int16
+â€” Foreign Type: :uint16
+â€” Foreign Type: :int32
+â€” Foreign Type: :uint32
+â€” Foreign Type: :int64
+â€” Foreign Type: :uint64
 Foreign integer types of specific sizes, corresponding to the C types defined in stdint.h.
 
-— Foreign Type: :float
-— Foreign Type: :double
+â€” Foreign Type: :float
+â€” Foreign Type: :double
 On all systems, the :float and :double types represent a C float and double, respectively. On most but not all systems, :float and :double represent a Lisp single-float and double-float, respectively. It is not so useful to consider the relationship between Lisp types and C types as isomorphic, as simply to recognize the relationship, and relative precision, among each respective category.
 
-— Foreign Type: :long-double
+â€” Foreign Type: :long-double
 This type is only supported on SCL.
 
-— Foreign Type: :pointer &optional type
+â€” Foreign Type: :pointer &optional type
 A foreign pointer to an object of any type, corresponding to void *. You can optionally specify type of pointer (e.g. (:pointer :char)). Although CFFI won't do anything with that information yet, it is useful for documentation purposes.
 
-— Foreign Type: :void
+â€” Foreign Type: :void
 No type at all. Only valid as the return type of a function.
 
 
@@ -130,6 +130,14 @@ cffi_eval(F):-cffi_eval1(F).
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    Parsing (Using LISPy CFFI File format)
+   Dont be confused when you are seeing S-Expressions in this library
+   I am merely using Trisk;s S-Expresssion parser (from lisprolog.pl with no incentives yet to strip out unused parts)
+   Why? There has been 20+ years developing the Lisp FFI design and tests to be leveraged and no incentive (see as it as a 
+   distraction at least to msyelf) to copy the entire technology from S to P (prolog terms) syntax.
+   Ammusingly the SWI-Prolog interface     is available in S format and not  P 
+   https://github.com/logicmoo/swicli/blob/master/cffi-tests/swi-prolog.cffi
+   So for those who think it needs to become P .. Please go ahead and get the processes started, I wil continue to
+   develop the technology to enable either.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 
