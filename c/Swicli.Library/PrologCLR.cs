@@ -3,7 +3,7 @@
 *  Project: Swicli.Library - Two Way Interface for .NET and MONO to SWI-Prolog
 *  Author:        Douglas R. Miles
 *  E-mail:        logicmoo@gmail.com
-*  WWW:           http://www.logicmoo.com
+*  WWW:           http://www.logicmoo.org
 *  Copyright (C):  2010-2012 LogicMOO Developement
 *
 *  This library is free software; you can redistribute it and/or
