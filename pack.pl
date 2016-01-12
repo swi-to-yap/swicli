@@ -1,5 +1,5 @@
 name(swicli).
-version('1.0.2').
+version('1.1.1').
 title('SWI-Prolog interface to C/C++/.NET/Mono/Objective-C').
 keywords([mono,'.net',csharp,cffi,c,cpp]).
 author( 'Douglas Miles', 'http://www.linkedin.com/in/logicmoo' ).
