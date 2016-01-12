@@ -6,5 +6,5 @@ author( 'Douglas Miles', 'http://www.linkedin.com/in/logicmoo' ).
 packager( 'Douglas Miles', 'http://www.linkedin.com/in/logicmoo' ).
 maintainer( 'Douglas Miles', 'http://www.linkedin.com/in/logicmoo' ).
 home( 'https://github.com/logicmoo/swicli' ).
-download( 'https://github.com/logicmoo/swicli/release/*.zip' ).
+download( 'https://github.com/logicmoo/swicli/archive/*.zip' ).
 provides(swicffi).
