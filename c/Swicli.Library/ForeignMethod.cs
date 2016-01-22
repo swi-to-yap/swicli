@@ -333,7 +333,7 @@ typedef struct // define a context structure  { ... } context;
             if (!minfo.IsStatic && defaultInstanceWhenMissing == null)
             {
                 throw new NotSupportedException(string.Format(
-                                                    "Interning a staic method without a target {0}:{1} -> {2}", module,
+                                                    "Interning a dynamic method without a target {0}:{1} -> {2}", module,
                                                     pn, minfo));
             }
             ExportedMethodInfos.Add(minfo);
