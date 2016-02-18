@@ -49,6 +49,7 @@ ENDFOREACH( file1 )
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	COMMAND dmcs -unsafe /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
 )
 
