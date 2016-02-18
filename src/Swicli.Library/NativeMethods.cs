@@ -5,7 +5,7 @@
 *  Author:        Douglas R. Miles
 *                 Uwe Lesta (SbsSW.SwiPlCs classes)
 *  E-mail:        logicmoo@gmail.com
-*  WWW:           http://www.logicmoo.com
+*  WWW:           http://www.logicmoo.org
 *  Copyright (C): 2008, Uwe Lesta SBS-Softwaresysteme GmbH, 
 *     2010-2012 LogicMOO Developement
 *
@@ -184,11 +184,19 @@ namespace SbsSW.SwiPlCs
 	[ System.Security.SuppressUnmanagedCodeSecurity ]
 	public static class SafeNativeMethods
 	{
-		//private const string DllFileName = @"D:\Lesta\swi-pl\pl\bin\LibPl.dll";
-        //"libpl.dll" for 5.7.8; 
-        //public const string DllFileName = @"swiprolog\bin\swipl.dll";
+
+		
+// .DLL is translated to .so by MONO
+#if PROLOG_SWI
         public const string CONST_LIBSWIPL_DllFileName = @"libswipl.dll";
-        //public const string DllFileName = @"C:\Program Files\pl\bin\swipl.dll";
+#else
+#if PROLOG_SWI_6
+        //private const string DllFileName = @"LibPl.dll";
+#else // Yap
+        public const string CONST_LIBSWIPL_DllFileName = @"libYAP.dll";
+#endif
+#endif
+
         static SafeNativeMethods()
         {
             if (PrologCLR.IsLinux) return;
@@ -211,7 +219,7 @@ namespace SbsSW.SwiPlCs
             get { return CONST_LIBSWIPL_DllFileName; }
         }
 
-	    //public const string DllFileName = @"swipl.dll";
+	    
 		public static string SwiplConstLibswiplDllFileName
 		{
 			get

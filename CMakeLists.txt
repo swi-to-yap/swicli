@@ -1,6 +1,9 @@
 CMAKE_MINIMUM_REQUIRED ( VERSION 2.8 )
 
+add_subdirectory (src/Swicli.Library)
+
 PROJECT ( YAP_SWICLI C )
+
 
 SET ( YAP_SWICLI_VERSION 1.1.1)
 
@@ -25,7 +28,7 @@ IF (MONO_FOUND)
   #  MONO_LIBRARIES   - Link these to use MONO
   #  MONO_INCLUDE_DIR - Include directory for using MONO
 
-  add_subdirectory (src/swicli64)
+add_subdirectory (src/swicli64)
 
 if (YAP_ROOT)
 	set(YAP_SYSTEM_OPTIONS "MONO " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
@@ -36,4 +39,6 @@ INSTALL(FILES prolog/swicli.pl DESTINATION ${libpl})
 INSTALL(FILES prolog/swicffi.pl DESTINATION ${libpl})
 
 ENDIF (MONO_FOUND)
+
+
 
