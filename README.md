@@ -1,85 +1,210 @@
-# configure-cmake
+YAP/SWI-Prolog 2-Way interface to Common Language Infrastructure (.NET)
 
-configure-cmake is an autotools-style configure script for CMake-based
-projects.
+====
 
-People building software on Linux or BSD generally expect to be able
-to `./configure && make && make install`, but projects using CMake
-don't provide a `configure` script.  To make matters worse, the syntax
-for invoking CMake is awkward and has issues with discoverability.
+== [http://code.google.com/p/opensim4opencog/downloads/list Download] ==
+ The File named (SWICLI-xxx-DIST-xxxx.zip)
+== [https://github.com/logicmoo/swicli Sourcecode] ==
 
-configure-cmake provides an easy way for people accustomed to
-autotools-based projects to build your CMake-based project.  Just drop
-the `configure` script into your project; it will accept most of the
-standard autotools arguments (such as `--prefix` and `--libdir`), as
-well as custom arguments you can specify, and map them to the correct
-CMake definitions.
+== [http://logicmoo.github.com/swicli/api.html Documentation] ==
 
-It it as permissively licensed as I can make it (CC0 is basically an
-attempt to put something in the public domain), so please feel free to
-copy it into your project—users accustomed to autotools will thank
-you!  You only need the `configure` script—you shouldn't have to worry
-about the LICENSE or README files.
+== [http://logicmoo.github.com/swicli/documentation.html Old Docs] ==
 
-## Customizing
 
-You can add --enable-*, --disable-*, and --with-* parameters without
-modifying the `configure` script itself.  Instead, you only need to
-create a `.configure-custom.sh` file next to your `configure` script.
-`configure` will then source `.configure-custom.sh` and use the
-variables it finds to integrate the parameters.
+Example of Prject that uses it:
+* https://github.com/Tandysony/opensim4opencog/blob/master/bin/prolog/cogbot.pl
 
-The main variables you can set in `.configure-custom.sh` are:
+== Introduction ==
 
-* **ENABLE_VARS**
-* **DISABLE_VARS**
-* **WITH_VARS**
 
-Each of these a space separated list of values.  Each value is a '|'
-separated list of up to 3 values, though the first two are optional.
-The syntax is:
+* Provides SWI-Prolog full control of the Common Language Infrastructure (.NET/Mono).
+* Provides SWI-Prolog full control of the C/C++/Objective-C control of unmanaged Libraries
+* SwiCLI is a module that works on Linux, OS/X and MS Windows.
+* cli_ preds loosely based on jpl_ interface of JPL
+* Reused/_Pasted much code from SwiPlCS by Uwe Lesta_
+* See library/swicli.pl for predicate list/documentaton
+* See library/swicli.pl for predicate list/documentaton
 
-```
-name[|value[|transformed-name]]
-```
+Installation 
+====
 
-The `name` will be be the name of the argument passed to
-`configure`—for enable it will be `--enable-name`, for disable it will
-be `--disable-name`, and for with it will be `--with-name`.
+=== MS windows _requires .NET 4.0 or above_ ===
+Copy these two directories onto your Prolog Install Dir.
+{{{
 
-The optional `value` is the value passed to CMake, which defaults to
-"yes".
+Copy pl\bin  to your  c:\program files[x86]\swipl\bin  Folder
+Copy pl\library  to your  c:\program files[x86]\swipl\library  Folder
 
-The optional `transformed-name` is the key passed to CMake, which
-defaults to `name` uppercased and all non-alpha-numeric characters
-replaced with underscores.  For example:
+Install .NET 4.0 
 
-```
-ENABLE_VARS="foo|bar|BAZ"
-```
+And thats it!
 
-Will create a `--enable-foo` parameter for people to pass to
-`configure`.  If passed, `configure` will then pass `-DBAZ=bar` to
-CMake.
+pl//bin/   
+pl/library/
+}}}
 
-Additionally, if you would like to supply a custom documentation
-string for parameters (which is displayed in the output of
-`./configure --help`), you can create an additional variable called
-`ENABLE/DISABLE/WITH_transformed-name_DOC`.  Continuing or previous
-example:
+=== Linux OS/X _requires Mono (2.10.8+)_ ===
+Ubuntu:  apt-get install mono-devel libmono-system-Data-Linq4.0-cil libmono-system-xml-Linq4.0-cil libmono-microsoft-visualbasic10.0-cil
+Copy these two directories onto your Prolog Install Dir
+{{{
+pl/lib/  
+pl/library/
+}}}
 
-```
-ENABLE_BAZ_DOC="enable integration with foo"
-```
+== Running / Examples ==
+{{{
 
-Will result in the output of `./configure --help` displaying
+root@titan:~# swipl
+Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 7.1.26)
+Copyright (c) 1990-2014 University of Amsterdam, VU Amsterdam
+SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under certain conditions.
+Please visit http://www.swi-prolog.org for details.
 
-```
-  --enable-foo            enable integration with foo
-```
+For help, use ?- help(Topic). or ?- apropos(Word).
 
-If you would like to see an example of how this works, you can use the
-[`.configure-custom.sh` from Squash](https://github.com/quixdb/squash/blob/master/.configure-custom.sh).
+?- use_module(library(swicffi)).
+SetupProlog
 
-Note that you can also use `--pass-thru -DBAZ=bar` to achieve the same
-result.
+Cannot install hook ThreadExit to Mono
+Swicli.Library.Embedded.install suceeded
+true.
+
+?- cli_get_dll('libc.so.6',DLL),cli_call(DLL,printf,["I have been clicked %d times\n", 2],O).
+I have been clicked 2 times
+DLL = @'C#666',
+O = @void.
+
+?-
+
+
+}}}
+{{{
+[root@titan bin]# . mono_sysvars.sh
+[root@titan bin]# swipl
+Welcome to SWI-Prolog (Multi-threaded, 64 bits, Version 6.0.2)
+Copyright (c) 1990-2011 University of Amsterdam, VU Amsterdam
+SWI-Prolog comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under certain conditions.
+Please visit http://www.swi-prolog.org for details.
+
+For help, use ?- help(Topic). or ?- apropos(Word).
+
+?- use_module(library(swicli)).
+SetupProlog
+
+RegisterPLCSForeigns
+done RegisterPLCSForeigns
+Swicli.Library.Embedded.install suceeded
+% library(swicli) compiled into swicli 2.00 sec, 1,411 clauses
+true.
+
+?- cli_call('System.Threading.ThreadPool','GetAvailableThreads'(X,Y),_).
+X = 200,
+Y = 8.
+}}}
+
+{{{
+?- cli_new('System.Collections.Generic.List'('System.String'),[int],[10],Obj).
+Obj = @'C#516939544'.
+}}}
+{{{
+?- cli_get($Obj,'Count',Out).
+Out = 0.
+}}}
+{{{
+?- cli_call($Obj,'Add'("foo"),Out).
+Out = @void.
+}}}
+{{{
+?- cli_call($Obj,'Add'("bar"),Out).
+Out = @void.
+}}}
+{{{
+?- cli_get($Out,'Count',Out).
+Out = 2.
+}}}
+{{{
+?- cli_col($Obj,E).
+E = "foo" ;
+E = "bar" ;
+false.
+}}}
+{{{
+?- cli_get_type($Obj,Type),cli_get_typename(Type,Name).
+Type = @'C#516939520',
+Name = 'System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]'.
+}}}
+{{{
+?- cli_get_type($Obj,Type), cli_to_typespec(Type,Name).
+Type = @'C#516939520',
+Name = 'System.Collections.Generic.List'('String').
+
+?- cli_get_typespec($Obj,Type).
+Type = 'System.Collections.Generic.List'('String').
+
+
+}}}
+{{{
+?- cli_shorttype(stringl,'System.Collections.Generic.List'('String')).
+true.
+}}}
+{{{
+?- cli_new(stringl,[],O).
+O = @'C#516939472'.
+}}}
+{{{
+?- cli_get_type($O,Type),cli_typespec(Type,Name).
+Type = @'C#516939520',
+Name = 'System.Collections.Generic.List'('String').
+}}}
+
+cli_add_event_handler( +Class_or_Object, +EventName, +PredicateIndicator) :- 
+
+==ADDING A NEW EVENT HOOK==
+
+We already at least know that the object we want to hook is found via our call to
+{{{
+?- botget(['Self'],AM).
+}}}
+So we ask for the e/7 (event handlers of the members)
+{{{
+?- botget(['Self'],AM),cli_memb(AM,e(A,B,C,D,E,F,G)). 
+}}}
+ Press ;;;; a few times until you find the event Name you need (in the B var)
+{{{
+A = 6,                                          % index number
+B = 'IM',                                       % event name
+C = 'System.EventHandler'('InstantMessageEventArgs'),   % the delegation type
+D = ['Object', 'InstantMessageEventArgs'],      % the parameter types (2)
+E = [],                                         % the generic paramters
+F = decl(static(false), 'AgentManager'),        % the static/non static-ness.. the declaring class
+G = access_pafv(true, false, false, false)      % the PAFV bits
+}}}
+
+So reading the parameter types  "['Object', 'InstantMessageEventArgs']" lets you know the predicate needs at least two arguments
+
+And "F = decl(static(false), 'AgentManager')" says add on extra argument at start for Origin
+
+  handle_im(Origin,Obj,IM)*
+
+So registering the event is done:
+{{{
+?- botget(['Self'],AM), cli_add_event_handler(AM,'IM',handle_im(_Origin,_Object,_InstantMessageEventArgs))
+}}}
+To target a predicate such as:
+{{{
+handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
+}}}
+
+= Release notes =
+
+== TODO ==
+ # Publish the autoload examples (to website - outside of this package)
+
+== 0.7 ==
+ # Started making release notes
+ # The PL_agc_hook (Atom GC) tracker for deciding when to GC foriegn objects
+ # Added the dynamic registrations for exit and abort hooks
+ 
+
