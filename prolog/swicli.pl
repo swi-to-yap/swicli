@@ -71,14 +71,20 @@ cli_is_windows:-current_prolog_flag(windows, true),!.
 cli_is_windows:-current_prolog_flag(shared_object_extension,dll),!.
 cli_is_windows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH),!.
 
-swicli_so_name(X):- current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli.
 
-swicli_foreign_name(foreign(X)):-swicli_so_name(X).
+swicli_so_name(X):- current_prolog_flag(version_data,Data), Data=swi(_,_,_,_),!, 
+                   (current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli).
+swicli_so_name(swicliYap64):-current_prolog_flag(address_bits,64),!.
+swicli_so_name(swicliYap32).
+
 swicli_foreign_name(lib(X)):-swicli_so_name(X).
+swicli_foreign_name(foreign(X)):-swicli_so_name(X).
 swicli_foreign_name(bin(X)):-swicli_so_name(X).
 swicli_foreign_name(X):-swicli_so_name(X).
 
+:- use_module(library(shlib)).
 cli_ensure_so_loaded:- swicli_so_loaded(_),!.
+cli_ensure_so_loaded:- swicli_so_name(FO), load_foreign_library(FO),assert(swicli_so_loaded(FO)),!.
 cli_ensure_so_loaded:- swicli_so_name(FO), load_foreign_library(foreign(FO),install),assert(swicli_so_loaded(FO)),!.
 cli_ensure_so_loaded:- swicli_foreign_name(Y),throw(missing_dll(Y)).
 

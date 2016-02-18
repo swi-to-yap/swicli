@@ -32,8 +32,8 @@ if (YAP_ROOT)
 	set(YAP_SYSTEM_OPTIONS "SWICLI " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
 endif()
 
-#INSTALL(FILES swicli.pl DESTINATION ${libpl})
-#INSTALL(FILES swicffi.pl DESTINATION ${libpl})
+INSTALL(FILES prolog/swicli.pl DESTINATION ${libpl})
+INSTALL(FILES prolog/swicffi.pl DESTINATION ${libpl})
 
 ENDIF (MONO_FOUND)
 
