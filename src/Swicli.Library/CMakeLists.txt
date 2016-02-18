@@ -54,5 +54,8 @@ add_custom_command(
 
 add_custom_target(YAP_SWICLILIB ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll)
 
+if(NOT dlls)
+	set(dlls /tmp)
+endif()
 
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll DESTINATION /tmp )
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll DESTINATION ${dlls} )
