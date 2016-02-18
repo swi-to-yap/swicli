@@ -1,4 +1,6 @@
-= SWI-Prolog 2-Way interface to Common Language Infrastructure (.NET) =
+YAP/SWI-Prolog 2-Way interface to Common Language Infrastructure (.NET)
+
+====
 
 == [http://code.google.com/p/opensim4opencog/downloads/list Download] ==
  The File named (SWICLI-xxx-DIST-xxxx.zip)
@@ -8,17 +10,23 @@
 
 == [http://logicmoo.github.com/swicli/documentation.html Old Docs] ==
 
+
+Example of Prject that uses it:
+* https://github.com/Tandysony/opensim4opencog/blob/master/bin/prolog/cogbot.pl
+
 == Introduction ==
 
-  * Provides SWI-Prolog full control of the Common Language Infrastructure (.NET/Mono).
-  * Provides SWI-Prolog full control of the C/C++/Objective-C control of unmanaged Libraries
-  * SwiCLI is a module that works on Linux, OS/X and MS Windows.
-  * cli_ preds loosely based on jpl_ interface of JPL
-  * Reused/_Pasted much code from SwiPlCS by Uwe Lesta_
-  * See library/swicli.pl for predicate list/documentaton
-  * See library/swicli.pl for predicate list/documentaton
 
-== Installation ==
+* Provides SWI-Prolog full control of the Common Language Infrastructure (.NET/Mono).
+* Provides SWI-Prolog full control of the C/C++/Objective-C control of unmanaged Libraries
+* SwiCLI is a module that works on Linux, OS/X and MS Windows.
+* cli_ preds loosely based on jpl_ interface of JPL
+* Reused/_Pasted much code from SwiPlCS by Uwe Lesta_
+* See library/swicli.pl for predicate list/documentaton
+* See library/swicli.pl for predicate list/documentaton
+
+Installation 
+====
 
 === MS windows _requires .NET 4.0 or above_ ===
 Copy these two directories onto your Prolog Install Dir.
