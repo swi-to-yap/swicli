@@ -38,7 +38,6 @@ PrologCLRExt.cs
 RuntimeTypeInfo.cs
 SWI-cs.cs
 SWI-cs-PlQuery.cs
-SwiPlCs.csproj
 Threads.cs
 Tracker.cs
 TypeSystem.cs
@@ -50,7 +49,10 @@ ENDFOREACH( file1 )
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll
-	COMMAND dmcs /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
+	COMMAND dmcs -unsafe /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
 )
 
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll DESTINATION ${dlls} )
+add_custom_target(YAP_SWICLILIB ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll)
+
+
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll DESTINATION /tmp )
