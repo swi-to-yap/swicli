@@ -16,7 +16,7 @@ vc100.pdb
 *.obj
 *.exp
 temp/
-*~
+*.bak
 bin
 lib
 *.exe

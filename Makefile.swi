@@ -1,0 +1,43 @@
+# HOW DIO I EMULATE THIS?
+
+
+/*
+        eval `swipl --dump-runtime-variables`
+                CC="gcc"
+                PLBASE="/usr/local/lib/swipl-7.3.13"
+                PLARCH="x86_64-linux"
+                PLLIBS=""
+                PLLIB="-lswipl"
+                PLCFLAGS="-DO_DEBUG=1 -pthread -fPIC"
+                PLLDFLAGS="-rdynamic -O2 -g3 -pthread -Wl,-rpath=/usr/local/lib/swipl-7.3.13/lib/x86_64-linux"
+                PLSOEXT="so"
+                PLTHREADS="yes"
+        gcc -c -fpic -D_REENTRANT -DO_DEBUG=1 -pthread -fPIC -D__SWI_PROLOG__ -I/usr/local/lib/swipl-7.3.13/include -I/usr/lib/pkgconfig/../../include/mono-2.0 -o src/swicli64/swicli64.o src/swicli64/swicli64.c
+        gcc -o lib/amd64/swicli64.so -shared -rdynamic -O2 -g3 -pthread -Wl,-rpath=/usr/local/lib/swipl-7.3.13/lib/x86_64-linux src/swicli64/swicli64.o -L/usr/local/lib/swipl-7.3.13/lib/x86_64-linux -L/usr/lib/pkgconfig/../../lib -lmono-2.0 -lm -lrt -ldl -lpthread -lm -lswipl
+        rm src/swicli64/swicli64.o
+
+*/
+mkdir -p lib/x86_64-linux/
+swipl-ld -m64 -shared -o lib/x86_64-linux/swicli.so src/swicli64/swicli.c `pkg-config --cflags --libs mono-2` -lm
+mkdir -p lib/i386-linux/
+swipl-ld -m32 -shared -o lib/i386-linux/swicli32.so src/swicli64/swicli32.c `pkg-config --cflags --libs mono-2` -lm
+mkdir -p lib/amd64/
+swipl-ld -m64 -shared -o lib/amd64/swicli.so src/swicli64/swicli.c `pkg-config --cflags --libs mono-2` -lm
+# CC=swipl-ld
+
+SOBJ=	$(PACKSODIR)/swicli.$(SOEXT)
+CFLAGS+= -D_REENTRANT -I/usr/lib/pkgconfig/../../include/mono-2.0  -L/usr/lib/pkgconfig/../../lib -lmono-2.0 -lm -lrt -ldl -lpthread
+LIBS= -D_REENTRANT -I/usr/lib/pkgconfig/../../include/mono-2.0  -L/usr/lib/pkgconfig/../../lib -lmono-2.0 -lm -lrt -ldl -lpthread
+
+all:	$(SOBJ)
+
+$(SOBJ): src/swicli64/swicli.o
+	mkdir -p $(PACKSODIR)
+	$(LD) $(LDSOFLAGS) -o $@ $(SWISOLIB) $< $(LIBS)
+
+check::
+install::
+clean:
+	rm -f src/swicli64/swicli.o
+distclean: clean
+	rm -f $(SOBJ)

@@ -1,30 +1,39 @@
-cmake_minimum_required (VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED ( VERSION 2.8 )
 
-project(swicli)
+PROJECT ( YAP_SWICLI C )
 
-set(CMAKE_LOCAL_ROOT ${CMAKE_SOURCE_DIR}/cmake)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_LOCAL_ROOT}/Modules")
+SET ( YAP_SWICLI_VERSION 1.1.1)
 
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
+SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
-enable_language(CSharp)
+SET( CMAKE_FIND_FRAMEWORK LAST)
+SET( CMAKE_FIND_APPBUNDLE LAST)
 
-# cmake_minimum_required(VERSION 3.2)
-# project(InterOp)
+if (NOT YAP_FOUND)
+  FIND_PACKAGE(YAP REQUIRED)
+ENDIF (NOT YAP_FOUND)
 
-# TODO: https://help.github.com/articles/creating-project-pages-manually/
+IF (NOT YAP_FOUND)
+  MESSAGE (SEND_ERROR "YAP was not found!")
+ENDIF (NOT YAP_FOUND)
 
-# TODO: Handle Windows Shared libs: https://cmake.org/Wiki/BuildingWinDLL
 
+find_package(Mono REQUIRED)
 
-	# add_subdirectory (src/swicli32)
+IF (MONO_FOUND)
+  #  MONO_FOUND       - system has MONO
+  #  MONO_LIBRARIES   - Link these to use MONO
+  #  MONO_INCLUDE_DIR - Include directory for using MONO
 
-	add_subdirectory (src/swicli64)
+  add_subdirectory (src/swicli64)
 
-  # add_subdirectory (src/Swicli.Library)  
+if (YAP_ROOT)
+	set(YAP_SYSTEM_OPTIONS "MONO " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
+	set(YAP_SYSTEM_OPTIONS "SWICLI " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
+endif()
 
-	install(FILES prolog/swicli.pl prolog/swicffi.pl
-			DESTINATION ${libpl}
-    )
+#INSTALL(FILES swicli.pl DESTINATION ${libpl})
+#INSTALL(FILES swicffi.pl DESTINATION ${libpl})
+
+ENDIF (MONO_FOUND)
 

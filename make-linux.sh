@@ -11,10 +11,10 @@ mkdir -p ${SCBINDIR}
 echo doing local C build
 mkdir -p lib/x86_64-linux/
 cp src/Swicli.Library/app.config lib/x86_64-linux/swicli.dll.config
-swipl-ld -m64 -shared -o lib/x86_64-linux/swicli.so src/swicli/swicli.src `pkg-config --cflags --libs mono-2` -lm
+swipl-ld -m64 -shared -o lib/x86_64-linux/swicli.so src/swicli/swicli.c `pkg-config --cflags --libs mono-2` -lm
 mkdir -p lib/i386-linux/
 cp src/Swicli.Library/app.config lib/i386-linux/swicli32.dll.config
-swipl-ld -m32 -shared -o lib/i386-linux/swicli32.so src/swicli/swicli32.src `pkg-config --cflags --libs mono-2` -lm
+swipl-ld -m32 -shared -o lib/i386-linux/swicli32.so src/swicli/swicli32.c `pkg-config --cflags --libs mono-2` -lm
 
 mkdir -p lib/amd64/
 cp -a lib/x86_64-linux/?* lib/amd64/

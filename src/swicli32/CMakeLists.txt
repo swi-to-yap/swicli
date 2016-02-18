@@ -15,9 +15,9 @@ target_link_libraries(swicliYap32 libYap ${MONO_LIBRARIES} ${IKVM_LIBRARIES})
   
 set_target_properties(swicliYap32 
  PROPERTIES
-    OUTPUT_NAME swicli32 )
+    OUTPUT_NAME swicliYap32 )
   
-  # set(YAP_SYSTEM_OPTIONS "swicli " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
+  # set(YAP_SYSTEM_OPTIONS "SWICLIYAP32 " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
   install(TARGETS  swicliYap32
     LIBRARY DESTINATION ${dlls}
 		ARCHIVE DESTINATION ${dlls}
