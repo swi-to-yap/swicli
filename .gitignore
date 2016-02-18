@@ -16,6 +16,16 @@ vc100.pdb
 *.obj
 *.exp
 temp/
+*.bak
+bin
+lib
+*.exe
+build
+Makefile
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+
 **/BuildLog.htm
 c/SWICLI.sln.cache
 PInvokeSignatureGeneratorSource/
