@@ -50,7 +50,7 @@ ENDFOREACH( file1 )
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	COMMAND dmcs -unsafe /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
+	COMMAND dmcs -unsafe -warn:0 -define:PROLOG_YAP /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
 )
 
 add_custom_target(YAP_SWICLILIB ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll)
