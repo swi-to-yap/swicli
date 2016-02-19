@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="swicli\swicli.c">
+    <ClCompile Include="swicli64\swicli64.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

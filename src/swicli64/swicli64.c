@@ -51,17 +51,61 @@ typedef char gchar;
 #include <SWI-Prolog.h>
 //#include <exception>
 
+#define UN_STR(dname,dnamestr) if (dname) {if (PL_is_variable(dname)) PL_unify_atom_chars(dname,dnamestr);  else PL_get_atom_chars(dname, &dnamestr);}
+
 #ifdef WINDOWS_CPP
 extern "C" {
 #endif //WINDOWS_CPP
+
+
+#ifndef WINDOWS_CPP
+	static int MonoInited = 0;
+	static MonoDomain* domain;
+#endif
+
+	
+	// install_t == __declspec( dllexport )
+
+	static foreign_t cli_init_domain(term_t dname, term_t cname, term_t vname) 	
+	{ 
+		char *dnamestr = "swicli";
+		char *cnamestr = NULL;
+		char *vnamestr = "v4.0.0.0";
+		UN_STR(dname, dnamestr);
+		UN_STR(cname, cnamestr);
+		UN_STR(vname, vnamestr);
+					
+#ifndef WINDOWS_CPP
+		if (!MonoInited)
+		{
+			MonoInited = 1;
+			/*
+			* Load the default Mono configuration file, this is needed
+			* if you are planning on using the dllmaps defined on the
+			* system configuration
+			*/
+			mono_config_parse (cnamestr);
+
+			/*  mono_jit_init() creates a domain: each assembly is loaded and run in a MonoDomain. */
+			domain = mono_jit_init_version  (dnamestr,vnamestr);
+			if(domain==0) ;
+			/* add our special internal call, so that C# code can call us back. */
+			//mono_add_internal_call ("MonoEmbed::gimme", gimme);
+		}
+#endif
+		return TRUE;
+	}
 
 	/// static MonoString* gimme () {   	return mono_string_new (mono_domain_get (), "All your monos are belong to us!"); }
 
 	/// ?- load_foreign_library(swicli).
 	/// This DLL shall have given: cli_load_lib(+AppDomainName, +AssemblyPartialName, +FullClassName, +StaticMethodName).
 	/// used like: cli_load_lib('SWIProlog','SwiPlCs','SbsSW.SwiPlCs.swipl_win','install').
-	int cli_load_lib(term_t dname, term_t aname, term_t cname, term_t mname) 	
+	static foreign_t cli_load_lib(term_t dname, term_t aname, term_t cname, term_t mname) 	
 	{ 
+		
+		if(cli_init_domain(dname,0,0)) return FALSE;
+
 		char *dnamestr;
 		char *anamestr;
 		char *cnamestr;
@@ -84,24 +128,7 @@ extern "C" {
 			if (method == nullptr) return PL_warning("No method found named %s", mnamestr);
 			method->Invoke(nullptr, gcnew cli::array<System::Object^,1>(0));
 #else        
-			static int MonoInited = 0;
-			static MonoDomain* domain;
 			
-			if (!MonoInited) {
-				MonoInited = 1;
-				/*
-				* Load the default Mono configuration file, this is needed
-				* if you are planning on using the dllmaps defined on the
-				* system configuration
-				*/
-				mono_config_parse ("swicli.dll.config");
-
-				/*  mono_jit_init() creates a domain: each assembly is loaded and run in a MonoDomain. */
-				domain = mono_jit_init_version  (dnamestr,"v4.0.0.0");
-				if(domain==0) ;
-				/* add our special internal call, so that C# code can call us back. */
-				//mono_add_internal_call ("MonoEmbed::gimme", gimme);
-			}
 
 			MonoImageOpenStatus status = MONO_IMAGE_OK;
 
@@ -112,7 +139,7 @@ extern "C" {
 			MonoImage* image = mono_assembly_get_image(assembly);
 			if (!image) return PL_warning("No image module %s", anamestr);
 
-			char str[255];
+			char str[512];
 			strcpy(str,cnamestr);
 			strcat(str,":");
 			strcat(str,mnamestr);
@@ -138,15 +165,41 @@ extern "C" {
 		PL_fail;
 	}
 
-	// install_t == __declspec( dllexport )
-	install_t install()
+static
+ PL_extension predspecs[] =
 	{
-		PL_register_foreign("cli_load_lib", 4, (pl_function_t)cli_load_lib, 0);
+	  { "cli_load_lib",					 	4, (pl_function_t)cli_load_lib,			0 },
+	  { "cli_init_domain",				3, (pl_function_t)cli_init_domain,	0 },
+	  { NULL,							 				0, (pl_function_t)NULL,  						0 }
+	};
+
+
+  install_t  install()
+	{
+		PL_register_extensions( predspecs);
+		PL_warning("Runing Install!");
 	}
-	install_t swicli_install()
+
+
+	install_t install_swicliYap64()
 	{
 		install();
 	}
+
+	install_t install_libswicliYap64()
+	{
+		install();
+	}
+
+	install_t install_libswi64()
+	{
+		install();
+	}
+	install_t install_libswi()
+	{
+		install();
+	}
+
 
 #ifdef WINDOWS_CPP
 }

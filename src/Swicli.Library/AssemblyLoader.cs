@@ -57,7 +57,7 @@ namespace Swicli.Library
                 PrologCLR.RedirectStreams = false;
                 PrologCLR.SetupProlog();
                 PrologCLR.ConsoleWriteLine(typeof(Embedded).FullName + ".install suceeded");
-				PrologCLR.ClientReady = true;
+                PrologCLR.ClientReady = true;
                 return libpl.PL_succeed;
             }
             catch (Exception e)

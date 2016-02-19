@@ -10,6 +10,9 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="swicli32\swicli32.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F957BFA7-8955-450D-89BC-5F2AAA5A4684}</ProjectGuid>
     <RootNamespace>DummyLibraryUsage</RootNamespace>
@@ -101,9 +104,6 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="swicli\swicli32.c" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

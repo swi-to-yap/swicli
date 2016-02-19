@@ -1,4 +1,4 @@
-/** <module>  Swicli.Library - Two Way Interface for .NET and MONO to/from SWI-Prolog
+/** Swicli.Library - Two Way Interface for .NET and MONO to/from SWI-Prolog
 *  Author:        Douglas R. Miles
 *  E-mail:        logicmoo@gmail.com
 *  WWW:           http://www.logicmoo.com
@@ -18,29 +18,39 @@
 *  License along with this library; if not, write to the Free Software
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
-The easiest way to install on SWI is via the package manager. 
-Simply do:
-==
-     ?- pack_install( swicli ).
-==
-And you are good to go.
-*********************************************************/
-
+*/
 :- module(swicli,
           [
             module_functor/4,
             to_string/2,
-            member_elipse/2
+            member_elipse/2,
+					  cli_init/0
           ]).
 
+/** <module>  Swicli.Library - Two Way Interface for .NET and MONO to/from SWI-Prolog
+*
+The easiest way to install on SWI is via the package manager. 
+Simply do:
+==
+     ?- pack_install( swicli ).
 
-:-meta_predicate(cli_add_event_handler(+,+,0)).
-:-meta_predicate(cli_new_delegate(+,0,+)).
-:-meta_predicate(cli_new_delegate_term(+,0,+,-)).
+     ?- use_module(library(swicli )).
+==
 
+*********************************************************/
+*/
 
-:- push_operators([op(600, fx, ('*'))]).
-:- push_operators([op(600, fx, ('@'))]). 
+:- meta_predicate(cli_add_event_handler(+,+,0)).
+:- meta_predicate(cli_new_delegate(+,0,+)).
+:- meta_predicate(cli_new_delegate_term(+,0,+,-)).
+:- use_module(library(lists)).
+:- use_module(library(shlib)).
+:- use_module(library(system)).
+
+is_swi:- current_prolog_flag(version_data,DATA),DATA=swi(_,_,_,_).
+
+%:- push_operators([op(600, fx, ('*'))]).
+%:- push_operators([op(600, fx, ('@'))]). 
 :- set_prolog_flag(double_quotes,string).
 
 
@@ -54,43 +64,243 @@ no_repeats(Call):- term_variables(Call,Vs), CONS = [_],!, Call, (( \+ memberchk_
 
 debug_call(Call):- catch((Call,debug(swicli,'SUCCEED: ~q.~n',[Call])),E,(debug(swicli), debug(swicli,'ERROR: ~q.~n',[E=Call]))) *-> true; debug(swicli,'FAILED: ~q.~n',[Call]) .
 
-cli_tests:- debugging(swicli),!,forall(clause(swicli_test,Call),Call).
+cli_tests:- debugging(swicli),!,forall(clause(swicli_test,Call),Call),!.
 cli_tests:- cli_debug,forall(clause(swicli_test,Call),debug_call(Call)),cli_nodebug.
 
 :- discontiguous(swicli_test/0).
 
 swicli_test :- cli_debug.
 
+
+:- discontiguous(cli_init0/0).
+
+
+		 /*******************************
+		 *             PATHS            *
+		 *******************************/
+
+:- multifile user:file_search_path/2.
+:- dynamic   user:file_search_path/2.
+
+:- if(current_prolog_flag(version_data,yap(_,_,_,_))).
+
+user:file_search_path(jar, library('.')).
+:- else.
+user:file_search_path(jar, swi(lib)).
+:- endif.
+
+%% @pred 	add_search_path(+Var, +Value) is det.
+%
+%	Add value to the end of  search-path   Var.  Value is normally a
+%	directory. Does not change the environment  if Dir is already in
+%	Var.
+%
+%	@param Value	Path to add in OS notation.
+
+add_search_path(Path, Dir) :- 
+	(   getenv(Path, Old)
+	->  (   current_prolog_flag(windows, true)
+	    ->	Sep = (;)
+	    ;	Sep = (:)
+	    ),
+	    (	atomic_list_concat(Current, Sep, Old),
+		memberchk(Dir, Current)
+	    ->	true			% already present
+	    ;	atomic_list_concat([Old, Sep, Dir], New),
+		setenv(Path, New)
+	    )
+	;   setenv(Path, Dir)
+	).
+
+%% @pred 	path_sep(-Sep:atom)
+%
+%	Separator  used  the  the  OS    in  =PATH=,  =LD_LIBRARY_PATH=,
+%	=ASSEMBLYPATH=, etc.
+
+path_sep((;)) :- 
+	current_prolog_flag(windows, true), !.
+path_sep(:).
+
+		 /*******************************
+		 *         LOAD THE RUNTIME         *
+		 *******************************/
+
+%% @pred       check_framework_environment
+%
+%       Verify the Framework environment.  Preferably   we  would create, but
+%       most Unix systems do not   allow putenv("LD_LIBRARY_PATH=..." in
+%       the current process. A suggesting found on  the net is to modify
+%       LD_LIBRARY_PATH right at startup and  next execv() yourself, but
+%       this doesn't work if we want to load Framework on demand or if Prolog
+%       itself is embedded in another application.
+%
+%       So, after reading lots of pages on   the web, I decided checking
+%       the environment and producing a sensible   error  message is the
+%       best we can do.
+%
+%       Please not that Framework2 doesn't require   $ASSEMBLYPATH to be set, so
+%       we do not check for that.
+
+check_framework_libs(RUNTIME, Framework) :- 
+    location( framework_root, '/' , Root),
+    libfile( runtime, Root, RUNTIME),
+    libfile( framework, Root, Framework), !.
+
+% try FRAMEWORK_HOME, registry, etc..
+location( framework_root, _, Home) :- 
+    getenv( 'FRAMEWORK_HOME', Home ).
+location(framework_root, _, MONO) :- 
+    % OS well-known
+    member(Root, [ '/usr/lib',
+		   '/usr/local/lib',
+                   '/opt/lib',
+  '/Library/Framework/FrameworkVirtualMachines',
+  '/System/Library/Frameworks'
+		 ]),
+    exists_directory(Root),
+    dontnet_mono( Root, MONO).
+
+dontnet_mono( Home, J ) :- 
+    member(Extension, [framework, runtime, 'runtime/*framework*', 'runtime/*dontnet*', 'runtime/*sun*', 'dontnet*/Contents/Home', 'FrameworkVM.framework/Home'] ),
+    absolute_file_name( Extension, [expand(true), relative_to(Home), access(exists), file_type( directory ), file_errors(fail), solutions(all) ], J0 ),
+    pick_dontnet_mono(J0, J).
+
+  
+pick_dontnet_mono(J, J).
+pick_dontnet_mono(J0, J) :- 
+    absolute_file_name( 'mono*', [expand(true), relative_to(J0), access(exists), file_type( directory ), file_errors(fail), solutions(all) ], J ).
+pick_dontnet_mono(J0, J) :- 
+    absolute_file_name( 'dontnet*', [expand(true), relative_to(J0), access(exists), file_type( directory ), file_errors(fail), solutions(all) ], J ).
+    
+
+libfile(Base, HomeLib, File) :- 
+  framework_arch( Arch ),
+  monovm(Base, LBase),
+  atom_concat(['lib/',Arch,LBase], Lib),
+  absolute_file_name( Lib, [relative_to(HomeLib), access(read), file_type( executable),  expand(true), file_errors(fail), solutions(all)], File ).
+libfile(Base, HomeLib, File) :- 
+  monovm(Base, LBase),
+  atom_concat(['lib',LBase], Lib),
+  absolute_file_name( Lib, [relative_to(HomeLib), access(read), file_type( executable),  expand(true), file_errors(fail), solutions(all)], File ).
+  
+monovm( runtime, '/server/libruntime' ).
+monovm( runtime, '/client/libruntime' ).
+monovm( framework, '/libframework' ).
+
+framework_arch( amd64 ) :- 
+    current_prolog_flag( arch, x86_64 ).
+
+
+%% @pred 	library_search_path(-Dirs:list, -EnvVar) is det.
+%
+%	Dirs  is  the  list   of    directories   searched   for  shared
+%	objects/DLLs. EnvVar is the variable in which the search path os
+%	stored.
+
+library_search_path(Path, EnvVar) :- 
+	current_prolog_flag(shared_object_search_path, EnvVar),
+	path_sep(Sep),
+	phrase(framework_dirs, _Extra),
+	(   getenv(EnvVar, Env),
+	    atomic_list_concat(Path, Sep, Env)
+	->  true
+	;   Path = []
+	).
+
+
+%% @pred       add_swicli_to_assemblypath
+%
+%       Add swicli.jar to =ASSEMBLYPATH= to facilitate callbacks
+
+add_swicli_to_assemblypath :- 
+	absolute_file_name(jar('swicli.jar'),
+			   [ access(read)
+			   ], SwicliLibraryDLL), !,
+	(   getenv('MONO_PATH', Old)
+	->  true
+	;   Old = '.'
+	),
+	(       current_prolog_flag(windows, true)
+	->      Separator = ';'
+	;       Separator = ':'
+	),
+	atomic_list_concat([SwicliLibraryDLL, Old], Separator, New),
+	setenv('MONO_PATH', New).
+
+
+%% @pred 	add_swicli_to_ldpath(+SWICLI) is det.
+%
+%	Add the directory holding swicli.so  to   search  path  for dynamic
+%	libraries. This is needed for callback   from Framework. Framework appears
+%	to use its own search  and  the   new  value  of the variable is
+%	picked up correctly.
+
+add_swicli_to_ldpath(SWICLI, File) :- 
+	absolute_file_name(SWICLI, File,
+			   [ file_type(executable),
+			     access(read),
+			     file_errors(fail)
+			   ]),
+	file_directory_name(File, Dir),
+	prolog_to_os_filename(Dir, OsDir),
+	current_prolog_flag(shared_object_search_path, PathVar),
+	add_search_path(PathVar, OsDir).
+
+%% @pred 	add_framework_to_ldpath is det.
+%
+%	Adds the directories holding runtime.dll and framework.dll to the %PATH%.
+%	This appears to work on Windows. Unfortunately most Unix systems
+%	appear to inspect the content of LD_LIBRARY_PATH only once.
+
+add_framework_to_ldpath(_LIBFRAMEWORK, LIBRUNTIME) :- 
+    add_lib_to_ldpath(LIBRUNTIME),
+    fail.
+add_framework_to_ldpath(LIBFRAMEWORK, _LIBRUNTIME) :- 
+    add_lib_to_ldpath(LIBFRAMEWORK),
+    fail.
+add_framework_to_ldpath(_,_).
+
 %=========================================
 % Load C++ DLL
 %=========================================
-:-dynamic(swicli_so_loaded/1).
 
-cli_is_windows:-current_prolog_flag(unix,true),!,fail.
-cli_is_windows:-current_prolog_flag(windows, true),!.
-cli_is_windows:-current_prolog_flag(shared_object_extension,dll),!.
-cli_is_windows:-current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH),!.
+:- dynamic(swicli_so_loaded/1).
+
+cli_is_windows:- current_prolog_flag(unix,true),!,fail.
+cli_is_windows:- current_prolog_flag(windows, true),!.
+cli_is_windows:- current_prolog_flag(shared_object_extension,dll),!.
+cli_is_windows:- current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',ARCH),!.
+
+%% @pred       libswicli(-Spec) is det.
+%
+%       Return the spec for loading the   SWICLI shared object. This shared
+%       object must be called libswicliYap.so as the Framework System.LoadLibrary()
+%       call used by swicli.jar adds the lib* prefix.
+libswicli(X):- 
+	 (current_prolog_flag(unix,true)->Lib='lib';Lib=''),
+	 (is_swi->VM='';VM='Yap'),
+   current_prolog_flag(address_bits,Bits),
+   atomic_list_concat([Lib,swicli,VM,Bits],X).
+
+swicli_foreign_name(foreign(X)):- libswicli(X).
+swicli_foreign_name(ext(X)):- libswicli(X).
+swicli_foreign_name(lib(X)):- libswicli(X).
+swicli_foreign_name(bin(X)):- libswicli(X).
+swicli_foreign_name(jar(X)):- libswicli(X).
+swicli_foreign_name(X):- libswicli(X).
 
 
-swicli_so_name(X):- current_prolog_flag(version_data,Data), Data=swi(_,_,_,_),!, 
-                   (current_prolog_flag(address_bits,32) -> X = swicli32 ;  X= swicli).
-swicli_so_name(swicliYap64):-current_prolog_flag(address_bits,64),!.
-swicli_so_name(swicliYap32).
-
-swicli_foreign_name(lib(X)):-swicli_so_name(X).
-swicli_foreign_name(foreign(X)):-swicli_so_name(X).
-swicli_foreign_name(bin(X)):-swicli_so_name(X).
-swicli_foreign_name(X):-swicli_so_name(X).
-
-:- use_module(library(shlib)).
 cli_ensure_so_loaded:- swicli_so_loaded(_),!.
-cli_ensure_so_loaded:- swicli_so_name(FO), load_foreign_library(FO),assert(swicli_so_loaded(FO)),!.
-cli_ensure_so_loaded:- swicli_so_name(FO), load_foreign_library(foreign(FO),install),assert(swicli_so_loaded(FO)),!.
-cli_ensure_so_loaded:- swicli_foreign_name(Y),throw(missing_dll(Y)).
+cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO),_,fail),assert(swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO,install),_,fail),assert(swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap.so',
+     catch(load_absolute_foreign_files([FO], [],install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap.so',
+     catch(load_absolute_foreign_files([FO], ['/usr/lib/libmonoboehm-2.0.so.1', '/usr/local/lib/libYap.so.6.3'],
+    install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- swicli_foreign_name(FO), throw(missing_dll(FO)).
 
-:-cli_ensure_so_loaded.
 
-swicli_test :- debug_call(swicli_so_loaded(_)).
 
 
 %=========================================
@@ -113,56 +323,140 @@ swicli_test :- debug_call(swicli_so_loaded(_)).
 %  _Linux_:  adding to $MONO_PATH
 %
 
-path_sep(';'):-cli_is_windows,!.
-path_sep(':').
-
-
 cli_path(ASSEMBLY,PATHO):- absolute_file_name(ASSEMBLY,PATH),exists_file(PATH),!,prolog_to_os_filename(PATH,PATHO).
 cli_path(ASSEMBLY,PATHO):- cli_path(ASSEMBLY,['.exe','.dll',''],PATHO).
-cli_path(ASSEMBLY,ExtList,PATHO):- cli_os_dir(DIR),member(Ext,ExtList),concat_atom([ASSEMBLY,Ext],ADLL),  
+cli_path(ASSEMBLY,ExtList,PATHO):- cli_os_dir(DIR),member(Ext,ExtList),atomic_list_concat([ASSEMBLY,Ext],'',ADLL),  
       absolute_file_name(ADLL,PATH,[relative_to(DIR)]),exists_file(PATH),!,prolog_to_os_filename(PATH,PATHO).
 
 cli_os_dir(OS):- cli_search(gac,DIR),absolute_file_name(DIR,ABS),prolog_to_os_filename(ABS,OS).
 
 
 
-cli_search(VAR,DIR):- no_repeats((user:file_search_path(VAR, FROM), user:expand_file_search_path(FROM,DIR))).
+cli_search(VAR,DIR):- no_repeats((user:file_search_path(VAR, FROM), expand_file_search_path(FROM,DIR))).
 
-:- multifile(user:file_search_path/2).
 
-user:file_search_path(gac, DIR):- user:expand_file_search_path(pack(swicli/bin),DIR),exists_directory(DIR).
+		 /*******************************
+		 *	 FILE_SEARCH_PATH	*
+		 *******************************/
+
+:- dynamic user:file_search_path/2.
+:- multifile user:file_search_path/2.
+
+user:file_search_path(gac, DIR):- expand_file_search_path(pack(swicli/bin),DIR),exists_directory(DIR).
 user:file_search_path(gac, DIR):- cli_search(lib,DIR),exists_directory(DIR).
-user:file_search_path(gac, DIR):- '$pack':pack_dir(swicli, _, DIR).
+user:file_search_path(gac, DIR):- is_swi,call( '$pack':pack_dir(swicli, _, DIR)).
 user:file_search_path(gac, DIR):- env_path_elements('MONO_PATH', DIR).
 user:file_search_path(gac, DIR):- env_path_elements('PATH', DIR).
 user:file_search_path(gac, DIR):- env_path_elements('LD_LIBRARY_PATH', DIR).
 
-env_path_elements(VAR,DIR):- getenv(VAR,VAL),path_sep(Sep),atomic_list_concat(DIRS, Sep, VAL),!, no_repeats('$member'(DIR,DIRS)).
+/*
+user:(file_search_path(library, Dir) :- 
+	library_directory(Dir)).
+user:file_search_path(swi, Home) :- 
+	current_prolog_flag(home, Home).
+user:file_search_path(foreign, swi(ArchLib)) :- 
+	current_prolog_flag(arch, Arch),
+	atom_concat('lib/', Arch, ArchLib).
+user:file_search_path(foreign, swi(SoLib)) :- 
+	(   current_prolog_flag(windows, true)
+	->  SoLib = bin
+	;   SoLib = lib
+	).
+user:file_search_path(path, Dir) :- 
+	getenv('PATH', Path),
+	(   current_prolog_flag(windows, true)
+	->  atomic_list_concat(Dirs, (;), Path)
+	;   atomic_list_concat(Dirs, :, Path)
+	),
+	'member'(Dir, Dirs),
+	'$no-null-bytes'(Dir).
+*/
 
-remove_zero_codes(WAZ,WAS):-member(M,['a\000\n\000\/.','\a;','\\\\000','\\000','\\\\C','\\C',';;']),concat_atom([W,A|ZL],M,WAZ),concat_atom([W,A|ZL],';',WAZ0),!,remove_zero_codes(WAZ0,WAS),!.
+'$no-null-bytes'(Dir) :- 
+	sub_atom(Dir, _, _, _, '\u0000'), !,
+	print_message(warning, null_byte_in_path(Dir)),
+	fail.
+'$no-null-bytes'(_).
+
+%%	expand_file_search_path(+Spec, -Expanded) is nondet.
+%
+%	Expand a search path.  The system uses depth-first search upto a
+%	specified depth.  If this depth is exceeded an exception is raised.
+%	TBD: bread-first search?
+
+user:expand_file_search_path(Spec, Expanded) :- 
+	catch('$expand_file_search_path'(Spec, Expanded, 0, []),
+	      loop(Used),
+	      throw(error(loop_error(Spec), file_search(Used)))).
+
+'$expand_file_search_path'(Spec, Expanded, N, Used) :- 
+	functor(Spec, Alias, 1), !,
+	user:file_search_path(Alias, Exp0),
+	NN is N + 1,
+	(   NN > 16
+	->  throw(loop(Used))
+	;   true
+	),
+	'$expand_file_search_path'(Exp0, Exp1, NN, [Alias=Exp0|Used]),
+	arg(1, Spec, Segments),
+	'$segments_to_atom'(Segments, File),
+	'$make_path'(Exp1, File, Expanded).
+'$expand_file_search_path'(Spec, Path, _, _) :- 
+	'$segments_to_atom'(Spec, Path).
+
+'$make_path'(Dir, File, Path) :- 
+	atom_concat(_, /, Dir), !,
+	atom_concat(Dir, File, Path).
+'$make_path'(Dir, File, Path) :- 
+	atomic_list_concat([Dir, /, File], Path).
+
+'$segments_to_atom'(Atom, Atom) :- 
+	atomic(Atom), !.
+'$segments_to_atom'(Segments, Atom) :- 
+	'$segments_to_list'(Segments, List, []), !,
+	atomic_list_concat(List, /, Atom).
+
+'$segments_to_list'(A/B, H, T) :- 
+	'$segments_to_list'(A, H, T0),
+	'$segments_to_list'(B, T0, T).
+'$segments_to_list'(A, [A|T], T) :- 
+	atomic(A).
+
+env_path_elements(VAR,DIR):- getenv(VAR,VAL),path_sep(Sep),atomic_list_concat(DIRS, Sep, VAL),!, no_repeats('member'(DIR,DIRS)).
+
+remove_zero_codes(WAZ,WAS):- member(M,['a\000\n\000\/.','\a;','\\\\000','\\000','\\\\C','\\C',';;']),atomic_list_concat([W,A|ZL],M,WAZ),atomic_list_concat([W,A|ZL],';',WAZ0),!,remove_zero_codes(WAZ0,WAS),!.
 remove_zero_codes(WAS,WAS).
 
 % sometimes usefull
-swicli_test :-getenv('PATH',WAZ),remove_zero_codes(WAZ,WAS),setenv('PATH',WAS).
+swicli_test :- getenv('PATH',WAZ),remove_zero_codes(WAZ,WAS),setenv('PATH',WAS).
 
-append_env_var(Var,Path):-getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (concat_atom([_,_|_],Path,WAS)->true;((path_sep(Sep),concat_atom([WAS,Sep,Path],'',NEW),setenv(Var,NEW)))).
-append_env_var(Var,Path):-setenv(Var,Path).
-prepend_env_var(Var,Path):-getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (concat_atom([_,_|_],Path,WAS)->true;((path_sep(Sep),concat_atom([Path,Sep,WAS],'',NEW),setenv(Var,NEW)))).
-prepend_env_var(Var,Path):-setenv(Var,Path).
+append_env_var(Var,Path):- getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (atomic_list_concat([_,_|_],Path,WAS)->true;((path_sep(Sep),atomic_list_concat([WAS,Sep,Path],'',NEW),setenv(Var,NEW)))).
+append_env_var(Var,Path):- setenv(Var,Path).
+prepend_env_var(Var,Path):- getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (atomic_list_concat([_,_|_],Path,WAS)->true;((path_sep(Sep),atomic_list_concat([Path,Sep,WAS],'',NEW),setenv(Var,NEW)))).
+prepend_env_var(Var,Path):- setenv(Var,Path).
 
 % so we dont have to export MONO_PATH=/usr/lib/swi-prolog/lib/amd64
-cli_update_paths:- forall( user:file_alias_path(foreign,D),
+cli_update_paths:- forall( file_alias_path(foreign,D),
   ((append_env_var('PATH',D),append_env_var('MONO_PATH',D),append_env_var('LD_LIBRARY_PATH',D)))).
 
 % sometimes usefull
 swicli_test :- cli_update_paths.
 
-getenv_safe(N,V,ELSE):-getenv(N,V)->true;V=ELSE.
-cli_env(N):-getenv_safe(N,V,'(missing)'),format('~q.~n',[N=V]).
+getenv_safe(N,V,ELSE):- getenv(N,V)->true;V=ELSE.
+cli_env(N):- getenv_safe(N,V,'(missing)'),format('~q.~n',[N=V]).
 cli_env:- cli_env('LD_LIBRARY_PATH'),cli_env('MONO_PATH'),cli_env('PATH').  
 
 % sometimes usefull
 swicli_test :- cli_env.
+
+
+
+swicli_test :- debug_call(swicli_so_loaded(_)).
+
+cli_init0:- cli_env.
+
+cli_init0:- cli_ensure_so_loaded.
+
 
 %=========================================
 % Library Loading
@@ -185,9 +479,12 @@ swicli_test :- cli_env.
 
 swicli_cs_assembly('Swicli.Library').
 
-cli_load_lib_safe(DOMAIN,ASSEMBLY,CLASS,METHOD):-cli_path(ASSEMBLY,PATH),cli_load_lib(DOMAIN,PATH,CLASS,METHOD).
+cli_load_lib_safe(DOMAIN,ASSEMBLY,CLASS,METHOD):- cli_path(ASSEMBLY,PATH),cli_load_lib(DOMAIN,PATH,CLASS,METHOD).
 
-:- swicli_cs_assembly(ASSEMBLY),cli_load_lib_safe('SWIProlog',ASSEMBLY,'Swicli.Library.Embedded','install').
+
+
+cli_init0:- swicli_cs_assembly(ASSEMBLY),cli_load_lib_safe('SWIProlog',ASSEMBLY,'Swicli.Library.Embedded','install').
+
 
 
 %% cli_lib_type(-LibTypeName).
@@ -209,7 +506,7 @@ cli_lib_type('Swicli.Library.PrologCLR').
 % ==
 % The uncaught version allows exception to come from .NET
 % (We use the caugth version)
-:- swicli_cs_assembly(SWICLI_DOT_LIBRARY),cli_load_assembly(SWICLI_DOT_LIBRARY).
+cli_init0:- swicli_cs_assembly(SWICLI_DOT_LIBRARY),cli_load_assembly(SWICLI_DOT_LIBRARY).
 
 swicli_test:- cli_load_assembly('Example4SWICLI').
 
@@ -233,7 +530,8 @@ swicli_test:- cli_add_foreign_methods('Example4SWICLI.Example4SWICLIClass',@fals
 swicli_test:- listing(foo_main/1).
 
 % Install our .NET GC Hook
-:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
+cli_init0:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
+
 
 
 %=========================================
@@ -242,7 +540,7 @@ swicli_test:- listing(foo_main/1).
 
 %% cli_non_obj(+Obj) 
 % is null or void or var
-cli_non_obj(Obj):-once(var(Obj);(Obj='@'(null));(Obj='@'(void))).
+cli_non_obj(Obj):- once(var(Obj);(Obj='@'(null));(Obj='@'(void))).
 
 %% cli_non_null(+Obj)
 % is not null or void
@@ -282,18 +580,18 @@ cli_void(@(void)).
 
 %% cli_is_type(+Obj).
 %  equiv to cli_is_type(Obj,'System.Type')
-cli_is_type(Obj):-nonvar(Obj),cli_is_type(Obj,'System.Type').
+cli_is_type(Obj):- nonvar(Obj),cli_is_type(Obj,'System.Type').
 
 
 %% cli_is_object(+Obj).
 %
 % is Object a CLR object and not null or void (includes struct,enum,object,event)
 
-cli_is_object([_|_]):-!,fail.
-cli_is_object('@'(O)):-!,O\=void,O\=null.
-cli_is_object(O):-functor(O,CLRF,_),hcli_clr_functor(CLRF).
+cli_is_object([_|_]):- !,fail.
+cli_is_object('@'(O)):- !,O\=void,O\=null.
+cli_is_object(O):- functor(O,CLRF,_),hcli_clr_functor(CLRF).
 
-hcli_clr_functor(F):-memberchk(F,[struct,enum,object,event,'{}']).
+hcli_clr_functor(F):- memberchk(F,[struct,enum,object,event,'{}']).
 
 %% cli_is_prolog(+Obj).
 %
@@ -303,7 +601,7 @@ cli_is_prolog(O):- \+ cli_is_object(O).
 %% cli_is_value(+Obj).
 %
 % is Object a CLR ValueType and not null or void (includes struct,enums)
-cli_is_value(O):-cli_is_type(O,'System.ValueType').
+cli_is_value(O):- cli_is_type(O,'System.ValueType').
 
 %% cli_is_tagged_object(+Obj)
 % is Object a ref object (maybe null or void) (excludes struct,enum,object/N,event refernces)
@@ -311,7 +609,7 @@ cli_is_value(O):-cli_is_type(O,'System.ValueType').
 %% cli_is_ref(+Obj) 
 % is Object a ref object and not null or void (excludes struct,enum,object/N,event refernces)
 
-cli_is_ref([_|_]):-!,fail.
+cli_is_ref([_|_]):- !,fail.
 cli_is_ref('@'(O)):- \+ hcli_immed_funct(O).
 
 
@@ -327,8 +625,8 @@ hcli_immed_funct(O):- member(O,[void,null,true,false]).
 %% cli_memb(O,X).
 %% cli_memb(O,F,X).
 % ==
-% cli_memb(O,X):-cli_members(O,Y),member(X,Y).
-% cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
+% cli_memb(O,X):- cli_members(O,Y),member(X,Y).
+% cli_memb(O,F,X):- cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
 % ==
 %
 % Object to the member infos of it
@@ -429,22 +727,22 @@ hcli_immed_funct(O):- member(O,[void,null,true,false]).
 %    c(2,'List`1'('System.Collections.Generic.IEnumerable'('String')))
 %    c(3,'List`1')
 % ==
-cli_memb(O,X):-cli_members(O,Y),cli_col(Y,X).
-cli_memb(O,F,X):-cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
+cli_memb(O,X):- cli_members(O,Y),cli_col(Y,X).
+cli_memb(O,F,X):- cli_memb(O,X),member(F,[f,p, c,m ,e]),functor(X,F,_).
 
 
-:-dynamic(cli_subproperty/2).
-:-module_transparent(cli_subproperty/2).
-:-multifile(cli_subproperty/2).
+:- dynamic(cli_subproperty/2).
+:- module_transparent(cli_subproperty/2).
+:- multifile(cli_subproperty/2).
 
 
 %%  cli_is_type(+Impl,?Type).
 %
 % tests to see if the Impl Object is assignable to Type
 %
-cli_is_type(Impl,Type):-not(ground(Impl)),nonvar(Type),!,cli_find_type(Type,RealType),cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
-cli_is_type(Impl,Type):-nonvar(Type),cli_find_type(Type,RealType),!,cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
-cli_is_type(Impl,Type):-cli_get_type(Impl,Type).
+cli_is_type(Impl,Type):- not(ground(Impl)),nonvar(Type),!,cli_find_type(Type,RealType),cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
+cli_is_type(Impl,Type):- nonvar(Type),cli_find_type(Type,RealType),!,cli_call(RealType,'IsInstanceOfType'(object),[Impl],'@'(true)).
+cli_is_type(Impl,Type):- cli_get_type(Impl,Type).
 
 %=========================================
 % Type Inspection
@@ -453,7 +751,7 @@ cli_is_type(Impl,Type):-cli_get_type(Impl,Type).
 %% cli_subclass(+Subclass,+Superclass) 
 % tests to see if the Subclass is assignable to Superclass
 
-cli_subclass(Sub,Sup):-cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli_call(RealSup,'IsAssignableFrom'('System.Type'),[RealSub],'@'(true)).
+cli_subclass(Sub,Sup):- cli_find_type(Sub,RealSub),cli_find_type(Sup,RealSup),cli_call(RealSup,'IsAssignableFrom'('System.Type'),[RealSub],'@'(true)).
 
 %% cli_get_typespec(+Obj,?TypeSpec)
 % gets or checks the TypeSpec
@@ -579,7 +877,7 @@ cli_get_typename(Obj,TypeName):- cli_get_type(Obj,Type), cli_type_to_fullname(Ty
 %% cli_with_gc(+Call)
 % as ref objects are created they are tracked .. when the call is complete any new object tags are released
 % uses Forienly defined cli_tracker_begin/1 and cli_tracker_free/1
-cli_with_gc(Call):-setup_call_cleanup(cli_tracker_begin(Mark),Call,cli_tracker_free(Mark)).
+cli_with_gc(Call):- setup_call_cleanup(cli_tracker_begin(Mark),Call,cli_tracker_free(Mark)).
 
 
 %=========================================
@@ -589,7 +887,7 @@ cli_with_gc(Call):-setup_call_cleanup(cli_tracker_begin(Mark),Call,cli_tracker_f
 %% cli_with_lock(+Lock,+Call)
 % 
 %  Lock the first arg while calling Call
-cli_with_lock(Lock,Call):-setup_call_cleanup(cli_lock_enter(Lock),Call,cli_lock_exit(Lock)).
+cli_with_lock(Lock,Call):- setup_call_cleanup(cli_lock_enter(Lock),Call,cli_lock_exit(Lock)).
 
 %% cli_lock_enter(+LockObj).
 % Does a Monitor.Enter on LockObj
@@ -605,18 +903,18 @@ cli_with_lock(Lock,Call):-setup_call_cleanup(cli_lock_enter(Lock),Call,cli_lock_
 
 %% cli_write(+Obj)
 %  writes an object out
-cli_write(S):-cli_to_str(S,W),writeq(W).
+cli_write(S):- cli_to_str(S,W),writeq(W).
 
 %% cli_writeln(+Obj)
 %  writes an object out with a new line
-cli_writeln(S):-cli_write(S),nl.
+cli_writeln(S):- cli_write(S),nl.
 
 %% cli_fmt(+String,+Args).
 %% cli_fmt(+Obj,+String,+Args).
 % use .NET system string.Format(String,Args)
 % Obj is WriteLineDelegate
-cli_fmt(WID,String,Args):-cli_fmt(String,Args),cli_free(WID). % WID will be made again each call
-cli_fmt(String,Args):-cli_call('System.String','Format'('string','object[]'),[String,Args],Result),cli_writeln(Result).
+cli_fmt(WID,String,Args):- cli_fmt(String,Args),cli_free(WID). % WID will be made again each call
+cli_fmt(String,Args):- cli_call('System.String','Format'('string','object[]'),[String,Args],Result),cli_writeln(Result).
 
 %% cwl(+StringValue).
 % allas for System.Console.WriteLine(+String)   (not user_output but what .NET thinks its System.Console.Out)
@@ -633,16 +931,16 @@ cli_fmt(String,Args):-cli_call('System.String','Format'('string','object[]'),[St
 %% cli_java_to_string(+Obj,-Value).
 % Resolves @(Obj) to string
 
-cli_to_str(Term,String):-catch(ignore(hcli_to_str_0(Term,String0)),_,true),copy_term(String0,String),numbervars(String,666,_).
+cli_to_str(Term,String):- catch(ignore(hcli_to_str_0(Term,String0)),_,true),copy_term(String0,String),numbervars(String,666,_).
 hcli_to_str_0(Term,Term):- not(compound(Term)),!.
-hcli_to_str_0(Term,String):-Term='@'(_),cli_is_object(Term),catch(cli_to_str_raw(Term,String),_,Term==String),!.
-hcli_to_str_0([A|B],[AS|BS]):-!,hcli_to_str_0(A,AS),hcli_to_str_0(B,BS).
-hcli_to_str_0(eval(Call),String):-nonvar(Call),!,call(Call,Result),hcli_to_str_0(Result,String).
-hcli_to_str_0(Term,String):-Term=..[F|A],hcli_to_str_0(A,AS),String=..[F|AS],!.
+hcli_to_str_0(Term,String):- Term='@'(_),cli_is_object(Term),catch(cli_to_str_raw(Term,String),_,Term==String),!.
+hcli_to_str_0([A|B],[AS|BS]):- !,hcli_to_str_0(A,AS),hcli_to_str_0(B,BS).
+hcli_to_str_0(eval(Call),String):- nonvar(Call),!,call(Call,Result),hcli_to_str_0(Result,String).
+hcli_to_str_0(Term,String):- Term=..[F|A],hcli_to_str_0(A,AS),String=..[F|AS],!.
 hcli_to_str_0(Term,Term).
 
-%%to_string(Object,String):-jpl_is_ref(Object),!,jpl_call(Object,toString,[],String).
-to_string(Object,String):-cli_to_str(Object,String).
+%%to_string(Object,String):- jpl_is_ref(Object),!,jpl_call(Object,toString,[],String).
+to_string(Object,String):- cli_to_str(Object,String).
 
 
 %=========================================
@@ -652,8 +950,8 @@ to_string(Object,String):-cli_to_str(Object,String).
 %% cli_halt.
 %% cli_halt(+Obj).
 % 
-cli_halt:-cli_halt(0).
-cli_halt(_Status):-cli_lib_type(LibType),cli_call(LibType,'ManagedHalt',_).
+cli_halt:- cli_halt(0).
+cli_halt(_Status):- cli_lib_type(LibType),cli_call(LibType,'ManagedHalt',_).
 
 
 %% cli_throw(+Ex).
@@ -665,8 +963,8 @@ cli_halt(_Status):-cli_lib_type(LibType),cli_call(LibType,'ManagedHalt',_).
 %% cli_debug(+Obj).
 %% cli_debug(+Fmt,Args).
 % writes to user_error
-cli_debug(format(Format,Args)):-atom(Format),sformat(S,Format,Args),!,cli_debug(S).
-cli_debug(Data):-format(user_error,'~n %% cli_-DEBUG: ~q~n',[Data]),flush_output(user_error).
+cli_debug(format(Format,Args)):- atom(Format),sformat(S,Format,Args),!,cli_debug(S).
+cli_debug(Data):- format(user_error,'~n %% cli_-DEBUG: ~q~n',[Data]),flush_output(user_error).
 
 %%cli_debug(Engine,Data):- format(user_error,'~n %% ENGINE-DEBUG: ~q',[Engine]),cli_debug(Data).
 
@@ -718,40 +1016,40 @@ cli_enumerator_element(I, E) :- cli_enumerator_element(I, E).
 %    E = "bar" ;
 %    false.
 % ==
-cli_col(X,Y):-hcli_col(X,Y).
+cli_col(X,Y):- hcli_col(X,Y).
 
-% old version:s hcli_col(Obj,Ele):-cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
-hcli_col(Error,_Ele):-cli_is_null(Error),!,fail.
-hcli_col([S|Obj],Ele):-!,member(Ele,[S|Obj]).
-hcli_col('[]',_Ele):-!,fail.
-hcli_col(C,Ele):-functor(C,'[]',_),!,arg(_,C,Ele).
-hcli_col(Obj,Ele):-
+% old version:s hcli_col(Obj,Ele):- cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
+hcli_col(Error,_Ele):- cli_is_null(Error),!,fail.
+hcli_col([S|Obj],Ele):- !,member(Ele,[S|Obj]).
+hcli_col('[]',_Ele):- !,fail.
+hcli_col(C,Ele):- functor(C,'[]',_),!,arg(_,C,Ele).
+hcli_col(Obj,Ele):- 
       cli_memb(Obj,m(_, 'GetEnumerator', _, [], [], _, _)),!,
       cli_call(Obj,'GetEnumerator',[],Enum),!,
       call_cleanup(cli_enumerator_element(Enum,Ele),cli_free(Enum)).
-hcli_col(Obj,Ele):-cli_array_to_term_args(Obj,Vect),!,arg(_,Vect,Ele).
-hcli_col(Obj,Ele):-cli_memb(Obj,m(_, 'ToArray', _, [], [], _, _)),cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
-hcli_col(Obj,Ele):-cli_array_to_termlist(Obj,Vect),!,member(Ele,Vect).
+hcli_col(Obj,Ele):- cli_array_to_term_args(Obj,Vect),!,arg(_,Vect,Ele).
+hcli_col(Obj,Ele):- cli_memb(Obj,m(_, 'ToArray', _, [], [], _, _)),cli_call(Obj,'ToArray',[],Array),cli_array_to_term_args(Array,Vect),!,arg(_,Vect,Ele).
+hcli_col(Obj,Ele):- cli_array_to_termlist(Obj,Vect),!,member(Ele,Vect).
 
 %% cli_col_add(+Col,+Item)
 % add an Item to Col
-cli_col_add(Col,Value):-cli_call(Col,'Add'(Value),_).
+cli_col_add(Col,Value):- cli_call(Col,'Add'(Value),_).
 
 %% cli_col_contains(+Col,+Item)
 % Test an Item in Col
-cli_col_contains(Col,Value):-cli_call(Col,'Contains'(Value),_).
+cli_col_contains(Col,Value):- cli_call(Col,'Contains'(Value),_).
 
 %% cli_col_remove(+Col,+Item)
 % Remove an Item in Col
-cli_col_remove(Col,Value):-cli_call(Col,'Remove'(Value),_).
+cli_col_remove(Col,Value):- cli_call(Col,'Remove'(Value),_).
 
 %% cli_col_removeall(+Col)
 % Clears a Col
-cli_col_removeall(Col):-cli_call(Col,'Clear',_).
+cli_col_removeall(Col):- cli_call(Col,'Clear',_).
 
 %% cli_col_size(+Col,?Count)
 % Returns the Count
-cli_col_size(Col,Count):-cli_call(Col,'Count',Count).
+cli_col_size(Col,Count):- cli_call(Col,'Count',Count).
 
 %% cli_set_element(+Obj,+IndexParams,+Item).
 %% cli_add_element(+Obj,+Item).
@@ -763,14 +1061,14 @@ cli_col_size(Col,Count):-cli_call(Col,'Count',Count).
 %% cli_new_list_1(+Obj,+Arg2,+Arg3).
 % @see cli_make_list/2
 
-cli_new_list_1(Item,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),cli_call(List,add(Item),_).
-cli_make_list(Items,Type,List):-cli_new('System.Collections.Generic.List'(Type),[],[],List),forall(member(Item,Items),cli_call(List,add(Item),_)).
+cli_new_list_1(Item,Type,List):- cli_new('System.Collections.Generic.List'(Type),[],[],List),cli_call(List,add(Item),_).
+cli_make_list(Items,Type,List):- cli_new('System.Collections.Generic.List'(Type),[],[],List),forall(member(Item,Items),cli_call(List,add(Item),_)).
 
 %% cli_sublist(+Mask,+List)
 %  Test to see if Mask appears in List
 
-cli_sublist(What,What):-!.
-cli_sublist(Mask,What):-append(Pre,_,What),append(_,Mask,Pre).
+cli_sublist(What,What):- !.
+cli_sublist(Mask,What):- append(Pre,_,What),append(_,Mask,Pre).
 
 
 %=========================================
@@ -787,9 +1085,9 @@ cli_sublist(Mask,What):-append(Pre,_,What),append(_,Mask,Pre).
 %% cli_term_to_array(+ArrayValue,-Value).
 %% cli_array_to_term_args(+Array,-Term).
 %  todo
-cli_array_to_list(Array,List):-cli_array_to_term(Array,array(_,Term)),Term=..[_|List].
-cli_array_to_term_args(Array,Term):-cli_array_to_term(Array,array(_,Term)).
-cli_array_to_length(Array,Length):-cli_get(Array,'Length',Length).
+cli_array_to_list(Array,List):- cli_array_to_term(Array,array(_,Term)),Term=..[_|List].
+cli_array_to_term_args(Array,Term):- cli_array_to_term(Array,array(_,Term)).
+cli_array_to_length(Array,Length):- cli_get(Array,'Length',Length).
 
 /*
 
@@ -812,14 +1110,14 @@ T = array('String', values(@null, @null, @null, @null, @null, @null, @null, @nul
 %% cli_map_size(+Map,-Count).
 % Map calls
 
-cli_map(Map,Key,Value):-nonvar(Key),!,cli_call(Map,'TryGetValue',[Key,Value],@(true)).
-cli_map(Map,Key,Value):-cli_col(Map,Ele),cli_get(Ele,'Key',Key),cli_get(Ele,'Value',Value).
-cli_map_set(Map,Key,Value):-cli_call(Map,'[]'(type(Key)),[Key,Value],_).
-cli_map_add(Map,Key,Value):-cli_call(Map,'Add'(Key,Value),_).
-cli_map_remove(Map,Key):-cli_call(Map,'Remove'(Key),_).
-cli_map_remove(Map,Key,Value):-cli_map(Map,Key,Value),!,cli_call(Map,'Remove'(Key),_).
-cli_map_removeall(Map):-cli_call(Map,'Clear',_).
-cli_map_size(Map,Count):-cli_call(Map,'Count',Count).
+cli_map(Map,Key,Value):- nonvar(Key),!,cli_call(Map,'TryGetValue',[Key,Value],@(true)).
+cli_map(Map,Key,Value):- cli_col(Map,Ele),cli_get(Ele,'Key',Key),cli_get(Ele,'Value',Value).
+cli_map_set(Map,Key,Value):- cli_call(Map,'[]'(type(Key)),[Key,Value],_).
+cli_map_add(Map,Key,Value):- cli_call(Map,'Add'(Key,Value),_).
+cli_map_remove(Map,Key):- cli_call(Map,'Remove'(Key),_).
+cli_map_remove(Map,Key,Value):- cli_map(Map,Key,Value),!,cli_call(Map,'Remove'(Key),_).
+cli_map_removeall(Map):- cli_call(Map,'Clear',_).
+cli_map_size(Map,Count):- cli_call(Map,'Count',Count).
 
 
 %=========================================
@@ -828,7 +1126,7 @@ cli_map_size(Map,Count):-cli_call(Map,'Count',Count).
 
 %% cli_preserve(TF,:Call)
 % make Call with PreserveObjectType set to TF
-cli_preserve(TF,Calls):-
+cli_preserve(TF,Calls):- 
    cli_lib_type(LibType),
    cli_get(LibType,'PreserveObjectType',O),
    call_cleanup(
@@ -842,14 +1140,14 @@ cli_preserve(TF,Calls):-
 % E = b ;
 % E = c.
 % ==
-member_elipse(NV,{NVs}):-!,nonvar(NVs),member_elipse(NV,NVs).
-member_elipse(NV,(A,B)):-!,(member_elipse(NV,A);member_elipse(NV,B)).
+member_elipse(NV,{NVs}):- !,nonvar(NVs),member_elipse(NV,NVs).
+member_elipse(NV,(A,B)):- !,(member_elipse(NV,A);member_elipse(NV,B)).
 member_elipse(NV,NV).
 
-cli_expanded(In,Out):-cli_expand(In,Out),!,In\==Out,!.
+cli_expanded(In,Out):- cli_expand(In,Out),!,In\==Out,!.
 
 cli_expand(Value,Value):- (var(Value);atomic(Value);cli_is_ref(Value)),!.
-cli_expand(eval(Call),Result):-nonvar(Call),!,call(Call,Result).
+cli_expand(eval(Call),Result):- nonvar(Call),!,call(Call,Result).
 %%cli_expand([A|B],Result):- cli_get(A,B,Result),!.
 %%cli_expand(Call,Result):- call(Call,Result),!.
 cli_expand(Value,Value).
@@ -870,25 +1168,25 @@ cli_expand(Value,Value).
 
 cli_to_data(Term,String):- cli_new('System.Collections.Generic.List'(object),[],[],Objs),cli_to_data(Objs,Term,String).
 cli_to_data(_,Term,Term):- not(compound(Term)),!.
-%cli_to_data(_Objs,[A|B],[A|B]):-!.
+%cli_to_data(_Objs,[A|B],[A|B]):- !.
 cli_to_data(_Objs,[A|B],[A|B]):- \+( \+(A=[_=_])),!.
-cli_to_data(Objs,[A|B],[AS|BS]):-!,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
-cli_to_data(Objs,Term,String):-cli_is_ref(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
-cli_to_data(Objs,Term,FAS):-Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
+cli_to_data(Objs,[A|B],[AS|BS]):- !,cli_to_data(Objs,A,AS),cli_to_data(Objs,B,BS).
+cli_to_data(Objs,Term,String):- cli_is_ref(Term),!,hcli_get_termdata(Objs,Term,Mid),(Term==Mid-> true; cli_to_data(Objs,Mid,String)).
+cli_to_data(Objs,Term,FAS):- Term=..[F|A],hcli_to_data_1(Objs,F,A,Term,FAS).
 
-hcli_to_data_1(_Objs,CLRFunctor,_A,Term,Term):-hcli_clr_functor(CLRFunctor),!.
-hcli_to_data_1(Objs,F,A,_Term,String):-cli_to_data(Objs,A,AS),!,String=..[F|AS].
+hcli_to_data_1(_Objs,CLRFunctor,_A,Term,Term):- hcli_clr_functor(CLRFunctor),!.
+hcli_to_data_1(Objs,F,A,_Term,String):- cli_to_data(Objs,A,AS),!,String=..[F|AS].
 
 %% hcli_get_termdata(+Obj,+Arg2,+Arg3).
 %
-hcli_get_termdata(Done,Term,String):-cli_get_type(Term,Type),cli_props_for_type(Type,Props),Props\=[],
+hcli_get_termdata(Done,Term,String):- cli_get_type(Term,Type),cli_props_for_type(Type,Props),Props\=[],
    hcli_getmap(Done,Term,Props,Name,Value,Name=Value,Mid),!,cli_to_data(Done,Mid,String).
-%%hcli_get_termdata(Done,Term,String):-cli_is_ref(Term),!,cli_getterm(Done,Term,String),!.
-hcli_get_termdata(_Done,Term,Mid):-Term=Mid.
+%%hcli_get_termdata(Done,Term,String):- cli_is_ref(Term),!,cli_getterm(Done,Term,String),!.
+hcli_get_termdata(_Done,Term,Mid):- Term=Mid.
 
 
 hcli_getmap(Done,Term,_,_,_,_,ListO):- cli_is_type(Term,'System.Collections.IEnumerable'),findall(ED,(cli_col(Term,E),cli_to_data(Done,E,ED)),ListO),!.
-hcli_getmap(Done,Term,Props,Name,Value,NameValue,List):-hcli_getmap_1(Done,Term,Props,Name,Value,NameValue,List).
+hcli_getmap(Done,Term,Props,Name,Value,NameValue,List):- hcli_getmap_1(Done,Term,Props,Name,Value,NameValue,List).
 
 hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):- findall(NameValue,(member(Name,Props),cli_get_raw(Term,Name,ValueM),cli_to_data(Objs,ValueM,Value)),List).
 
@@ -899,15 +1197,15 @@ hcli_getmap_1(Objs,Term,Props,Name,Value,NameValue,List):- findall(NameValue,(me
 
 %% cli_unify(OE,PE)
 
-cli_unify(OE,PE):-OE=PE,!.
-cli_unify(enum(_,O1),O2):-!,cli_unify(O1,O2).
-cli_unify(O2,enum(_,O1)):-!,cli_unify(O1,O2).
-cli_unify(eval(O1),O2):-cli_expand(O1,O11),!,cli_unify(O11,O2).
-cli_unify(O2,eval(O1)):-cli_expand(O1,O11),!,cli_unify(O11,O2).
-cli_unify(O1,O2):-atomic(O1),atomic(O2),string_to_atom(S1,O1),string_to_atom(S2,O2),!,S1==S2.
-cli_unify([O1|ARGS1],[O2|ARGS2]):-!,cli_unify(O1,O2),cli_unify(ARGS1,ARGS2).
-cli_unify(O1,O2):-cli_is_ref(O1),cli_to_str(O1,S1),!,cli_unify(O2,S1).
-cli_unify(O1,O2):-O1=..[F|[A1|RGS1]],!,O2=..[F|[A2|RGS2]],cli_unify([A1|RGS1],[A2|RGS2]).
+cli_unify(OE,PE):- OE=PE,!.
+cli_unify(enum(_,O1),O2):- !,cli_unify(O1,O2).
+cli_unify(O2,enum(_,O1)):- !,cli_unify(O1,O2).
+cli_unify(eval(O1),O2):- cli_expand(O1,O11),!,cli_unify(O11,O2).
+cli_unify(O2,eval(O1)):- cli_expand(O1,O11),!,cli_unify(O11,O2).
+cli_unify(O1,O2):- atomic(O1),atomic(O2),string_to_atom(S1,O1),string_to_atom(S2,O2),!,S1==S2.
+cli_unify([O1|ARGS1],[O2|ARGS2]):- !,cli_unify(O1,O2),cli_unify(ARGS1,ARGS2).
+cli_unify(O1,O2):- cli_is_ref(O1),cli_to_str(O1,S1),!,cli_unify(O2,S1).
+cli_unify(O1,O2):- O1=..[F|[A1|RGS1]],!,O2=..[F|[A2|RGS2]],cli_unify([A1|RGS1],[A2|RGS2]).
 
 
 %=========================================
@@ -915,21 +1213,21 @@ cli_unify(O1,O2):-O1=..[F|[A1|RGS1]],!,O2=..[F|[A2|RGS2]],cli_unify([A1|RGS1],[A
 %=========================================
 
 % cli_intern/3
-:-dynamic(cli_interned/3).
-:-multifile(cli_interned/3).
-:-module_transparent(cli_interned/3).
-cli_intern(Engine,Name,Value):-retractall(cli_interned(Engine,Name,_)),assert(cli_interned(Engine,Name,Value)),cli_debug(cli_interned(Name,Value)),!.
+:- dynamic(cli_interned/3).
+:- multifile(cli_interned/3).
+:- module_transparent(cli_interned/3).
+cli_intern(Engine,Name,Value):- retractall(cli_interned(Engine,Name,_)),assert(cli_interned(Engine,Name,Value)),cli_debug(cli_interned(Name,Value)),!.
 
 
 % cli_eval/3
-:-dynamic(cli_eval_hook/3).
-:-multifile(cli_eval_hook/3).
-:-module_transparent(cli_eval_hook/3).
+:- dynamic(cli_eval_hook/3).
+:- multifile(cli_eval_hook/3).
+:- module_transparent(cli_eval_hook/3).
 
 cli_eval(Engine,Name,Value):- cli_eval_hook(Engine,Name,Value),!,cli_debug(cli_eval(Engine,Name,Value)),!.
 cli_eval(Engine,Name,Value):- Value=cli_eval(Engine,Name),cli_debug(cli_eval(Name,Value)),!.
 cli_eval_hook(Engine,In,Out):- catch(call((In,Out=In)),E,Out= foobar(Engine,In,E)).
-cli_is_defined(_Engine,Name):-cli_debug(cli_not_is_defined(Name)),!,fail.
+cli_is_defined(_Engine,Name):- cli_debug(cli_not_is_defined(Name)),!,fail.
 cli_get_symbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_UnDefined(Name)),!,cli_debug(cli_get_symbol(Name,Value)),!.
 
 
@@ -990,8 +1288,8 @@ cli_get_symbol(Engine,Name,Value):- (cli_interned(Engine,Name,Value);Value=cli_U
 %  ?- cli_new(array(string),[int],[32],O),cli_get(O,'Length',L).
 % ==
 
-cli_new(ClazzConstArgs,Out):-ClazzConstArgs=..[BasicType|ConstArgs],cli_new(BasicType,ConstArgs,Out).
-cli_new(Clazz,ConstArgs,Out):-Clazz=..[BasicType|ParmSpc],cli_new(BasicType,ParmSpc,ConstArgs,Out).
+cli_new(ClazzConstArgs,Out):- ClazzConstArgs=..[BasicType|ConstArgs],cli_new(BasicType,ConstArgs,Out).
+cli_new(Clazz,ConstArgs,Out):- Clazz=..[BasicType|ParmSpc],cli_new(BasicType,ParmSpc,ConstArgs,Out).
 
 
 %=========================================
@@ -1023,14 +1321,14 @@ cli_new(Clazz,ConstArgs,Out):-Clazz=..[BasicType|ParmSpc],cli_new(BasicType,Parm
 %   finally, an attempt will be made to unify Result with the returned result
 
 
-cli_call(Obj,[Prop|CallTerm],Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Out).
-cli_call(Obj,CallTerm,Out):-CallTerm=..[MethodName|Args],cli_call(Obj,MethodName,Args,Out).
+cli_call(Obj,[Prop|CallTerm],Out):- cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Out).
+cli_call(Obj,CallTerm,Out):- CallTerm=..[MethodName|Args],cli_call(Obj,MethodName,Args,Out).
 
 % arity 4
-cli_call(Obj,[Prop|CallTerm],Params,Out):-cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Params,Out).
+cli_call(Obj,[Prop|CallTerm],Params,Out):- cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Params,Out).
 
-% cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
-cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out).
+% cli_call(Obj,MethodSpec,Params,Out):- cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
+cli_call(Obj,MethodSpec,Params,Out):- cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out).
 
 
 %=========================================
@@ -1044,13 +1342,13 @@ cli_call(Obj,MethodSpec,Params,Out):-cli_expand(Obj,ObjO),cli_call_raw(ObjO,Meth
 %       (may involve dynamic overload resolution based on inferred types of params)
 %
 %   finally, an attempt will be made to unify Result with the returned result
-cli_lib_call(CallTerm,Out):-cli_lib_type(LibType),cli_call(LibType,CallTerm,Out).
+cli_lib_call(CallTerm,Out):- cli_lib_type(LibType),cli_call(LibType,CallTerm,Out).
 
 %=========================================
 % Object GET
 %=========================================
-:-dynamic(cli_get_hook/3).
-:-multifile(cli_get_hook/3).
+:- dynamic(cli_get_hook/3).
+:- multifile(cli_get_hook/3).
 
 %% cli_set(+Obj,+NameValueParis:list).
 %% cli_get(+Obj,+NameValueParis:list).
@@ -1101,46 +1399,46 @@ cli_lib_call(CallTerm,Out):-cli_lib_type(LibType),cli_call(LibType,CallTerm,Out)
 %       * Getting, an attempt will be made to unify Value with the retrieved value
 %       * Setting, put Value
 
-cli_get(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_get(Obj,N,V)).
+cli_get(Obj,NVs):- forall(member_elipse(N=V,NVs),cli_get(Obj,N,V)).
 
-cli_get(Obj,_,_):-cli_non_obj(Obj),!,fail.
-cli_get(Expand,Prop,Value):-cli_expanded(Expand,ExpandO),!,cli_get(ExpandO,Prop,Value).
-cli_get(Obj,[P],Value):-!,cli_get(Obj,P,Value).
-cli_get(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_get(M,N,Value),!.
-cli_get(Obj,P,ValueOut):-hcli_get_overloaded(Obj,P,Value),!,cli_unify(Value,ValueOut).
+cli_get(Obj,_,_):- cli_non_obj(Obj),!,fail.
+cli_get(Expand,Prop,Value):- cli_expanded(Expand,ExpandO),!,cli_get(ExpandO,Prop,Value).
+cli_get(Obj,[P],Value):- !,cli_get(Obj,P,Value).
+cli_get(Obj,[P|N],Value):- !,cli_get(Obj,P,M),cli_get(M,N,Value),!.
+cli_get(Obj,P,ValueOut):- hcli_get_overloaded(Obj,P,Value),!,cli_unify(Value,ValueOut).
 
-hcli_get_overloaded(Obj,_,_):-cli_non_obj(Obj),!,fail,throw(cli_non_obj(Obj)).
-hcli_get_overloaded(Obj,P,Value):-cli_get_hook(Obj,P,Value),!.
-hcli_get_overloaded(Obj,P,Value):-compound(P),!,cli_call(Obj,P,Value),!.
-hcli_get_overloaded(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
-hcli_get_overloaded(Obj,P,Value):-not(atom(Obj)),cli_get_type(Obj,CType),!,hcli_get_type_subprops(CType,Sub),hcli_get_raw_0(Obj,Sub,SubValue),hcli_get_overloaded(SubValue,P,Value),!.
+hcli_get_overloaded(Obj,_,_):- cli_non_obj(Obj),!,fail,throw(cli_non_obj(Obj)).
+hcli_get_overloaded(Obj,P,Value):- cli_get_hook(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):- compound(P),!,cli_call(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):- cli_get_raw(Obj,P,Value),!.
+hcli_get_overloaded(Obj,P,Value):- not(atom(Obj)),cli_get_type(Obj,CType),!,hcli_get_type_subprops(CType,Sub),hcli_get_raw_0(Obj,Sub,SubValue),hcli_get_overloaded(SubValue,P,Value),!.
 
-hcli_get_raw_0(Obj,[P],Value):-!,hcli_get_raw_0(Obj,P,Value).
-hcli_get_raw_0(Obj,[P|N],Value):-!,hcli_get_raw_0(Obj,P,M),hcli_get_raw_0(M,N,Value),!.
-hcli_get_raw_0(Obj,P,Value):-cli_get_raw(Obj,P,Value),!.
+hcli_get_raw_0(Obj,[P],Value):- !,hcli_get_raw_0(Obj,P,Value).
+hcli_get_raw_0(Obj,[P|N],Value):- !,hcli_get_raw_0(Obj,P,M),hcli_get_raw_0(M,N,Value),!.
+hcli_get_raw_0(Obj,P,Value):- cli_get_raw(Obj,P,Value),!.
 
-%%hcli_get_type_subprops(CType,Sub):-cli_ProppedType(
-hcli_get_type_subprops(CType,Sub):-cli_subproperty(Type,Sub),cli_subclass(CType,Type).
+%%hcli_get_type_subprops(CType,Sub):- cli_ProppedType(
+hcli_get_type_subprops(CType,Sub):- cli_subproperty(Type,Sub),cli_subclass(CType,Type).
 
 
 %=========================================
 % Object SET
 %=========================================
-:-dynamic(cli_set_hook/3).
-:-multifile(cli_set_hook/3).
+:- dynamic(cli_set_hook/3).
+:- multifile(cli_set_hook/3).
 
-cli_set(Obj,NVs):-forall(member_elipse(N=V,NVs),cli_set(Obj,N,V)).
-cli_set(Obj,_,_):-cli_non_obj(Obj),!,fail.
-cli_set(Expand,Prop,Value):-cli_expanded(Expand,ExpandO),!,cli_set(ExpandO,Prop,Value).
-cli_set(Obj,[P],Value):-!,cli_set(Obj,P,Value).
-cli_set(Obj,[P|N],Value):-!,cli_get(Obj,P,M),cli_set(M,N,Value),!.
-cli_set(Obj,P,Value):-hcli_set_overloaded(Obj,P,Value).
+cli_set(Obj,NVs):- forall(member_elipse(N=V,NVs),cli_set(Obj,N,V)).
+cli_set(Obj,_,_):- cli_non_obj(Obj),!,fail.
+cli_set(Expand,Prop,Value):- cli_expanded(Expand,ExpandO),!,cli_set(ExpandO,Prop,Value).
+cli_set(Obj,[P],Value):- !,cli_set(Obj,P,Value).
+cli_set(Obj,[P|N],Value):- !,cli_get(Obj,P,M),cli_set(M,N,Value),!.
+cli_set(Obj,P,Value):- hcli_set_overloaded(Obj,P,Value).
 
 hcli_set_overloaded(Obj,_,_):- cli_non_obj(Obj),!,fail.
-hcli_set_overloaded(Obj,P,ValueI):-cli_expanded(ValueI,Value),!,hcli_set_overloaded(Obj,P,Value).
-hcli_set_overloaded(Obj,P,Value):-cli_set_hook(Obj,P,Value),!.
-hcli_set_overloaded(Obj,P,Value):-cli_subproperty(Type,Sub),cli_is_type(Obj,Type),hcli_get_raw_0(Obj,Sub,SubValue),hcli_set_overloaded(SubValue,P,Value),!.
-hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
+hcli_set_overloaded(Obj,P,ValueI):- cli_expanded(ValueI,Value),!,hcli_set_overloaded(Obj,P,Value).
+hcli_set_overloaded(Obj,P,Value):- cli_set_hook(Obj,P,Value),!.
+hcli_set_overloaded(Obj,P,Value):- cli_subproperty(Type,Sub),cli_is_type(Obj,Type),hcli_get_raw_0(Obj,Sub,SubValue),hcli_set_overloaded(SubValue,P,Value),!.
+hcli_set_overloaded(Obj,P,Value):- cli_set_raw(Obj,P,Value),!.
 
 
 %=========================================
@@ -1155,7 +1453,7 @@ hcli_set_overloaded(Obj,P,Value):-cli_set_raw(Obj,P,Value),!.
 
 %% cli_block_until_event(+WaitOn,+Time,+Lambda).
 % Calls (foreignly defined) cli_block_until_event/4 and then cleansup the .NET objects.
-cli_block_until_event(WaitOn,Time,Lambda):-setup_call_cleanup(true,cli_block_until_event(WaitOn,Time,Lambda,_),cli_call(WaitOn,'Dispose',_)).
+cli_block_until_event(WaitOn,Time,Lambda):- setup_call_cleanup(true,cli_block_until_event(WaitOn,Time,Lambda,_),cli_call(WaitOn,'Dispose',_)).
 
 %% cli_block_until_event(+WaitOn,+MaxTime,+TestVarsCode,-ExitCode).
 % foreignly defined tododocs
@@ -1205,7 +1503,7 @@ So registering the event is done:
 
 To target a predicate like 
 
-handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
+handle_im(Origin,Obj,IM):- writeq(handle_im(Origin,Obj,IM)),nl.
 
 
 
@@ -1219,7 +1517,7 @@ handle_im(Origin,Obj,IM):-writeq(handle_im(Origin,Obj,IM)),nl.
 %% cli_new_prolog_collection(+PredImpl,+ElementType,-PBD)
 % Prolog Backed Collection
 
-cli_new_prolog_collection(PredImpl,TypeSpec,PBC):-
+cli_new_prolog_collection(PredImpl,TypeSpec,PBC):- 
    module_functor(PredImpl,Module,Pred,_),
    atom_concat(Pred,'_get',GET),atom_concat(Pred,'_add',ADD),atom_concat(Pred,'_remove',REM),atom_concat(Pred,'_clear',CLR),
    PANON =..[Pred,_],PGET =..[GET,Val],PADD =..[ADD,Val],PREM =..[REM,Val],PDYN =..[Pred,Val],
@@ -1237,7 +1535,7 @@ cli_new_prolog_collection(PredImpl,TypeSpec,PBC):-
 %% cli_new_prolog_dictionary(+PredImpl,+KeyType,+ValueType,-PBD)
 % Prolog Backed Dictionaries
 
-cli_new_prolog_dictionary(PredImpl,KeyType,ValueType,PBD):-
+cli_new_prolog_dictionary(PredImpl,KeyType,ValueType,PBD):- 
    cli_new_prolog_collection(PredImpl,KeyType,PBC),
    module_functor(PredImpl,Module,Pred,_),
    atom_concat(Pred,'_get',GET),atom_concat(Pred,'_set',SET),atom_concat(Pred,'_remove',REM),atom_concat(Pred,'_clear',CLR),
@@ -1366,34 +1664,34 @@ cli_demo(PBC,PBD):- asserta(( add_new_flag(Flag) :- create_prolog_flag(Flag,_,[a
 
 %% module_functor(+Obj, Arg2, Arg3, Arg4).
 
-module_functor(PredImpl,Module,Pred,Arity):-strip_module(PredImpl,Module,NewPredImpl),strip_arity(NewPredImpl,Pred,Arity).
+module_functor(PredImpl,Module,Pred,Arity):- strip_module(PredImpl,Module,NewPredImpl),strip_arity(NewPredImpl,Pred,Arity).
 strip_arity(Pred/Arity,Pred,Arity).
-strip_arity(PredImpl,Pred,Arity):-functor(PredImpl,Pred,Arity).
+strip_arity(PredImpl,Pred,Arity):- functor(PredImpl,Pred,Arity).
 
 
-%:-use_module(library(jpl)).
-%:-use_module(library(pce)).
+%:- use_module(library(jpl)).
+%:- use_module(library(pce)).
 
-%:-interactor.
+%:- interactor.
 
 %% cli_hide(+Pred).
 % hide Pred from tracing
 
-to_pi(M:F/A,M:PI):-functor(PI,F,A),!.
-to_pi(F/A,M:PI):-context_module(M),functor(PI,F,A),!.
-to_pi(M:PI,M:PI):-!.
-to_pi(PI,M:PI):-context_module(M).
-cli_hide(PIn):-to_pi(PIn,Pred),
-   '$set_predicate_attribute'(Pred, trace, 1),
+to_pi(M:F/A,M:PI):- functor(PI,F,A),!.
+to_pi(F/A,M:PI):- context_module(M),functor(PI,F,A),!.
+to_pi(M:PI,M:PI):- !.
+to_pi(PI,M:PI):- context_module(M).
+cli_hide(PIn):- to_pi(PIn,Pred),
+  ignore(( '$set_predicate_attribute'(Pred, trace, 1),
    '$set_predicate_attribute'(Pred, noprofile, 1),
-   '$set_predicate_attribute'(Pred, hide_childs, 1).
+   '$set_predicate_attribute'(Pred, hide_childs, 1))).
 
-:-meta_predicate(cli_notrace(0)).
+:- meta_predicate(cli_notrace(0)).
 
 %% cli_notrace(+Call) is nondet.
 %  use call/1 with trace turned off
-cli_notrace(Call):-tracing,notrace,!,call_cleanup(call(Call),trace).
-cli_notrace(Call):-call(Call).
+cli_notrace(Call):- tracing,notrace,!,call_cleanup(call(Call),trace).
+cli_notrace(Call):- call(Call).
 
 %% cli_class_from_type(+Value,-Value).
 %% cli_find_class(+ClazzName,-ClazzObject).
@@ -1454,33 +1752,31 @@ cli_notrace(Call):-call(Call).
 % Assembly definition test preds for Examples
 
 
-:-forall((current_predicate(swicli:F/A),atom_concat(cli_,_,F)),(export(F/A),functor(P,F,A),cli_hide(swicli:P))).
 
+cap_word(In,Out):- atom_codes(In,[L|Rest]),code_type(U,to_upper(L)),atom_codes(Out,[U|Rest]).
 
-cap_word(In,Out):-atom_codes(In,[L|Rest]),code_type(U,to_upper(L)),atom_codes(Out,[U|Rest]).
+ppList2Args(PP,Args):- ppList2Args0(PP,Args).
 
-ppList2Args(PP,Args):-ppList2Args0(PP,Args).
-
-ppList2Args0([],[]):-!.
-ppList2Args0([P|PP],[A|Args]):-
+ppList2Args0([],[]):- !.
+ppList2Args0([P|PP],[A|Args]):- 
    ppList2Arg(P,A),
    ppList2Args0(PP,Args).
 
-ppList2Arg('PlTerm':A,AA):-!,ppList2Arg(A,AA).
-ppList2Arg('Int32':A,AA):-!,ppList2Arg(A,AA).
-ppList2Arg(A:B,AA):-ppList2Arg(A,A1),ppList2Arg(B,B1),atom_concat(A1,B1,AB),!,ppList2Arg(AB,AA).
-ppList2Arg(F,B):-compound(F),F=..List,concat_atom(List,A),!,ppList2Arg(A,B).
-ppList2Arg(A,BB):- concat_atom([B,''],"Out",A),!,cap_word(B,BB1),concat_atom([-,BB1],'',BB).
-ppList2Arg(A,BB):- concat_atom([B,''],"In",A),!,cap_word(B,BB1),concat_atom([+,BB1],'',BB).
-ppList2Arg(A,BB):- concat_atom([_,_|_],"Byref",A),!,A=B,cap_word(B,BB1),concat_atom([?,BB1],'',BB).
-ppList2Arg(A,BB):- concat_atom([_,_|_],"Out",A),!,A=B,cap_word(B,BB1),concat_atom([-,BB1],'',BB).
-ppList2Arg(A,BB):- concat_atom([_,_|_],"In",A),A=B,!,cap_word(B,BB1),concat_atom([+,BB1],'',BB).
-ppList2Arg(A,BB):-concat_atom([A],'',B),cap_word(B,BB).
+ppList2Arg('PlTerm':A,AA):- !,ppList2Arg(A,AA).
+ppList2Arg('Int32':A,AA):- !,ppList2Arg(A,AA).
+ppList2Arg(A:B,AA):- ppList2Arg(A,A1),ppList2Arg(B,B1),atom_concat(A1,B1,AB),!,ppList2Arg(AB,AA).
+ppList2Arg(F,B):- compound(F),F=..List,atomic_list_concat(List,'',A),!,ppList2Arg(A,B).
+ppList2Arg(A,BB):- atomic_list_concat([B,''],"Out",A),!,cap_word(B,BB1),atomic_list_concat([-,BB1],'',BB).
+ppList2Arg(A,BB):- atomic_list_concat([B,''],"In",A),!,cap_word(B,BB1),atomic_list_concat([+,BB1],'',BB).
+ppList2Arg(A,BB):- atomic_list_concat([_,_|_],"Byref",A),!,A=B,cap_word(B,BB1),atomic_list_concat([?,BB1],'',BB).
+ppList2Arg(A,BB):- atomic_list_concat([_,_|_],"Out",A),!,A=B,cap_word(B,BB1),atomic_list_concat([-,BB1],'',BB).
+ppList2Arg(A,BB):- atomic_list_concat([_,_|_],"In",A),A=B,!,cap_word(B,BB1),atomic_list_concat([+,BB1],'',BB).
+ppList2Arg(A,BB):- atomic_list_concat([A],'',B),cap_word(B,BB).
 
 
-bot_params_to_list(PPs,PNs):-findall(T:N,(cli_col(PPs,PI),bot_param(PI,T,N)),PNs).
+bot_params_to_list(PPs,PNs):- findall(T:N,(cli_col(PPs,PI),bot_param(PI,T,N)),PNs).
 
-bot_param(PI,T,N):-cli_get(PI,'ParameterType',TR),cli_type_to_typespec(TR,T),cli_get(PI,'Name',N).
+bot_param(PI,T,N):- cli_get(PI,'ParameterType',TR),cli_type_to_typespec(TR,T),cli_get(PI,'Name',N).
 
 
 % cli_docs:- predicate_property(swicli:P,file(_)),P=P,!.
@@ -1488,7 +1784,7 @@ cli_docs:- cli_find_type('Swicli.Library.PrologCLR',T),
    cli_get(static(T),'AutoDocInfos',SRF),cli_map(SRF,K,V),P=V,cli_get(P,'GetParameters',PPs),
    bot_params_to_list(PPs,PP),
    cli_member_doc(P,_Doc,_XML),
-   concat_atom([FC,AC],"/",K),atom_number(AC,A),string_to_atom(FC,F),
+   atomic_list_concat([FC,AC],"/",K),atom_number(AC,A),string_to_atom(FC,F),
     ppList2Args(PP,Args),PRED=..[F|Args],A=A,
     cli_to_str(V,VS),
    %% cli_to_str(F/A=eval(cli_get(V,name)):PRED:Doc,TSTR),
@@ -1498,7 +1794,7 @@ cli_docs:- cli_find_type('Swicli.Library.PrologCLR',T),
     VS==VS, %%'format'('%       Foreign call to ~w~n',[VS]),
     fail.
 
-cli_start_pldoc_server:-use_module(library(pldoc)), doc_server(57007,[workers(5)]) , portray_text(true). 
+cli_start_pldoc_server:- use_module(library(pldoc)), doc_server(57007,[workers(5)]) , portray_text(true). 
 
 /** <module> SWI-Prolog 2-Way interface to .NET/Mono
 
@@ -1548,6 +1844,11 @@ Doc root and Download will be findable from http://code.google.com/p/opensim4ope
 @author	Douglas Miles
 
 */
+
+
+cli_init:- forall(clause(cli_init0,B),call(B)).
+
+:- forall((current_predicate(F/A),atom_concat(cli_,_,F)),catch((export(F/A),functor(P,F,A),cli_hide(P),writeln(:- export(F/A))),_,true)).
 
 end_of_file.
 
@@ -1847,6 +2148,7 @@ end_of_file.
 %    cli_find_type('ABuildStartup.Program',Y),cli_to_str(Y,W).
 %    
 %    
+
 
 
 end_of_file.
