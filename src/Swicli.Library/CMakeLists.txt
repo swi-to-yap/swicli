@@ -47,16 +47,20 @@ FOREACH( file1 ${YAP_SWICLILIB_SRC} )
     SET( arguments ${arguments} ${file1} )
 ENDFOREACH( file1 )
 
-add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll
+# execute_process(COMMAND rm ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll )
+
+# https://cmake.org/pipermail/cmake/2007-March/013419.html
+add_custom_target(RECOMIPLE_YAP_SWICLILIB ALL dmcs -unsafe -warn:1 -define:PROLOG_YAP /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	COMMAND dmcs -unsafe -warn:0 -define:PROLOG_YAP /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
+        COMMENT add_custom_target dmcs -unsafe -warn:1 -define:PROLOG_YAP /out:${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll ${arguments}
+	SOURCES ${arguments}
 )
+# add_custom_target(YAP_SWICLILIB ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll)
+# else do 
+# add_custom_target(YAP_SWICLILIB ALL )
 
-add_custom_target(YAP_SWICLILIB ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll)
 
-if(NOT dlls)
-	set(dlls /tmp)
-endif()
+
+# if(NOT dlls) set(dlls /tmp) endif()
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Swicli.Library.dll DESTINATION ${dlls} )

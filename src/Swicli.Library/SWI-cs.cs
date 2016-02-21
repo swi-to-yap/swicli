@@ -756,9 +756,9 @@ namespace SbsSW.SwiPlCs
 
             // term_t 
             uint t = libpl.PL_new_term_ref();
-
+            
             if (0 == libpl.PL_chars_to_term(text, t))
-                throw new PlException(new PlTerm(t));
+                throw new PlException("PlTerm creation failed : " + text);
 
             this._termRef = libpl.PL_new_term_ref();
             libpl.PL_put_term(this.TermRef, t);
@@ -867,10 +867,9 @@ namespace SbsSW.SwiPlCs
             uint t = libpl.PL_new_term_ref();
 
             if (0 == libpl.PL_chars_to_term(text, t))
-                throw new PlException(new PlTerm(t));
+                throw new PlException("PlCompound creation failed : " + text);
 
-            PlTerm term = new PlTerm();
-            term._termRef = libpl.PL_new_term_ref();
+            PlTerm term = PlVar();
             libpl.PL_put_term(term.TermRef, t);
             return term;
         }

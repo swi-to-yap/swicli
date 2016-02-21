@@ -1,3 +1,11 @@
+#if PROLOG_SWI
+#else
+#if PROLOG_SWI_6
+#else // Yap
+#define PROLOG_YAP
+#endif
+#endif
+
 #define USESAFELIB
 /*  $Id$
 *  
@@ -191,9 +199,9 @@ namespace SbsSW.SwiPlCs
         public const string CONST_LIBSWIPL_DllFileName = @"libswipl.dll";
 #else
 #if PROLOG_SWI_6
-        //private const string DllFileName = @"LibPl.dll";
+        private const string DllFileName = @"LibPl.dll";
 #else // Yap
-        public const string CONST_LIBSWIPL_DllFileName = @"libYAP.dll";
+        public const string CONST_LIBSWIPL_DllFileName = @"/usr/local/lib/libYap.so";
 #endif
 #endif
 
@@ -235,6 +243,7 @@ namespace SbsSW.SwiPlCs
 		/// libpl
 		///
         // das funktioniert NICHT wenn umlaute e.g. ü im pfad sind.
+#if (!PROLOG_YAP)
         [DllImport(CONST_LIBSWIPL_DllFileName,CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int PL_initialise(int argc, String[] argv);
 		[DllImport(CONST_LIBSWIPL_DllFileName)]
@@ -242,7 +251,8 @@ namespace SbsSW.SwiPlCs
 		internal static extern int PL_is_initialised([In, Out] ref int argc, [In, Out] ref String[] argv);
 		[DllImport(CONST_LIBSWIPL_DllFileName)]
 		internal static extern int PL_is_initialised(IntPtr argc, IntPtr argv);
-		[DllImport(CONST_LIBSWIPL_DllFileName)]
+#endif
+        [DllImport(CONST_LIBSWIPL_DllFileName)]
 		internal static extern int PL_halt(int i);
 		[DllImport(CONST_LIBSWIPL_DllFileName)]
 		internal static extern void PL_cleanup(int status);
@@ -417,13 +427,20 @@ namespace SbsSW.SwiPlCs
 		// __pl_export int PL_chars_to_term(const char *chars, term_t term);
 		//__pl_export void	PL_cons_functor_v(term_t h, functor_t fd, term_t A0);
 		//__pl_export functor_t	PL_new_functor(atom_t f, int atom);
-        [DllImport(CONST_LIBSWIPL_DllFileName, CharSet = CharSet.Ansi, ExactSpelling = true, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+		#if !(missing_PL_chars_to_term)
+        // ExactSpelling = true
+        [DllImport(CONST_LIBSWIPL_DllFileName, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         //[DllImport(DllFileName)]
         internal static extern int PL_chars_to_term(string chars, uint term);
         //internal static extern int PL_chars_to_term([In, MarshalAs(UnmanagedType.LPStr)]String chars, uint term);
+#endif
         [DllImport(CONST_LIBSWIPL_DllFileName)]
-		internal static extern void PL_cons_functor_v(uint term, uint functor_t, uint term_a0 );
-		[DllImport(CONST_LIBSWIPL_DllFileName)]
+        internal static extern int atom_to_term(uint atom, uint term, uint binding);
+        //[DllImport(DllFileName)]
+        //
+        [DllImport(CONST_LIBSWIPL_DllFileName)]
+        internal static extern void PL_cons_functor_v(uint term, uint functor_t, uint term_a0);
+        [DllImport(CONST_LIBSWIPL_DllFileName)]
 		internal static extern uint PL_new_functor(uint atom_a, int a);
 
 		//__pl_export void	PL_put_string_chars(term_t term, const char *chars);

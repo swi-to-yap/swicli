@@ -5,7 +5,7 @@
 *  Author:        Douglas R. Miles
 *                 Uwe Lesta (SbsSW.SwiPlCs classes)
 *  E-mail:        logicmoo@gmail.com
-*  WWW:           http://www.logicmoo.com
+*  WWW:           http://www.logicmoo.org
 *  Copyright (C): 2008, Uwe Lesta SBS-Softwaresysteme GmbH, 
 *     2010-2012 LogicMOO Developement
 *
@@ -281,7 +281,12 @@ namespace SbsSW.SwiPlCs
         public static int PL_initialise(int argc, String[] argv)
         {
             LoadLibPl();
+#if PROLOG_YAP
+            return 1;
+#else
             return SafeNativeMethods.PL_initialise(argc, argv);
+#endif
+
         }
 
 
@@ -297,7 +302,11 @@ namespace SbsSW.SwiPlCs
             int iRet = 0;
             if (IsValid)
             {
+#if PROLOG_YAP
+                iRet = 1;
+#else
                 iRet = SafeNativeMethods.PL_is_initialised(ref argc, ref argv);
+#endif
             }
             return iRet;
         }
@@ -307,7 +316,11 @@ namespace SbsSW.SwiPlCs
             int iRet = 0;
             if (IsValid)
             {
+#if PROLOG_YAP
+                iRet = 1;
+#else
                 iRet = SafeNativeMethods.PL_is_initialised(argc, argv);
+#endif
             }
             return iRet;
         }
@@ -630,10 +643,16 @@ namespace SbsSW.SwiPlCs
         public static void PL_put_term(uint t1, uint t2)
         { SafeNativeMethods.PL_put_term(t1, t2); }
 
-        // PlCompound
         public static int PL_chars_to_term(string chars, uint term)
-        { return SafeNativeMethods.PL_chars_to_term(chars, term); }
-
+        {
+            PlTermV termV = new PlTermV(2);
+            PL_unify(termV[0].TermRef, term);
+            PL_put_atom(termV[0].TermRef, PL_new_atom(chars));
+            return PrologCLR.PlCall(null, "term_to_atom", termV)?1:0;
+            return SafeNativeMethods.PL_chars_to_term(chars, term);
+		}
+       
+		
         public static void PL_cons_functor_v(uint term, uint functor_t, uint term_a0)
         {
             //PrologCLR.RegisterThread(Thread.CurrentThread);

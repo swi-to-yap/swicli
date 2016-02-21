@@ -24,11 +24,12 @@
             module_functor/4,
             to_string/2,
             member_elipse/2,
+            op(600,fx,'@'),
 					  cli_init/0
           ]).
 
 /** <module>  Swicli.Library - Two Way Interface for .NET and MONO to/from SWI-Prolog
-*
+
 The easiest way to install on SWI is via the package manager. 
 Simply do:
 ==
@@ -38,8 +39,12 @@ Simply do:
 ==
 
 *********************************************************/
-*/
 
+
+cli_api:- !.
+  
+ 
+:- op(600,fx,'@').
 :- meta_predicate(cli_add_event_handler(+,+,0)).
 :- meta_predicate(cli_new_delegate(+,0,+)).
 :- meta_predicate(cli_new_delegate_term(+,0,+,-)).
@@ -53,6 +58,7 @@ is_swi:- current_prolog_flag(version_data,DATA),DATA=swi(_,_,_,_).
 %:- push_operators([op(600, fx, ('@'))]). 
 :- set_prolog_flag(double_quotes,string).
 
+cli_must(Call):- (Call *-> true; throw(failed_cli_must(Call))).
 
 cli_debug:- debug(swicli), set_prolog_flag(verbose_file_search,true), set_prolog_flag(swicli_debug,true).
 cli_nodebug:- nodebug(swicli), set_prolog_flag(verbose_file_search,false), set_prolog_flag(swicli_debug,false).
@@ -282,6 +288,7 @@ libswicli(X):-
    current_prolog_flag(address_bits,Bits),
    atomic_list_concat([Lib,swicli,VM,Bits],X).
 
+swicli_foreign_name('/usr/local/lib/Yap/libswicliYap64.so').
 swicli_foreign_name(foreign(X)):- libswicli(X).
 swicli_foreign_name(ext(X)):- libswicli(X).
 swicli_foreign_name(lib(X)):- libswicli(X).
@@ -291,11 +298,14 @@ swicli_foreign_name(X):- libswicli(X).
 
 
 cli_ensure_so_loaded:- swicli_so_loaded(_),!.
+cli_ensure_so_loaded:- swicli_foreign_name(FO),
+     catch(load_absolute_foreign_files([FO], [],install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
 cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO),_,fail),assert(swicli_so_loaded(FO)),!.
 cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO,install),_,fail),assert(swicli_so_loaded(FO)),!.
-cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap.so',
+cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO,install),_,fail),assert(swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap64.so',
      catch(load_absolute_foreign_files([FO], [],install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
-cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap.so',
+cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap64.so',
      catch(load_absolute_foreign_files([FO], ['/usr/lib/libmonoboehm-2.0.so.1', '/usr/local/lib/libYap.so.6.3'],
     install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
 cli_ensure_so_loaded:- swicli_foreign_name(FO), throw(missing_dll(FO)).
@@ -436,15 +446,18 @@ prepend_env_var(Var,Path):- getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (atomi
 prepend_env_var(Var,Path):- setenv(Var,Path).
 
 % so we dont have to export MONO_PATH=/usr/lib/swi-prolog/lib/amd64
-cli_update_paths:- forall( file_alias_path(foreign,D),
+cli_update_paths:- forall(expand_file_search_path(foreign('.'),D),
   ((append_env_var('PATH',D),append_env_var('MONO_PATH',D),append_env_var('LD_LIBRARY_PATH',D)))).
 
 % sometimes usefull
 swicli_test :- cli_update_paths.
 
 getenv_safe(N,V,ELSE):- getenv(N,V)->true;V=ELSE.
-cli_env(N):- getenv_safe(N,V,'(missing)'),format('~q.~n',[N=V]).
-cli_env:- cli_env('LD_LIBRARY_PATH'),cli_env('MONO_PATH'),cli_env('PATH').  
+cli_env(N,V):- getenv_safe(N,WV,'(missing)'),WV=='(missing)',!,setenv(N,V),format('~NSetting: ~q.~n',[N=V]).
+cli_env(N,_):- getenv_safe(N,V,'(missing)'),format('~N~q.~n',[N=V]).
+
+cli_env(N):- getenv_safe(N,V,'(missing)'),format('~N~q.~n',[N=V]).
+cli_env:- cli_env('MONO_PATH','/usr/lib/mono/4.5'),cli_env('LD_LIBRARY_PATH','/usr/local/lib/Yap:/usr/lib/mono/4.5:.'),cli_env('PATH').
 
 % sometimes usefull
 swicli_test :- cli_env.
@@ -453,6 +466,8 @@ swicli_test :- cli_env.
 
 swicli_test :- debug_call(swicli_so_loaded(_)).
 
+cli_init0:- cli_env.
+cli_init0:- cli_update_paths.
 cli_init0:- cli_env.
 
 cli_init0:- cli_ensure_so_loaded.
@@ -540,7 +555,7 @@ cli_init0:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
 
 %% cli_non_obj(+Obj) 
 % is null or void or var
-cli_non_obj(Obj):- once(var(Obj);(Obj='@'(null));(Obj='@'(void))).
+cli_non_obj(Obj):- (var(Obj) ; Obj= @(null) ; Obj= @(void)),!.
 
 %% cli_non_null(+Obj)
 % is not null or void
@@ -1846,9 +1861,18 @@ Doc root and Download will be findable from http://code.google.com/p/opensim4ope
 */
 
 
-cli_init:- forall(clause(cli_init0,B),call(B)).
+cli_init:- forall(clause(cli_init0,B),cli_must(once(B))).
 
-:- forall((current_predicate(F/A),atom_concat(cli_,_,F)),catch((export(F/A),functor(P,F,A),cli_hide(P),writeln(:- export(F/A))),_,true)).
+:- forall((current_predicate(F/A),atom_concat(cli_,_,F)),
+  catch(
+    (export(F/A),
+     % writeln(':-'(export(F/A))),
+     functor(P,F,A),
+     cli_hide(P)),_,true)).
+
+:- cli_init.
+:- cli_load_lib_safe('SWIProlog','Swicli.Library.dll','Swicli.Library.Embedded','install').
+
 
 end_of_file.
 
@@ -2152,4 +2176,5 @@ end_of_file.
 
 
 end_of_file.
+
 
