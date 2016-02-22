@@ -22,7 +22,7 @@
     <ProjectGuid>{F957BFA7-8955-450D-89BC-5F2AAA5A4666}</ProjectGuid>
     <RootNamespace>DummyLibraryUsage</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>swicli64</ProjectName>
+    <ProjectName>swicliYap64</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -90,8 +90,8 @@
     </Midl>
     <ClCompile>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>C:\Program Files\swipl\include;$(SWI_HOME_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../../build;T:\devel\GITHUB\YAP6;T:\devel\GITHUB\YAP6\h;T:\devel\GITHUB\YAP6\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions);_YAP_NOT_INSTALLED_</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>
       </ExceptionHandling>
@@ -100,9 +100,9 @@
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(SWI_HOME_DIR)\lib\libswipl.dll.a;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\Program Files\Yap64\bin\Yap.dll;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerbose</ShowProgress>
-      <OutputFile>..\lib\x64-win64\swicliD.dll</OutputFile>
+      <OutputFile>..\lib\x64-win64\swicliYap64.dll</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AssemblyDebug>true</AssemblyDebug>
       <SubSystem>Windows</SubSystem>

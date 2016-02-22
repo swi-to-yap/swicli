@@ -103,7 +103,9 @@ extern "C" {
 
   static foreign_t cli_mono_jit_cleanup() 
   {
-    if(domain) mono_jit_cleanup (domain);
+#ifndef WINDOWS_CPP
+	  if(domain) mono_jit_cleanup (domain);
+#endif
     return TRUE;
   }
 
@@ -115,7 +117,7 @@ extern "C" {
   static foreign_t cli_load_lib(term_t dname, term_t aname, term_t cname, term_t mname)   
   {
 
-    if (! cli_init_domain(dname,0,0,0,0) ) return FALSE;
+	if (! cli_init_domain(dname,0,0,0,0) ) return FALSE;
 
     char *dnamestr;
     char *anamestr;
