@@ -135,40 +135,44 @@ namespace SbsSW.SwiPlCs
             }
         }
 
-        public static void LoadUnmanagedPrologLibrary(string fileName)
+        public static SafeLibraryHandle LoadUnmanagedPrologLibrary(string fileName)
         {
-#if USESAFELIB
-            if (m_hLibrary == null)
+            SafeLibraryHandle localHLibrary;
+            //if (PrologCLR.IsLinux)
             {
-                if (PrologCLR.IsLinux)
-                {
-                    if (fileName.EndsWith("libswipl.dll"))
-                    {
-                        fileName = "/usr/lib/swi-prolog/libswipl.so";
-                    }
-                    m_hLibrary = NativeMethodsLinux.LoadLibrary(fileName);
-                    if (m_hLibrary.IsInvalid)
-                    {
-                        PrologCLR.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
-                        // int hr = Marshal.GetHRForLastWin32Error();
-                        // Marshal.ThrowExceptionForHR(hr);
-                    }
-                }
-                else
-                {
-                    fileName = fileName.Replace('/', '\\');
-                }
-                 
-                {
-                    m_hLibrary = NativeMethodsWindows.LoadLibrary(fileName);
-                    if (m_hLibrary.IsInvalid)
-                    {
-                        int hr = Marshal.GetHRForLastWin32Error();
-                        Marshal.ThrowExceptionForHR(hr);
-                    }
-                }
+				try {
+					localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
+					if (!localHLibrary.IsInvalid)
+					{
+						return localHLibrary;
+					}
+					PrologCLR.ConsoleTrace("IsInvalid NativeMethodsLinux "  + fileName);
+				} catch ( Exception e) {
+					PrologCLR.ConsoleTrace("NativeMethodsLinux "  + fileName + " e=" + e );
+				}
+				
             }
-#endif
+			{
+				try {
+					localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
+					if (!localHLibrary.IsInvalid)
+					{
+						return localHLibrary;
+					}
+					PrologCLR.ConsoleTrace("IsInvalid NativeMethodsWindows " + fileName);
+				} catch ( Exception e) {
+					PrologCLR.ConsoleTrace("NativeMethodsWindows "  + fileName + " e=" + e );
+				}
+            }
+
+			localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
+			if (localHLibrary.IsInvalid)
+			{
+				int hr = Marshal.GetHRForLastWin32Error();
+				//if (throwOnInvalid) 
+					Marshal.ThrowExceptionForHR(hr);
+			}
+            return localHLibrary;
         }
 
         public static void UnLoadUnmanagedLibrary()

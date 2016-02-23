@@ -701,7 +701,13 @@ jpl_jlist_demo :-
         public static bool RedirectStreams = false;
         public static int VMStringsAsAtoms = libpl.CVT_STRING;
 
-        public static bool IsLinux = Type.GetType("Mono.Runtime") != null;
+        public static bool IsLinux 
+	    {
+			get {
+				 int p = (int) Environment.OSVersion.Platform;
+				 return (p == 4) || (p == 6) || (p == 128);
+			}
+		}
 
         public void InitFromUser()
         {

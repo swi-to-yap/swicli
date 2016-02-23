@@ -97,22 +97,39 @@ namespace SbsSW.SwiPlCs
         public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName, bool throwOnInvalid)
         {
             SafeLibraryHandle localHLibrary;
-            if (PrologCLR.IsLinux)
+            //if (PrologCLR.IsLinux)
             {
+				try {
+					localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
+					if (!localHLibrary.IsInvalid)
+					{
+						return localHLibrary;
+					}
+					PrologCLR.ConsoleTrace("IsInvalid NativeMethodsLinux "  + fileName);
+				} catch ( Exception e) {
+					PrologCLR.ConsoleTrace("NativeMethodsLinux "  + fileName + " e=" + e );
+				}
+				
+            }
+			{
+				try {
+					localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
+					if (!localHLibrary.IsInvalid)
+					{
+						return localHLibrary;
+					}
+					PrologCLR.ConsoleTrace("IsInvalid NativeMethodsWindows " + fileName);
+				} catch ( Exception e) {
+					PrologCLR.ConsoleTrace("NativeMethodsWindows "  + fileName + " e=" + e );
+				}
+            }
 
-                localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
-                if (!localHLibrary.IsInvalid)
-                {
-                    return localHLibrary;
-                }
-                PrologCLR.ConsoleTrace("IsInvalid LoadUnmanagedLibrary " + fileName);
-            }
-            localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
-            if (localHLibrary.IsInvalid)
-            {
-                int hr = Marshal.GetHRForLastWin32Error();
-                if (throwOnInvalid) Marshal.ThrowExceptionForHR(hr);
-            }
+			localHLibrary = NativeMethodsWindows.LoadLibrary(fileName);
+			if (localHLibrary.IsInvalid)
+			{
+				int hr = Marshal.GetHRForLastWin32Error();
+				if (throwOnInvalid) Marshal.ThrowExceptionForHR(hr);
+			}
             return localHLibrary;
         }
 
@@ -147,23 +164,41 @@ namespace SbsSW.SwiPlCs
 
     static class NativeMethodsLinux
     {
-        public static SafeLibraryHandle LoadLibrary(string fileName)
-        {
-            return dlopen(fileName);
+        
+		static public SafeLibraryHandle LoadLibrary(string fileName) {
+            return dlopen(fileName, RTLD_NOW);
         }
-        //const string SKernel = "libdl.so";
-        const string SKernel = "kernel32.dll";
-        [DllImport(SKernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
-        public static extern SafeLibraryHandle dlopen(string fileName);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [DllImport(SKernel, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool FreeLibrary(IntPtr hModule);
+        static public bool FreeLibrary(IntPtr handle) {
+            dlclose(handle);
+			return true;
+        }
 
-        // see: http://blogs.msdn.com/jmstall/archive/2007/01/06/Typesafe-GetProcAddress.aspx
-        [DllImport(SKernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
-        internal static extern IntPtr GetProcAddress(SafeLibraryHandle hModule, String procname);
+        static public IntPtr GetProcAddress(SafeLibraryHandle dllHandle, string name) {
+            // clear previous errors if any
+            dlerror();
+            var res = dlsym(dllHandle, name);
+            var errPtr = dlerror();
+            if (errPtr != IntPtr.Zero) {
+                throw new Exception("dlsym: " + Marshal.PtrToStringAnsi(errPtr));
+            }
+            return res;
+        }
+
+        const int RTLD_NOW = 2;
+
+        [DllImport("libdl.so")]
+        private static extern SafeLibraryHandle dlopen(String fileName, int flags);
+        
+        [DllImport("libdl.so")]
+        private static extern IntPtr dlsym(SafeLibraryHandle handle, String symbol);
+
+        [DllImport("libdl.so")]
+        private static extern int dlclose(IntPtr handle);
+
+        [DllImport("libdl.so")]
+        private static extern IntPtr dlerror();
+
 
     }
 	#endregion // Safe Handles and Native imports

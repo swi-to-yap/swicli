@@ -1,27 +1,32 @@
+CMAKE_MINIMUM_REQUIRED ( VERSION 2.8 )
 
-#CHECK: Mono
+if (YAP_ROOT)
+# SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake ${CMAKE_MODULE_PATH})
+endif()
 
-set(CMAKE_CXX_COMPILER_ARG1 "-m32")
-set(CMAKE_C_COMPILER_ARG1 "-m32")
+#set(CMAKE_C_COMPILER_ARG1 "-m64")
+#find_package(Mono REQUIRED)
+#FIND_PACKAGE(YAP REQUIRED)
 
-find_package(Mono REQUIRED)
-
-add_library (swicliYap32 SHARED swicli32.c)
+add_library (swicliYap64 SHARED swicliYap64.c)
   
-include_directories( 
-		${MONO_INCLUDE_DIRS} ${IKVM_INCLUDE_DIRS} )
+include_directories (${MONO_INCLUDE_DIRS} )
+# target_link_libraries(swicliYap64 libYap ${MONO_LIBRARIES} ${IKVM_LIBRARIES})
   
-target_link_libraries(swicliYap32 libYap ${MONO_LIBRARIES} ${IKVM_LIBRARIES})
-  
-set_target_properties(swicliYap32 
- PROPERTIES
-    INSTALL_RPATH_USE_LINK_PATH OUTPUT_NAME swicliYap32 )
-  
-  # set(YAP_SYSTEM_OPTIONS "SWICLIYAP32 " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
-  install(TARGETS  swicliYap32
-    LIBRARY DESTINATION ${dlls}
-		ARCHIVE DESTINATION ${dlls}
-  )
+  target_link_libraries(swicliYap64  libYap ${MONO_LIBRARIES})
 
+set_target_properties(swicliYap64 PROPERTIES OUTPUT_NAME swicliYap64)
+set_target_properties(swicliYap64 PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE )
+  
+if (YAP_ROOT)
+  # set(YAP_SYSTEM_OPTIONS "swicliYap64 " ${YAP_SYSTEM_OPTIONS} PARENT_SCOPE)
+endif()
+
+# for testing locally
+if(NOT dlls) 
+  set(dlls ${CMAKE_CURRENT_BINARY_DIR}/output )
+endif()
+
+install(TARGETS  swicliYap64 LIBRARY DESTINATION ${dlls}  )
 
 
