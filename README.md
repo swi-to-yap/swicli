@@ -4,11 +4,11 @@ YAP/SWI-Prolog 2-Way interface to Common Language Infrastructure (.NET)
 
 == [http://code.google.com/p/opensim4opencog/downloads/list Download] ==
  The File named (SWICLI-xxx-DIST-xxxx.zip)
-== [https://github.com/logicmoo/swicli Sourcecode] ==
+== [https://github.com/swi-to-yap/swicli Sourcecode] ==
 
-== [http://logicmoo.github.com/swicli/api.html Documentation] ==
+== [http://swi-to-yap.github.com/swicli/api.html Documentation] ==
 
-== [http://logicmoo.github.com/swicli/documentation.html Old Docs] ==
+== [http://swi-to-yap.github.com/swicli/documentation.html Old Docs] ==
 
 
 Example of Prject that uses it:
