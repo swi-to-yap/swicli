@@ -6,9 +6,9 @@ YAP/SWI-Prolog 2-Way interface to Common Language Infrastructure (.NET)
  The File named (SWICLI-xxx-DIST-xxxx.zip)
 == [https://github.com/swi-to-yap/swicli Sourcecode] ==
 
-== [http://swi-to-yap.github.com/swicli/api.html Documentation] ==
+== [http://swi-to-yap.github.io/swicli/api.html Documentation] ==
 
-== [http://swi-to-yap.github.com/swicli/documentation.html Old Docs] ==
+== [http://swi-to-yap.github.io/swicli/documentation.html Old Docs] ==
 
 
 Example of Prject that uses it:
