@@ -2626,5 +2626,21 @@
             Supports optional values, and custom attributes on constructors and parameters.
             Does not support n-ary (variadic) constructors</summary>
         </member>
+        <member name="T:Swicli.Library.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Swicli.Library.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Swicli.Library.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
     </members>
 </doc>
