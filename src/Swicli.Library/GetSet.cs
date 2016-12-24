@@ -72,7 +72,7 @@ namespace Swicli.Library
         {
             if (!valueIn.IsVar)
             {
-                return Error("Cant set property with a var {0}", valueIn);
+                return Embedded.Error("Cant set property with a var {0}", valueIn);
             }
             object getInstance;
             Type c;
@@ -111,7 +111,7 @@ namespace Swicli.Library
             var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz, searchFlags);
             if (pi == null)
             {
-                Error("Cant find property {0} on {1}", memberSpec, c);
+                Embedded.Error("Cant find property {0} on {1}", memberSpec, c);
                 return false;
             }
             Action postCallHook;
@@ -126,7 +126,7 @@ namespace Swicli.Library
         {
             if (!valueIn.IsVar)
             {
-                return Error("Cant set property with a var {0}", valueIn);
+                return Embedded.Error("Cant set property with a var {0}", valueIn);
             }
             object getInstance;
             Type c;
@@ -137,7 +137,7 @@ namespace Swicli.Library
             var pi = findPropertyInfo(memberSpec, c, false, true, ref paramz, searchFlags);
             if (pi == null)
             {
-                Error("Cant find property {0} on {1}", memberSpec, c);
+                Embedded.Error("Cant find property {0} on {1}", memberSpec, c);
                 return false;
             }
             Action postCallHook;
@@ -188,7 +188,7 @@ namespace Swicli.Library
                         found = true;
                         return ((InvokeCaught(mi, mi.IsStatic ? null : getInstance, ZERO_OBJECTS) ?? VoidOrNull(mi)));
                     }
-                    Warn("Cant find getter for property " + memberSpec + " on " + c + " for " + pi);
+                    Embedded.Warn("Cant find getter for property " + memberSpec + " on " + c + " for " + pi);
                     found = false;
                     return null;
                 }
@@ -207,7 +207,7 @@ namespace Swicli.Library
             {
                 if (memberSpec.IsVar)
                 {
-                    Warn("cliGet0 on IsVar={0} on {1} for {2}", memberSpec, c, getInstance);
+                    Embedded.Warn("cliGet0 on IsVar={0} on {1} for {2}", memberSpec, c, getInstance);
                     found = false;
                     return getInstance;
                 }
@@ -220,7 +220,7 @@ namespace Swicli.Library
                                 GetMethod(c, "To" + fn, icbf);
                 if (mi == null)
                 {
-                    WarnMissing("Cant find getter " + memberSpec + " on " + c);
+                    Embedded.WarnMissing("Cant find getter " + memberSpec + " on " + c);
                     found = false;
                     return null;
                 }
@@ -270,7 +270,7 @@ namespace Swicli.Library
                         InvokeCaught(mi, target, new[] {value});
                         return true;
                     }
-                    return WarnMissing("Cant find setter for property " + memberSpec + " on " + c);
+                    return Embedded.WarnMissing("Cant find setter for property " + memberSpec + " on " + c);
                 }
             }
             if ((searchFlags & BindingFlags.SetField) != 0)
@@ -293,7 +293,7 @@ namespace Swicli.Library
                                 GetMethod(c, "from" + fn, searchFlags);
                 if (mi == null)
                 {
-                    WarnMissing("Cant find setter " + memberSpec + " on " + c);
+                    Embedded.WarnMissing("Cant find setter " + memberSpec + " on " + c);
                     return false;
                 }
                 Action postCallHook;
@@ -302,7 +302,7 @@ namespace Swicli.Library
                 object retval = InvokeCaught(mi, target, value, postCallHook);
                 return true; // valueOut.FromObject(retval);
             }
-            WarnMissing("Cant find setter " + memberSpec + " on " + c);
+            Embedded.WarnMissing("Cant find setter " + memberSpec + " on " + c);
             return false;
         }
 
@@ -352,12 +352,12 @@ namespace Swicli.Library
         {
             if (c == null)
             {
-                Error("findField no class for {0}", memberSpec);
+                Embedded.Error("findField no class for {0}", memberSpec);
                 return null;
             }
             if (memberSpec.IsVar)
             {
-                Error("findField IsVar {0} on type {1}", memberSpec, c);
+                Embedded.Error("findField IsVar {0} on type {1}", memberSpec, c);
                 return null;
             }
             if (memberSpec.IsInteger)
@@ -392,12 +392,12 @@ namespace Swicli.Library
         {
             if (c == null)
             {
-                Error("findProperty no class for {0}", memberSpec);
+                Embedded.Error("findProperty no class for {0}", memberSpec);
                 return null;
             }
             if (memberSpec.IsVar)
             {
-                Error("findProperty IsVar {0} on type {1}", memberSpec, c);
+                Embedded.Error("findProperty IsVar {0} on type {1}", memberSpec, c);
                 return null;
             }
             if (memberSpec.IsInteger)

@@ -37,7 +37,7 @@ Simply do:
 
      ?- use_module(library(swicli )).
 ==
-
+And you are good to go.
 *********************************************************/
 
 
@@ -48,6 +48,20 @@ cli_api:- !.
 :- meta_predicate(cli_add_event_handler(+,+,0)).
 :- meta_predicate(cli_new_delegate(+,0,+)).
 :- meta_predicate(cli_new_delegate_term(+,0,+,-)).
+:- meta_predicate(cli_no_repeats(0,*)).
+:- meta_predicate(cli_transitive_except(*,2,?,?)).
+:- meta_predicate(with_env_vars(2,?)).
+:- meta_predicate(cli_must(0)).
+:- meta_predicate(cli_transitive_lc(2,?,?)).
+:- meta_predicate(cli_no_repeats(0)).
+:- meta_predicate(cli_no_repeats(+,0)).
+:- meta_predicate(cli_with_lock(*,0)).
+:- meta_predicate(cli_with_gc(0)).
+:- meta_predicate(cli_preserve(*,0)).
+:- meta_predicate(cli_trace_call(0)).
+:- meta_predicate(cli_eval_hook(*,0,0)).
+:- meta_predicate(cli_eval(*,0,0)).
+
 :- use_module(library(lists)).
 :- use_module(library(shlib)).
 :- use_module(library(system)).
@@ -65,13 +79,13 @@ cli_nodebug:- nodebug(swicli), set_prolog_flag(verbose_file_search,false), set_p
 
 
 memberchk_same(X, [Y|Ys]) :- (   X =@= Y ->  (var(X) -> X==Y ; true) ;   memberchk_same(X, Ys) ).
-:- meta_predicate no_repeats(0).
-no_repeats(Call):- term_variables(Call,Vs), CONS = [_],!, Call, (( \+ memberchk_same(Vs,CONS), copy_term(Vs,CVs), CONS=[_|T], nb_setarg(2, CONS, [CVs|T]))).
+cli_no_repeats(Call):- term_variables(Call,Vs),cli_no_repeats(Call,Vs).
+cli_no_repeats(Call,Vs):- CONS = [_],!, Call, (( \+ memberchk_same(Vs,CONS), copy_term(Vs,CVs), CONS=[_|T], nb_setarg(2, CONS, [CVs|T]))).
 
-debug_call(Call):- catch((Call,debug(swicli,'SUCCEED: ~q.~n',[Call])),E,(debug(swicli), debug(swicli,'ERROR: ~q.~n',[E=Call]))) *-> true; debug(swicli,'FAILED: ~q.~n',[Call]) .
+cli_trace_call(Call):- catch((Call,debug(swicli,'SUCCEED: ~q.~n',[Call])),E,(debug(swicli), debug(swicli,'ERROR: ~q.~n',[E=Call]))) *-> true; debug(swicli,'FAILED: ~q.~n',[Call]) .
 
 cli_tests:- debugging(swicli),!,forall(clause(swicli_test,Call),Call),!.
-cli_tests:- cli_debug,forall(clause(swicli_test,Call),debug_call(Call)),cli_nodebug.
+cli_tests:- cli_debug,forall(clause(swicli_test,Call),cli_trace_call(Call)),cli_nodebug.
 
 :- discontiguous(swicli_test/0).
 
@@ -182,11 +196,11 @@ pick_dontnet_mono(J0, J) :-
 libfile(Base, HomeLib, File) :- 
   framework_arch( Arch ),
   monovm(Base, LBase),
-  atom_concat(['lib/',Arch,LBase], Lib),
+  atomic_list_concat(['lib/',Arch,LBase], Lib),
   absolute_file_name( Lib, [relative_to(HomeLib), access(read), file_type( executable),  expand(true), file_errors(fail), solutions(all)], File ).
 libfile(Base, HomeLib, File) :- 
   monovm(Base, LBase),
-  atom_concat(['lib',LBase], Lib),
+  atomic_list_concat(['lib',LBase], Lib),
   absolute_file_name( Lib, [relative_to(HomeLib), access(read), file_type( executable),  expand(true), file_errors(fail), solutions(all)], File ).
   
 monovm( runtime, '/server/libruntime' ).
@@ -196,7 +210,7 @@ monovm( framework, '/libframework' ).
 framework_arch( amd64 ) :- 
     current_prolog_flag( arch, x86_64 ).
 
-
+/*
 %% @pred 	library_search_path(-Dirs:list, -EnvVar) is det.
 %
 %	Dirs  is  the  list   of    directories   searched   for  shared
@@ -212,6 +226,7 @@ library_search_path(Path, EnvVar) :-
 	->  true
 	;   Path = []
 	).
+*/
 
 
 %% @pred       add_swicli_to_assemblypath
@@ -270,7 +285,7 @@ add_framework_to_ldpath(_,_).
 % Load C++ DLL
 %=========================================
 
-:- dynamic(swicli_so_loaded/1).
+:- dynamic(scc:swicli_so_loaded/1).
 
 cli_is_windows:- current_prolog_flag(unix,true),!,fail.
 cli_is_windows:- current_prolog_flag(windows, true),!.
@@ -282,13 +297,13 @@ cli_is_windows:- current_prolog_flag(arch,ARCH),atomic_list_concat([_,_],'win',A
 %       Return the spec for loading the   SWICLI shared object. This shared
 %       object must be called libswicliYap.so as the Framework System.LoadLibrary()
 %       call used by swicli.jar adds the lib* prefix.
+libswicli(swicli):- is_swi,!.
 libswicli(X):- 
-	 (current_prolog_flag(unix,true)->Lib='lib';Lib=''),
-	 (is_swi->VM='';VM='Yap'),
-   current_prolog_flag(address_bits,Bits),
-   atomic_list_concat([Lib,swicli,VM,Bits],X).
+  (current_prolog_flag(unix,true)->Lib='lib';Lib=''),
+    current_prolog_flag(address_bits,Bits),
+    atomic_list_concat([Lib,swicli,'Yap',Bits],X).
 
-swicli_foreign_name('/usr/local/lib/Yap/libswicliYap64.so').
+% swicli_foreign_name('/usr/local/lib/Yap/libswicliYap64.so').
 swicli_foreign_name(foreign(X)):- libswicli(X).
 swicli_foreign_name(ext(X)):- libswicli(X).
 swicli_foreign_name(lib(X)):- libswicli(X).
@@ -297,17 +312,19 @@ swicli_foreign_name(jar(X)):- libswicli(X).
 swicli_foreign_name(X):- libswicli(X).
 
 
-cli_ensure_so_loaded:- swicli_so_loaded(_),!.
+cli_ensure_so_loaded:- scc:swicli_so_loaded(_),!.
+cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO,install),_,fail),assert(scc:swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO),_,fail),assert(scc:swicli_so_loaded(FO)),!.
+cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO,install),_,fail),assert(scc:swicli_so_loaded(FO)),!.
+:- if(current_predicate(load_absolute_foreign_files/3)).
 cli_ensure_so_loaded:- swicli_foreign_name(FO),
-     catch(load_absolute_foreign_files([FO], [],install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
-cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO),_,fail),assert(swicli_so_loaded(FO)),!.
-cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO,install),_,fail),assert(swicli_so_loaded(FO)),!.
-cli_ensure_so_loaded:- swicli_foreign_name(FO), catch(load_foreign_library(FO,install),_,fail),assert(swicli_so_loaded(FO)),!.
+     catch(load_absolute_foreign_files([FO], [],install),E,(writeln(E),fail)), assert(scc:swicli_so_loaded(FO)),!.
 cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap64.so',
-     catch(load_absolute_foreign_files([FO], [],install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
+     catch(load_absolute_foreign_files([FO], [],install),E,(writeln(E),fail)), assert(scc:swicli_so_loaded(FO)),!.
 cli_ensure_so_loaded:- FO= '/usr/local/lib/Yap/libswicliYap64.so',
      catch(load_absolute_foreign_files([FO], ['/usr/lib/libmonoboehm-2.0.so.1', '/usr/local/lib/libYap.so.6.3'],
-    install),E,(writeln(E),fail)), assert(swicli_so_loaded(FO)),!.
+    install),E,(writeln(E),fail)), assert(scc:swicli_so_loaded(FO)),!.
+:-endif.
 cli_ensure_so_loaded:- swicli_foreign_name(FO), throw(missing_dll(FO)).
 
 
@@ -342,7 +359,7 @@ cli_os_dir(OS):- cli_search(gac,DIR),absolute_file_name(DIR,ABS),prolog_to_os_fi
 
 
 
-cli_search(VAR,DIR):- no_repeats((user:file_search_path(VAR, FROM), expand_file_search_path(FROM,DIR))).
+cli_search(VAR,DIR):- cli_no_repeats((user:file_search_path(VAR, FROM), expand_file_search_path(FROM,DIR))).
 
 
 		 /*******************************
@@ -352,12 +369,17 @@ cli_search(VAR,DIR):- no_repeats((user:file_search_path(VAR, FROM), expand_file_
 :- dynamic user:file_search_path/2.
 :- multifile user:file_search_path/2.
 
-user:file_search_path(gac, DIR):- expand_file_search_path(pack(swicli/bin),DIR),exists_directory(DIR).
-user:file_search_path(gac, DIR):- cli_search(lib,DIR),exists_directory(DIR).
-user:file_search_path(gac, DIR):- is_swi,call( '$pack':pack_dir(swicli, _, DIR)).
-user:file_search_path(gac, DIR):- env_path_elements('MONO_PATH', DIR).
-user:file_search_path(gac, DIR):- env_path_elements('PATH', DIR).
-user:file_search_path(gac, DIR):- env_path_elements('LD_LIBRARY_PATH', DIR).
+user:file_search_path(gac, DIR):- cli_search_path(DIR).
+
+cli_search_path(DIR):- cli_no_repeats(gac_search_path(DIR)).
+gac_search_path(DIR):- gac_search_path0(DIR0),fix_pathname(DIR0,DIR).
+gac_search_path0(DIR):- cli_search(lib,DIR),exists_directory(DIR).
+gac_search_path0(DIR):- is_swi,call( '$pack':pack_dir(swicli, _, DIR)).
+gac_search_path0(DIR):- expand_file_search_path(pack(swicli/lib),DIR),exists_directory(DIR).
+gac_search_path0(DIR):- expand_file_search_path(pack(swicli/bin),DIR),exists_directory(DIR).
+gac_search_path0(DIR):- env_path_elements('MONO_PATH', DIR).
+gac_search_path0(DIR):- env_path_elements('PATH', DIR).
+gac_search_path0(DIR):- env_path_elements('LD_LIBRARY_PATH', DIR).
 
 /*
 user:(file_search_path(library, Dir) :- 
@@ -369,7 +391,7 @@ user:file_search_path(foreign, swi(ArchLib)) :-
 	atom_concat('lib/', Arch, ArchLib).
 user:file_search_path(foreign, swi(SoLib)) :- 
 	(   current_prolog_flag(windows, true)
-	->  SoLib = bin
+	->  SoLib = lib
 	;   SoLib = lib
 	).
 user:file_search_path(path, Dir) :- 
@@ -432,46 +454,112 @@ user:expand_file_search_path(Spec, Expanded) :-
 '$segments_to_list'(A, [A|T], T) :- 
 	atomic(A).
 
-env_path_elements(VAR,DIR):- getenv(VAR,VAL),path_sep(Sep),atomic_list_concat(DIRS, Sep, VAL),!, no_repeats('member'(DIR,DIRS)).
 
-remove_zero_codes(WAZ,WAS):- member(M,['a\000\n\000\/.','\a;','\\\\000','\\000','\\\\C','\\C',';;']),atomic_list_concat([W,A|ZL],M,WAZ),atomic_list_concat([W,A|ZL],';',WAZ0),!,remove_zero_codes(WAZ0,WAS),!.
+
+%= 	 	 
+
+%% cli_transitive_lc( :PRED2X, +A, -B) is semidet.
+%
+% Transitive Not Loop Checked.
+%
+cli_transitive_lc(X,A,B):-cli_transitive_except([],X,A,B).
+
+
+%= 	 	 
+
+%% cli_transitive_except( +NotIn, :PRED2X, +A, -B) is semidet.
+%
+% Transitive Except.
+%
+cli_transitive_except(NotIn,X,A,B):- memberchk_same_two(A,NotIn)-> (B=A,!) ;((once((call(X,A,R)) -> ( R\=@=A -> cli_transitive_except([A|NotIn],X,R,B) ; B=R); B=A))),!.
+
+
+%= 	 	 
+
+%% memberchk_same_two( ?X, :TermY0) is semidet.
+%
+% Memberchk Same Two.
+%
+memberchk_same_two(X, [Y0|Ys]) :- is_list(Ys),!,C=..[v,Y0|Ys],!, arg(_,C,Y), ( X =@= Y ->  (var(X) -> X==Y ; true)),!.
+memberchk_same_two(X, [Y|Ys]) :- (   X =@= Y ->  (var(X) -> X==Y ; true) ;   (nonvar(Ys),memberchk_same_two(X, Ys) )).
+
+fix_pathname(Path,PathFixed):-absolute_file_name(Path,PathFixed0),prolog_to_os_filename(PathFixed0,PathFixed),!.
+fix_pathname(Path,PathFixed):- cli_transitive_lc(fix_pathname0,Path,PathFixed).
+
+fix_pathname0(Path,PathFixed):-absolute_file_name(Path,PathFixed)-> PathFixed\==Path,!.
+fix_pathname0(Path,PathFixed):-prolog_to_os_filename(Path,PathFixed)-> PathFixed\==Path,!.
+fix_pathname0(Path,PathFixed):-atom_concat(PathFixed,'\\\\',Path),!.
+fix_pathname0(Path,PathFixed):-atom_concat(PathFixed,'/',Path),!.
+fix_pathname0(Path,Path).
+
+env_path_elements(VAR,DIR0):- getenv(VAR,VAL),path_sep(Sep),atomic_list_concat(DIRS, Sep, VAL),!, cli_no_repeats('member'(DIR,DIRS)),fix_pathname(DIR,DIR0).
+
+
+get_path_elements(VAL,NEWDIRS):- path_sep(Sep),atomic_list_concat(DIRS, Sep, VAL),!,maplist(fix_pathname,DIRS,NEWDIRS).
+
+remove_zero_codes(WAZ,WAS):- member(M,['a\000\n\000\/.','\a;','\\\\000','\\000',';;']), % '\\\\C','\\C',
+  atomic_list_concat([W,A|ZL],M,WAZ),atomic_list_concat([W,A|ZL],';',WAZ0),!,remove_zero_codes(WAZ0,WAS),!.
 remove_zero_codes(WAS,WAS).
+
+
 
 % sometimes usefull
 swicli_test :- getenv('PATH',WAZ),remove_zero_codes(WAZ,WAS),setenv('PATH',WAS).
 
-append_env_var(Var,Path):- getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (atomic_list_concat([_,_|_],Path,WAS)->true;((path_sep(Sep),atomic_list_concat([WAS,Sep,Path],'',NEW),setenv(Var,NEW)))).
-append_env_var(Var,Path):- setenv(Var,Path).
-prepend_env_var(Var,Path):- getenv(Var,WAZ),remove_zero_codes(WAZ,WAS),!, (atomic_list_concat([_,_|_],Path,WAS)->true;((path_sep(Sep),atomic_list_concat([Path,Sep,WAS],'',NEW),setenv(Var,NEW)))).
-prepend_env_var(Var,Path):- setenv(Var,Path).
+prepend_env_var(Var,PathF):-
+   fix_pathname(PathF,Path),
+   getenv(Var,WAZ),
+   remove_zero_codes(WAZ,WAS),   
+   get_path_elements(WAS,PathS),
+   subtract(PathS,[Path],PathSN),
+   path_sep(Sep),
+   atomic_list_concat([Path|PathSN],Sep,NEWPATH),
+   setenv(Var,NEWPATH).
+prepend_env_var(Var,PathF):-
+   fix_pathname(PathF,Path),
+   setenv(Var,Path).
+
 
 % so we dont have to export MONO_PATH=/usr/lib/swi-prolog/lib/amd64
-cli_update_paths:- forall(expand_file_search_path(foreign('.'),D),
-  ((append_env_var('PATH',D),append_env_var('MONO_PATH',D),append_env_var('LD_LIBRARY_PATH',D)))).
+
+find_swicli_libdir(JARLIB,DIR):-call( '$pack':pack_dir(swicli, _, DIR))->file_directory_name(DIR,JARLIB),!.
+
+
+cli_update_paths:- 
+  forall(expand_file_search_path(foreign('.'),D),add_lib_to_ldpath(D)),
+  find_swicli_libdir(JARLIB,DIR),
+  add_lib_to_ldpath(JARLIB),
+  add_lib_to_ldpath(DIR),!.
+
+
+add_lib_to_ldpath(DIR):-with_env_vars(prepend_env_var,DIR).
+
+with_env_vars(Call,D):- call(Call,'PATH',D),call(Call,'MONO_PATH',D),call(Call,'LD_LIBRARY_PATH',D),call(Call,'CLASSPATH',D).
 
 % sometimes usefull
 swicli_test :- cli_update_paths.
 
 getenv_safe(N,V,ELSE):- getenv(N,V)->true;V=ELSE.
+
 cli_env(N,V):- getenv_safe(N,WV,'(missing)'),WV=='(missing)',!,setenv(N,V),format('~NSetting: ~q.~n',[N=V]).
 cli_env(N,_):- getenv_safe(N,V,'(missing)'),format('~N~q.~n',[N=V]).
 
 cli_env(N):- getenv_safe(N,V,'(missing)'),format('~N~q.~n',[N=V]).
-cli_env:- cli_env('MONO_PATH','/usr/lib/mono/4.5'),cli_env('LD_LIBRARY_PATH','/usr/local/lib/Yap:/usr/lib/mono/4.5:.'),cli_env('PATH').
+
+cli_env:-    
+   cli_env('MONO_PATH','/usr/lib/mono/4.5'),
+   cli_env('LD_LIBRARY_PATH','/usr/local/lib/Yap:/usr/lib/mono/4.5:.'),
+   cli_env('PATH').
 
 % sometimes usefull
 swicli_test :- cli_env.
 
 
 
-swicli_test :- debug_call(swicli_so_loaded(_)).
+swicli_test :- cli_trace_call(scc:swicli_so_loaded(_)).
 
-cli_init0:- cli_env.
-cli_init0:- cli_update_paths.
-cli_init0:- cli_env.
-
+:- cli_update_paths, cli_env.
 cli_init0:- cli_ensure_so_loaded.
-
 
 %=========================================
 % Library Loading
@@ -542,12 +630,12 @@ swicli_test:- listing(excli_install).
 
 % A test
 swicli_test:- cli_add_foreign_methods('Example4SWICLI.Example4SWICLIClass',@false,'foo_').
-swicli_test:- listing(foo_main/1).
+% swicli_test:- listing(foo_main/1).
 
 % Install our .NET GC Hook
 cli_init0:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
 
-
+cli_init0:- export_prefixed(cli).
 
 %=========================================
 % Term/Reference Inspection
@@ -613,23 +701,35 @@ hcli_clr_functor(F):- memberchk(F,[struct,enum,object,event,'{}']).
 % is Object a CLR ValueType and not null or void (includes struct,enums)
 cli_is_prolog(O):- \+ cli_is_object(O).
 
-%% cli_is_value(+Obj).
-%
-% is Object a CLR ValueType and not null or void (includes struct,enums)
-cli_is_value(O):- cli_is_type(O,'System.ValueType').
-
 %% cli_is_tagged_object(+Obj)
 % is Object a ref object (maybe null or void) (excludes struct,enum,object/N,event refernces)
+
+%% cli_is_value(+Obj).
+%
+% is a CLR ValueType and not null or void (includes struct,enums)
+cli_is_value(O):- cli_is_type(O,'System.ValueType').
+
+%% cli_is_enum(+Obj).
+%
+% is Enum
+cli_is_enum(O):- cli_is_type(O,'System.Enum').
+
+%% cli_is_struct(+Obj).
+%
+% is Struct
+cli_is_struct(O):- cli_is_type(O,'System.Struct').
+
 
 %% cli_is_ref(+Obj) 
 % is Object a ref object and not null or void (excludes struct,enum,object/N,event refernces)
 
-cli_is_ref([_|_]):- !,fail.
-cli_is_ref('@'(O)):- \+ hcli_immed_funct(O).
+% cli_is_ref([_|_]):- !,fail.
+cli_is_ref('@'(O)):- \+ h_cli_simple_at(O).
 
-
-hcli_immed_funct(O):- member(O,[void,null,true,false]).
-
+h_cli_simple_at(void).
+h_cli_simple_at(null).
+h_cli_simple_at(true).
+h_cli_simple_at(false).
 
 %=========================================
 % Type Inspection
@@ -1664,14 +1764,6 @@ cli_demo(PBC,PBD):- asserta(( add_new_flag(Flag) :- create_prolog_flag(Flag,_,[a
    cli_new('Swicli.Library.PrologBackedDictionary'(string,string),0,[Module,current_prolog_flag,PBC,set_prolog_flag,@(null),@(null)],PBD).
 
 
-:- meta_predicate swicli:cli_with_lock(*,0).
-:- meta_predicate swicli:cli_with_gc(0).
-:- meta_predicate swicli:cli_preserve(*,0).
-:- meta_predicate swicli:debug_call(0).
-:- meta_predicate swicli:cli_eval_hook(*,0,0).
-% Restarting analysis ...
-% Found new meta-predicates in iteration 2 (0.016 sec)
-:- meta_predicate swicli:cli_eval(*,0,0).
 
 %=========================================
 % Module Utils
@@ -1708,7 +1800,7 @@ cli_hide(PIn):- to_pi(PIn,Pred),
 cli_notrace(Call):- tracing,notrace,!,call_cleanup(call(Call),trace).
 cli_notrace(Call):- call(Call).
 
-%% cli_class_from_type(+Value,-Value).
+%% cli_class_from_type(+Type,-Class).
 %% cli_find_class(+ClazzName,-ClazzObject).
 %% cli_find_type(+ClazzSpec,+ClassRef).
 %% cli_get_class(+Value,-Value).
@@ -1717,6 +1809,8 @@ cli_notrace(Call):- call(Call).
 %% cli_type_to_fullname(+Value,-Value).
 %% cli_type_from_class(+Value,-Value).
 % todo
+
+% cli_new('System.Drawing.Color',['Red'],C),cli_get_class(C,T),cli_class_from_type(T,CN).
 
 
 %% cli_is_layout(+MemberSpec).
@@ -1860,18 +1954,32 @@ Doc root and Download will be findable from http://code.google.com/p/opensim4ope
 
 */
 
+% :- cli_ensure_so_loaded.
 
-cli_init:- forall(clause(cli_init0,B),cli_must(once(B))).
-
-:- forall((current_predicate(F/A),atom_concat(cli_,_,F)),
+export_prefixed(Cli):- 
+ user:forall((current_predicate(swicli:F/A),atom_concat(Cli,_,F)),
   catch(
-    (export(F/A),
+    (swicli:export(F/A),
      % writeln(':-'(export(F/A))),
      functor(P,F,A),
-     cli_hide(P)),_,true)).
+     swicli:cli_hide(P)),_,true)).
 
+
+cli_init:- user:forall(clause(swicli:cli_init0,B),swicli:cli_must(once(cli_trace_call(B)))).
+
+:- debug(swicli).
 :- cli_init.
+:- cli_trace_call((cli_call('System.Threading.ThreadPool','GetAvailableThreads'(_X,_Y),_))).
+:- cli_trace_call((cli_call('System.Environment','Version',X),cli_writeln(X))).
+
+end_of_file.
+
+
+
+
 :- cli_load_lib_safe('SWIProlog','Swicli.Library.dll','Swicli.Library.Embedded','install').
+
+
 
 
 end_of_file.
@@ -2113,7 +2221,7 @@ end_of_file.
 %    X = @'C#40643064',
 %    S = "class java.lang.String".
 %    
-%    11 ?- cli_find_class('cli_.System.String',X),cli_to_str(X,S).
+%    11 ?- cli_find_class('cli.System.String',X),cli_to_str(X,S).
 %    X = @'C#40643064',
 %    S = "class java.lang.String".
 %    

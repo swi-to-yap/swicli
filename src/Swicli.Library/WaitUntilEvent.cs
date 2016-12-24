@@ -49,7 +49,7 @@ namespace Swicli.Library
             EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
-                return Error("Cant find event {0} on {1}", memberSpec, (object) c ?? clazzOrInstance);
+                return Embedded.Error("Cant find event {0} on {1}", memberSpec, (object) c ?? clazzOrInstance);
             }
             WaitUntilDelegateList list = new WaitUntilDelegateList();
             list.WaitOns.Add(new WaitUntilDelegate(list, fi, getInstance));
@@ -71,7 +71,7 @@ namespace Swicli.Library
             var wud = getInstance1 as WaitUntilDelegate;
             if (wud == null)
             {
-                if (!(getInstance1 is WaitUntilDelegateList)) return Error("Not an instance of WaitUntilDelegate: " + blockOn);
+                if (!(getInstance1 is WaitUntilDelegateList)) return Embedded.Error("Not an instance of WaitUntilDelegate: " + blockOn);
                 list = getInstance1 as WaitUntilDelegateList;
             }
             else
@@ -86,7 +86,7 @@ namespace Swicli.Library
             EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
-                return Error("Cant find event {0} on {1}", memberSpec, (object)c ?? clazzOrInstance);
+                return Embedded.Error("Cant find event {0} on {1}", memberSpec, (object)c ?? clazzOrInstance);
             }
             var wud2 = new WaitUntilDelegate(list, fi, getInstance);
             list.WaitOns.Add(wud2);
@@ -110,7 +110,7 @@ namespace Swicli.Library
             var wud = getInstance1 as WaitUntilDelegate;
             if (wud == null)
             {
-                if (!(getInstance1 is WaitUntilDelegateList)) return Error("Not an instance of WaitUntilDelegate: " + blockOn);
+                if (!(getInstance1 is WaitUntilDelegateList)) return Embedded.Error("Not an instance of WaitUntilDelegate: " + blockOn);
                 list = getInstance1 as WaitUntilDelegateList;
             }
             else

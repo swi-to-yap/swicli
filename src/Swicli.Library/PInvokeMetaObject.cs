@@ -57,7 +57,7 @@ namespace Swicli.Library
         [PrologVisible]
         public static void cliDynTest_1()
         {
-            Debug("System.Dynamic.DynamicObject=" + Type.GetType("System.Dynamic.DynamicObject"));
+            Embedded.Debug("System.Dynamic.DynamicObject=" + Type.GetType("System.Dynamic.DynamicObject"));
         }
 
         [PrologVisible]
@@ -96,7 +96,7 @@ namespace Swicli.Library
 
         public static void MainLinux(String[] args)
         {
-            var d = PrologCLR.cliGetDll("libc");
+            var d = cliGetDll("libc");
 
             for (int i = 0; i < 2; ++i)
             {

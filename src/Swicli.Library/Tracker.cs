@@ -21,13 +21,18 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+
+using System.Diagnostics;
+using org.jpl7.fli;
 #if USE_IKVM
-using Class = java.lang.Class;
+using Class=java.lang.Class;
+using Type = System.Type;
 #else
+using Class = System.Type;
+using Type = System.Type;
+#endif
 using System.Collections;
 using SbsSW.SwiPlCs.Callback;
-using Class = System.Type;
-#endif
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -157,7 +162,7 @@ namespace Swicli.Library
         public static bool StrictRefs = true;
         readonly static public Dictionary<object, TrackedObject> ObjToTag = new Dictionary<object, TrackedObject>();
         readonly static public Dictionary<string, TrackedObject> TagToObj = new Dictionary<string, TrackedObject>();
-        readonly static public System.Collections.Hashtable TagToST = new Hashtable();
+        readonly static public Hashtable TagToST = new Hashtable();
         readonly static public HashSet<string> NeedSweep = new HashSet<string>();
         public static object tag_to_object(string s)
         {
@@ -216,9 +221,9 @@ namespace Swicli.Library
             if (s == "true") return true;
             if (s == "false") return false;
             if (s == "null") return null;
-            if (string.IsNullOrEmpty(s) || s == "void" /*|| !s.StartsWith("C#")*/)
+            if (String.IsNullOrEmpty(s) || s == "void" /*|| !s.StartsWith("C#")*/)
             {
-                Warn("tag_to_object: {0} ", s);
+                Embedded.Warn("tag_to_object: {0} ", s);
                 return null;
             }
             lock (ObjToTag)
@@ -238,10 +243,10 @@ namespace Swicli.Library
                 }
                 if (DebugRefs)
                 {
-                    Warn("tag_to_object: {0} was missing due to {1}", s, TagToST[s]);
+                    Embedded.Warn("tag_to_object: {0} was missing due to {1}", s, TagToST[s]);
                 }
 #if USE_IKVM
-                return jpl.fli.Prolog.tag_to_object(s);
+                return Prolog.tag_to_object(s);
 #else
                 return null;
 #endif
@@ -262,9 +267,9 @@ namespace Swicli.Library
             {
                 iptr = NULL_GCHANDLE;
                 adr = nextTrackingNum++;
-                if (nextTrackingNum == long.MaxValue)
+                if (nextTrackingNum == Int64.MaxValue)
                 {
-                    nextTrackingNum = long.MinValue;
+                    nextTrackingNum = Int64.MinValue;
                 }
             }
             return iptr;
@@ -301,14 +306,14 @@ namespace Swicli.Library
         {
             if (o == null)
             {
-                Warn("object_to_tag: NULL");
+                Embedded.Warn("object_to_tag: NULL");
                 return null;
             }
 
             Type t = o.GetType();
             if (ShouldNotTrack(t))
             {
-                if (DebugRefs) Debug("object_to_tag:{0} from {1}", t, o);
+                if (DebugRefs) Embedded.Debug("object_to_tag:{0} from {1}", t, o);
             }
 
             lock (ObjToTag)
@@ -341,7 +346,7 @@ namespace Swicli.Library
                 if (UsePerThreadObjectTracker) LocallyTrackedObjects.AddTracking(s);
                 if (DebugRefs && ObjToTag.Count % 10000 == 0)
                 {
-                    PrologCLR.ConsoleTrace("ObjToTag=" + ObjToTag);
+                    ConsoleTrace("ObjToTag=" + ObjToTag);
                 }
 
                 return s.TagName;
@@ -373,7 +378,7 @@ namespace Swicli.Library
         {
             if (valueIn.IsVar)
             {
-                if (StrictRefs) return Error("Cant find instance {0}", valueIn);
+                if (StrictRefs) return Embedded.Error("Cant find instance {0}", valueIn);
                 return valueIn.Unify(valueOut);
             }
             if (!valueOut.IsVar)
@@ -395,7 +400,12 @@ namespace Swicli.Library
             }
             else if (t1.IsVar)
             {
-                return 0 != AddTagged(t1.TermRef, tag);
+                int retcode = AddTagged(t1.TermRef, tag);
+                if (retcode == libpl.PL_succeed)
+                {
+                    return true;
+                }
+                return BP();
             }
             //var t2 = new PlTerm(t1.TermRef + 1);
 
@@ -431,11 +441,13 @@ namespace Swicli.Library
             if (fid > 0) libpl.PL_close_foreign_frame(fid);
             if (retcode != libpl.PL_succeed)
             {
-                //libpl.PL_put_term(nt, TermRef);
+                
                 if (retcode == libpl.PL_fail)
                 {
+                    //libpl.PL_put_term(nt, TermRef);
                     return retcode;
                 }
+                //libpl.PL_put_term(nt, TermRef);
                 return retcode;
             }
             return retcode;
@@ -486,14 +498,10 @@ namespace Swicli.Library
             {
                 tag = taggedObject[1].Name;
             }
-            else if (taggedObject.IsAtom)
+            else if (taggedObject.IsAtomOrString)
             {
                 tag = taggedObject.Name;
-            }
-            else if (taggedObject.IsString)
-            {
-                tag = taggedObject.Name;
-            }
+            }       
             else
             {
                 return true;
@@ -567,11 +575,7 @@ namespace Swicli.Library
             {
                 tag = taggedObject[1].Name;
             }
-            else if (taggedObject.IsAtom)
-            {
-                tag = taggedObject.Name;
-            }
-            else if (taggedObject.IsString)
+            else if (taggedObject.IsAtomOrString)
             {
                 tag = taggedObject.Name;
             }
@@ -653,7 +657,7 @@ namespace Swicli.Library
                 if (TagToObj.TryGetValue(tag, out obj))
                 {
                     //UnPinObject(obj);
-                    TagToST[tag] = (new System.Diagnostics.StackTrace(true)).ToString();
+                    TagToST[tag] = (new StackTrace(true)).ToString();
                     if (SweepAtomGC)
                     {
                         lock (NeedSweep) NeedSweep.Add(tag);
@@ -665,7 +669,7 @@ namespace Swicli.Library
                         {
                             if (DebugRefs)
                             {
-                                Debug("Still alive: " + obj);
+                                Embedded.Debug("Still alive: " + obj);
                             }
                         }
                     }
@@ -678,7 +682,7 @@ namespace Swicli.Library
                         }
                         catch (Exception e)
                         {
-                            if (DebugRefs) Warn("Dispose of {0} had problem {1}", obj, e);
+                            if (DebugRefs) Embedded.Warn("Dispose of {0} had problem {1}", obj, e);
                         }
                     }
                     if (obj.Pinned != NULL_GCHANDLE)
@@ -924,7 +928,7 @@ namespace Swicli.Library
             {
                 if (PrologCLR.DebugRefs)
                 {
-                    PrologCLR.Debug("Removing wierd frame{0}", frame);
+                    Embedded.Debug("Removing wierd frame{0}", frame);
                 }
                 frame.RemoveRefs();
                 return false;

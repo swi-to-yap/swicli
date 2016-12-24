@@ -47,15 +47,15 @@ namespace SbsSW.SwiPlCs
         {
             try
             {
-                PrologCLR.IsPLWin = true;
-                PrologCLR.RedirectStreams = false;
+                Embedded.IsPLWin = true;
+                Embedded.RedirectStreams = false;
                 PrologCLR.SetupProlog();
-                PrologCLR.ConsoleWriteLine("swipl_win.install suceeded");
+                Embedded.ConsoleWriteLine("swipl_win.install suceeded");
                 return libpl.PL_succeed;
             } catch(Exception e)
             {
-                PrologCLR.WriteException(e);
-                PrologCLR.ConsoleWriteLine("swipl_win.install error");
+                Embedded.WriteException(e);
+                Embedded.ConsoleWriteLine("swipl_win.install error");
                 return libpl.PL_fail;
             }
         }
@@ -105,7 +105,7 @@ namespace SbsSW.SwiPlCs
         public const int PL_ENGINE_INUSE = 3;			// engine is in use 
 
         public const int PL_fail = 0;
-        public const int PL_succeed = 3;
+        public const int PL_succeed = 1; // should this been 3?
 
 
         /////////////////////////////
@@ -127,7 +127,7 @@ namespace SbsSW.SwiPlCs
             get
             {
 #if USESAFELIB
-                if (PrologCLR.IsLinux) return true;
+                if (Embedded.IsLinux) return true;
                 return m_hLibrary != null && !m_hLibrary.IsInvalid;
 #else 
                 return true;
@@ -138,7 +138,7 @@ namespace SbsSW.SwiPlCs
         public static SafeLibraryHandle LoadUnmanagedPrologLibrary(string fileName)
         {
             SafeLibraryHandle localHLibrary;
-            //if (PrologCLR.IsLinux)
+            if (Embedded.IsLinux)
             {
 				try {
 					localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
@@ -235,7 +235,7 @@ namespace SbsSW.SwiPlCs
             IntPtr callbackFunctionPtr = Marshal.GetFunctionPointerForDelegate(function);
 
             IntPtr address_std_stream_array;
-            if (PrologCLR.IsLinux)
+            if (Embedded.IsLinux)
             {
                 address_std_stream_array = NativeMethodsLinux.GetProcAddress(m_hLibrary, "S__iob");
             }
@@ -278,7 +278,7 @@ namespace SbsSW.SwiPlCs
             catch (Exception ex)
             {
                 
-               PrologCLR.WriteException(ex);
+               Embedded.WriteException(ex);
             }
         }
 
@@ -637,7 +637,7 @@ namespace SbsSW.SwiPlCs
                     TermRefCount++;
                     if (TermRefCount % 1000 == 0)
                     {
-
+                        // may print something
                     }                    
                 }
             }
@@ -927,6 +927,15 @@ PL_EXPORT(int) PL_write_term(IOSTREAM *s,
         public static int PL_unify_intptr(uint term, IntPtr intptr)
         {
             return SafeNativeMethods.PL_unify_intptr(term, intptr);
+        }
+
+        public static int PL_is_attvar(uint termRef)
+        {
+            return SafeNativeMethods.PL_is_attvar(termRef);
+        }
+        public static int PL_is_blob(uint termRef, [In, Out] ref UIntPtr type)
+        {
+            return SafeNativeMethods.PL_is_blob(termRef,ref type);
         }
     } // libpl
     #endregion

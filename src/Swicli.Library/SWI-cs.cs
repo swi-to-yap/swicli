@@ -23,9 +23,15 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+
+using System.Windows.Forms;
 #if USE_IKVM
-using Class=java.lang.Class;
+using Class = java.lang.Class;
+using Type = System.Type;
 #else
+using Class = System.Type;
+using Type = System.Type;
+#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,8 +41,6 @@ using SbsSW.DesignByContract;
 using SbsSW.SwiPlCs.Exceptions;
 using SbsSW.SwiPlCs.Streams;
 using Swicli.Library;
-using Class = System.Type;
-#endif
 /********************************
 *	       TYPES	Comment     *
 ********************************/
@@ -441,6 +445,57 @@ namespace SbsSW.SwiPlCs
         PlNil = (7),		/* The constant [] */
         PlBlob = (8),		/* non-atom blob */
         PlListPair = (9),	/* [_|_] term */
+
+         	PL_VARIABLE	 =(1),		/* nothing */
+  PL_ATOM		 =(2),		/* const char * */
+  PL_INTEGER	 =(3),		/* int */
+  PL_FLOAT	 =(4),		/* double */
+  PL_STRING	 =(5),		/* const char * */
+  PL_TERM		 =(6),
+
+  PL_NIL		 =(7),		/* The constant [] */
+  PL_BLOB		 =(8),		/* non-atom blob */
+  PL_LIST_PAIR	 =(9),		/* [_|_] term */
+
+        		/* PL_unify_term(), */
+  PL_FUNCTOR	 =(10),		/* functor_t, arg ... */
+  PL_LIST		 =(11),		/* length, arg ... */
+  PL_CHARS	 =(12),		/* const char * */
+  PL_POINTER	 =(13),		/* void * */
+					/* PlArg::PlArg=(text, type), */
+  PL_CODE_LIST	 =(14),		/* [ascii...] */
+  PL_CHAR_LIST	 =(15),		/* [h,e,l,l,o] */
+  PL_BOOL		 =(16),		/* PL_set_prolog_flag=(), */
+  PL_FUNCTOR_CHARS =(17),		/* PL_unify_term=(), */
+  _PL_PREDICATE_INDICATOR =(18),	/* predicate_t =(Procedure), */
+  PL_SHORT	 =(19),		/* short */
+  PL_INT		 =(20),		/* int */
+  PL_LONG		 =(21),		/* long */
+  PL_DOUBLE	 =(22),		/* double */
+  PL_NCHARS	 =(23),		/* size_t, const char * */
+  PL_UTF8_CHARS	 =(24),		/* const char * */
+  PL_UTF8_STRING	 =(25),		/* const char * */
+  PL_INT64	 =(26),		/* int64_t */
+  PL_NUTF8_CHARS	 =(27),		/* size_t, const char * */
+  PL_NUTF8_CODES	 =(29),		/* size_t, const char * */
+  PL_NUTF8_STRING	 =(30),		/* size_t, const char * */
+  PL_NWCHARS	 =(31),		/* size_t, const wchar_t * */
+  PL_NWCODES	 =(32),		/* size_t, const wchar_t * */
+  PL_NWSTRING	 =(33),		/* size_t, const wchar_t * */
+  PL_MBCHARS	 =(34),		/* const char * */
+  PL_MBCODES	 =(35),		/* const char * */
+  PL_MBSTRING	 =(36),		/* const char * */
+  PL_INTPTR	 =(37),		/* intptr_t */
+  PL_CHAR		 =(38),		/* int */
+  PL_CODE		 =(39),		/* int */
+  PL_BYTE		 =(40),		/* int */
+					/* PL_skip_list=(), */
+  PL_PARTIAL_LIST	 =(41),		/* a partial list */
+  PL_CYCLIC_TERM	 =(42),		/* a cyclic list/term */
+  PL_NOT_A_LIST	 =(43),		/* Object is not a list */
+					/* dicts */
+  PL_DICT		 =(44),
+
     }
 
 
@@ -920,7 +975,26 @@ namespace SbsSW.SwiPlCs
             return PlTerm.PlList(new PlTermV(h, t));
         }
 
-        public static String LIST_FUNCTOR_NAME = ".";// "[|]";
+        
+
+        public static String OLD_LIST_FUNCTOR_NAME = ".";
+        public static String NEW_LIST_FUNCTOR_NAME = "[|]";
+        static bool _wasTraditional;
+        public static String LIST_FUNCTOR_NAME = IsTraditional ? OLD_LIST_FUNCTOR_NAME : NEW_LIST_FUNCTOR_NAME;
+        public static bool IsTraditional {
+            get
+            {
+                
+                return _wasTraditional;
+            }
+            set
+            {
+                if (_wasTraditional == value) return;
+                _wasTraditional = value;
+                LIST_FUNCTOR_NAME = _wasTraditional ? OLD_LIST_FUNCTOR_NAME : NEW_LIST_FUNCTOR_NAME;                 
+            }
+        }
+
         private static string checkForNewList(string functor, int arity)
         {
             if (arity == 2 && ((functor == ".") || functor == "[|]")) return LIST_FUNCTOR_NAME;
@@ -1074,8 +1148,59 @@ namespace SbsSW.SwiPlCs
 
         /// <summary>Return true if <see cref="PlTerm"/> is an atom.</summary>
         /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
-        public bool IsAtom { get { return 0 != libpl.PL_is_atom(this.TermRef); } }
+        public bool IsAtom
+        {
+            get
+            {
+                return 0 != libpl.PL_is_atom(this.TermRef);
+            }
+        }
+        /// <summary>Return true if <see cref="PlTerm"/> is an atom.</summary>
+        /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
+        public bool IsBlob
+        {
+            get
+            {
+                UIntPtr type = new UIntPtr();
+                return 0 != libpl.PL_is_blob(this.TermRef, ref type);
+            }
+        }        /// <summary>Return true if <see cref="PlTerm"/> is an atom.</summary>
+        /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
+        public bool IsAttVar
+        {
+            get
+            {
+                return 0 != libpl.PL_is_attvar(this.TermRef);
+            }
+        }
 
+        /// <summary>Return true if <see cref="PlTerm"/> is an atom.</summary>
+        /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
+        public bool IsAtomOrNil
+        {
+            get
+            {
+
+                bool wasAtom = 0 != libpl.PL_is_atom(this.TermRef);
+                if (!wasAtom) return IsNil;
+                return wasAtom;
+
+            }
+        }
+
+        /// <summary>Return true if <see cref="PlTerm"/> is an atom.</summary>
+        /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
+        public bool IsAtomOrString
+        {
+            get
+            {
+
+                bool wasAtom = 0 != libpl.PL_is_atom(this.TermRef);
+                if (!wasAtom) return IsString;
+                return wasAtom;
+
+            }
+        }
         /// <summary>Return true if <see cref="PlTerm"/> is a string.</summary>
         /// <seealso cref="T:SbsSW.SwiPlCs.PlType"/>
         public bool IsString { get { return 0 != libpl.PL_is_string(this.TermRef); } }
@@ -1625,7 +1750,7 @@ namespace SbsSW.SwiPlCs
                     return arity;
 
                 if (IsString) return 0;
-
+                Embedded.Error(" arity called on a " + this.PlType);
                 throw new NotSupportedException("Only possible for compound or atoms");
                 //throw new PlTypeException("compound", this);   // FxCop Don't like this type of exception
             }
@@ -1639,18 +1764,27 @@ namespace SbsSW.SwiPlCs
         {
             get
             {
+
                 uint name = 0; // atom_t 
                 int arity = 0;
-
+                var pltype = this.PlType;
+                if (pltype == PlType.PlNil) return "[]";
+                if (pltype == PlType.PlListPair) return LIST_FUNCTOR_NAME;
                 if (0 != libpl.PL_get_name_arity(this.TermRef, ref name, ref arity))
+                {
                     return libpl.PL_atom_chars(name);
+                }
+                    
 
                 if (IsString) return ToString();
 
+
+                Embedded.Debug("pltype = "+pltype);
                 throw new NotSupportedException("Only possible for compound or atoms or string");
                 //throw new PlTypeException("compound", this);   // FyCop Don't like this type of exception
             }
         }
+
         #endregion Arity and Name
 
         public long longValue()
@@ -1986,7 +2120,17 @@ namespace SbsSW.SwiPlCs
 
         internal PlTerm[] Args
         {
-            get { throw new NotImplementedException("PLTerm.Args"); }
+            get
+            {
+                if (!IsCompound)
+                {
+                    if(IsAtom) return new PlTerm[0];
+                    if (IsNil) return null;
+                     return null;   
+                }
+                    
+                throw new NotImplementedException("PLTerm.Args");
+            }
            // set { throw new NotImplementedException(); }
         }
 
@@ -1996,7 +2140,7 @@ namespace SbsSW.SwiPlCs
         {
             if (!IsVar)
             {
-                PrologCLR.Warn("Not a free object! {0}", this);
+                Embedded.Warn("Not a free object! {0}", this);
             }
             var v = PrologCLR.UnifyToProlog(o, this);
             if (IsVar || v == 0)
@@ -2005,7 +2149,7 @@ namespace SbsSW.SwiPlCs
                 {
                     return true;
                 } 
-                PrologCLR.Warn("Unify failed! {0}", this);
+                Embedded.Warn("Unify failed! {0}", this);
                 return false;
             }
             return v != 0;
@@ -2503,11 +2647,11 @@ namespace SbsSW.SwiPlCs
             {
                 MoreSavedDelegates.Add(method);
                 if (false)
-                    PrologCLR.Debug("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
+                    Embedded.Debug("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
                                     " as " + method.GetType().Name);
                 return true;
             }
-            PrologCLR.ConsoleWriteLine("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
+            Embedded.ConsoleWriteLine("PinDelegate: " + key + " <- " + method.Method + " from " + prev.Method +
                                     " as " + method.GetType().Name);
             return false;
         }
@@ -2640,7 +2784,7 @@ namespace SbsSW.SwiPlCs
                 DelegateStreamWriteFunction wf = new DelegateStreamWriteFunction(Swrite_function);
                 if (!IsStreamFunctionWriteModified)
                 {
-                    if (PrologCLR.RedirectStreams) PlEngine.SetStreamFunctionWrite(PlStreamType.Output, wf);
+                    if (Embedded.RedirectStreams) PlEngine.SetStreamFunctionWrite(PlStreamType.Output, wf);
                     IsStreamFunctionWriteModified = false;
                 }
                 String[] local_argv = new String[argv.Length+1];
@@ -2648,11 +2792,11 @@ namespace SbsSW.SwiPlCs
                 local_argv[idx++] = "";
                 foreach (string s in argv)
                     local_argv[idx++] = s;
-                if (0 == libpl.PL_initialise(local_argv.Length, local_argv))
+                if (Embedded.IsEmbeddedFromProlog && 0 == libpl.PL_initialise(local_argv.Length, local_argv))
                     throw new PlLibException("failed to initialize");
                 else
                 {
-                    PrologCLR.ConsoleWriteLine("PL_initialised");
+                    Embedded.ConsoleWriteLine("PL_initialised");
                     SetStreamReader(Sread_function);
                 }
             }
@@ -2661,7 +2805,7 @@ namespace SbsSW.SwiPlCs
 
         public static void SetStreamReader(DelegateStreamReadFunction rf)
         {
-            if (PrologCLR.RedirectStreams)
+            if (Embedded.RedirectStreams)
             {
                // if (!IsStreamFunctionReadModified)
                 {

@@ -21,17 +21,21 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+
+using ikvm.extensions;
+using org.jpl7;
 #if USE_IKVM
+using Class = java.lang.Class;
+using Type = System.Type;
+using ClassLoader = java.lang.ClassLoader;
+using sun.reflect.misc;
 using IKVM.Internal;
+using Hashtable = java.util.Hashtable;
 using ikvm.runtime;
 using java.net;
-using jpl;
-#endif
-#if USE_IKVM
-using Hashtable = java.util.Hashtable;
-using ClassLoader = java.lang.ClassLoader;
-using Class = java.lang.Class;
-using sun.reflect.misc;
+#else
+using Class = System.Type;
+using Type = System.Type;
 #endif
 using System;
 using System.Collections.Generic;
@@ -47,6 +51,7 @@ namespace Swicli.Library
 {
     public partial class PrologCLR
     {
+        private NotSupportedException nse;
 #if USE_IKVM
 
         private static void SetupIKVM()
@@ -57,7 +62,7 @@ namespace Swicli.Library
             Environment.SetEnvironmentVariable("IKVM_BINDIR", IKVMHome);
             DirectoryInfo destination = new DirectoryInfo(IKVMHome);
             DirectoryInfo source;
-            if (Is64BitRuntime())
+            if (Embedded.Is64BitRuntime())
             {
                 source = new DirectoryInfo(IKVMHome + "/bin-x64/");
             }
@@ -171,7 +176,7 @@ namespace Swicli.Library
 
             foreach (var s1 in new Type[] { 1.GetType(), true.GetType(), "".GetType(), typeof(void), 'a'.GetType(), typeof(Type[]), typeof(IComparable<Type>) })
             {
-                c = ikvm.runtime.Util.getFriendlyClassFromType(s1);
+                c = getFriendlyClassFromType(s1);
                 if (c != null)
                 {
                     ConsoleTrace("class: " + c + " from type " + s1.FullName);
@@ -180,9 +185,10 @@ namespace Swicli.Library
                 ConsoleTrace("cant get " + s1.FullName);
             }
 
-            foreach (var s1 in new jpl.JPL().GetType().Assembly.GetTypes())
+            foreach (var s1 in new JPL().GetType().Assembly.GetTypes())
             {
-                c = ikvm.runtime.Util.getFriendlyClassFromType(s1);
+                c = getInstanceTypeFromClass(s1);
+                c = getFriendlyClassFromType(s1);
                 if (c != null)
                 {
                     //ConsoleTrace("" + c);
@@ -193,7 +199,7 @@ namespace Swicli.Library
             return;
         }
 
-        private static string clasPathOf(jpl.JPL jpl1)
+        private static string clasPathOf(JPL jpl1)
         {
             string s = null;
             var cl = jpl1.getClass().getClassLoader();

@@ -1,32 +1,51 @@
 #!/bin/bash
 
-if [ -z "$SCBINDIR" ]; then export SCBINDIR="./bin"; fi
-if [ -z "$DMCS_OPTS" ]; then DMCS_OPTS=" -lib:${SCBINDIR}/ -unsafe -warn:0 -reference:System.Drawing.dll "; fi
+export WITH_IKVM="-define:USE_IKVM -r:jpl7,IKVM.OpenJDK.Core,IKVM.OpenJDK.Util,IKVM.Runtime,System.Windows.Forms"
 
+if [ -z "$ODIR" ]; then export ODIR="./lib"; fi
+if [ -z "$DMCS_OPTS" ]; then DMCS_OPTS=" -lib:${ODIR}/ -define:PROLOG_SWI -unsafe -warn:0 -r:System.Drawing ${WITH_IKVM}"; fi
+if [ -z "$EXTRA_C_FLAGS" ]; then export EXTRA_C_FLAGS="-Wno-unused-result `pkg-config --cflags --libs monosgen-2`"; fi
 
 echo removing previous build
-rm -rf ${SCBINDIR}/
-mkdir -p ${SCBINDIR}
+mkdir -p ${ODIR}
+find ${ODIR} -ipath "*swicli*"  -not -ipath "*win*" -not -ipath "*Symbols*" -exec rm -f '{}' \;
+
+rm -rf ./src/?*/lib/ ./src/?*/obj/ ./src/?*/bin/ ./src/?*/Debug/ ./src/?*/Release/ ./obj ./src/obj ./src/lib ./src/Debug
+
+# find . -iname "*.so" -or -iname "*.dll" -or -iname "*.pdb" -or -iname "*.lib" -or -iname "*.dll.config" -or -iname "*.pl" -or -iname "*.cffi"  -or -iname "*.exe"
+
 
 echo doing local C build
-mkdir -p lib/x86_64-linux/
-cp src/Swicli.Library/app.config lib/x86_64-linux/swicli.dll.config
-swipl-ld -m64 -shared -o lib/x86_64-linux/swicli.so src/swicli/swicli.c `pkg-config --cflags --libs mono-2` -lm
-mkdir -p lib/i386-linux/
-cp src/Swicli.Library/app.config lib/i386-linux/swicli32.dll.config
-swipl-ld -m32 -shared -o lib/i386-linux/swicli32.so src/swicli/swicli32.c `pkg-config --cflags --libs mono-2` -lm
+
+export LIBARCH=./lib/x86_64-linux
+mkdir -p ${LIBARCH}/
+cp src/Swicli.Library/app.config ${LIBARCH}/swicli.dll.config
+swipl-ld -m64 src/swicli/swicli.c $EXTRA_C_FLAGS -shared -o ${LIBARCH}/swicli.so
+
+
+export LIBARCH=./lib/i386-linux
+mkdir -p ${LIBARCH}/
+cp src/Swicli.Library/app.config ${LIBARCH}/swicli.dll.config
+swipl-ld -m32 src/swicli/swicli.c $EXTRA_C_FLAGS -shared -o ${LIBARCH}/swicli.so
 
 mkdir -p lib/amd64/
-cp -a lib/x86_64-linux/?* lib/amd64/
+cp -a ${LIBARCH}/?* lib/amd64/
+
+echo local C build complete!
 
 echo doing local C# build
-mkdir -p ${SCBINDIR}
-cp src/Swicli.Library/app.config ${SCBINDIR}/Swicli.Library.dll.config
-dmcs ${DMCS_OPTS} src/Swicli.Library/?*.cs -out:${SCBINDIR}/PInvokeTest.exe
-dmcs ${DMCS_OPTS} src/Swicli.Library/?*.cs -out:${SCBINDIR}/Swicli.Library.dll
-dmcs ${DMCS_OPTS} src/SWICLITestDLL/?*.cs  -reference:${SCBINDIR}/Swicli.Library.dll -out:${SCBINDIR}/SWICLITestDLL.dll
-dmcs ${DMCS_OPTS} src/SWICFFITests/?*.cs -out:${SCBINDIR}/SWICFFITests.exe -reference:${SCBINDIR}/Swicli.Library.dll
-mcs -lib:/usr/lib/mono/2.0 -pkg:dotnet src/Example4SWICLI/?*.cs -out:${SCBINDIR}/Example4SWICLI.dll
+mkdir -p ${ODIR}
+cp src/Swicli.Library/app.config ${ODIR}/Swicli.Library.dll.config
 
+mcs ${DMCS_OPTS} src/Swicli.Library/?*.cs -out:${ODIR}/PInvokeTest
+mcs ${DMCS_OPTS} src/Swicli.Library/?*.cs -out:${ODIR}/Swicli.Library.dll
+mcs ${DMCS_OPTS}  src/SWICLITestDLL/?*.cs -r:Swicli.Library -out:${ODIR}/SWICLITestDLL.dll
+mcs ${DMCS_OPTS}   src/SWICFFITests/?*.cs -r:Swicli.Library -out:${ODIR}/SWICFFITests.exe
 
+mcs -lib:/usr/lib/mono/2.0 -pkg:dotnet src/Example4SWICLI/?*.cs -out:${ODIR}/Example4SWICLI.dll
+echo local C# build complete!
+
+rm -rf ./src/?*/lib/ ./src/?*/obj/ ./src/?*/Debug/ ./src/?*/Release/ ./obj ./src/obj ./src/lib ./src/Debug
+
+find . -iname "*.so" -or -iname "*.dll" -or -iname "*.pdb" -or -iname "*.lib" -or -iname "*.dll.config" -or -iname "*.pl" -or -iname "*.cffi"  -or -iname "*.exe"
 

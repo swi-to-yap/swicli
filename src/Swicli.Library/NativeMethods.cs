@@ -1,8 +1,11 @@
 #if PROLOG_SWI
 #else
 #if PROLOG_SWI_6
+#else
+#if PROLOG_YAP
 #else // Yap
 #define PROLOG_YAP
+#endif
 #endif
 #endif
 
@@ -70,7 +73,7 @@ namespace SbsSW.SwiPlCs
 
         protected override bool ReleaseHandle()
         {
-            if (PrologCLR.IsLinux)
+            if (Embedded.IsLinux)
             {
                 return NativeMethodsLinux.FreeLibrary(handle);
             }
@@ -97,7 +100,7 @@ namespace SbsSW.SwiPlCs
         public static SafeLibraryHandle LoadUnmanagedLibrary(string fileName, bool throwOnInvalid)
         {
             SafeLibraryHandle localHLibrary;
-            //if (PrologCLR.IsLinux)
+            if (Embedded.IsLinux)
             {
 				try {
 					localHLibrary = NativeMethodsLinux.LoadLibrary(fileName);
@@ -242,7 +245,7 @@ namespace SbsSW.SwiPlCs
 
         static SafeNativeMethods()
         {
-            if (PrologCLR.IsLinux) return;
+            if (Embedded.IsLinux) return;
             if (!File.Exists(CONST_LIBSWIPL_DllFileName))
             {
                 if (!File.Exists(SwiplConstLibswiplDllFileName))
@@ -517,7 +520,13 @@ namespace SbsSW.SwiPlCs
 		internal static extern int PL_is_atomic(uint term_t);
 		[DllImport(CONST_LIBSWIPL_DllFileName)]
 		internal static extern int PL_is_number(uint term_t);
-
+        [DllImport(CONST_LIBSWIPL_DllFileName)]
+		internal static extern int PL_is_attvar(uint t);
+        [DllImport(CONST_LIBSWIPL_DllFileName)]
+        internal static extern int PL_get_attr(uint v, uint a);
+        [DllImport(CONST_LIBSWIPL_DllFileName)]
+        internal static extern int PL_is_blob(uint t, [In, Out] ref UIntPtr type);
+//PL_EXPORT(int)		PL_unify_blob(term_t t, void *blob, size_t len,PL_blob_t *type);
 		// LISTS (PlTail)
 		//__pl_export term_t	PL_copy_term_ref(term_t from);
 		//__pl_export int		PL_unify_list(term_t l, term_t h, term_t term);

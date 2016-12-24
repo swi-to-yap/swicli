@@ -158,7 +158,7 @@ namespace Swicli.Library
                     PrologEvents++;
                     if (!knownDefined && !PrologCLR.IsDefined(module, Key.Name, PrologArity))
                     {
-                        PrologCLR.Warn("Undefined Delegate Handler {0}:{1}/{2}", module, Key.Name, PrologArity);
+                        Embedded.Warn("Undefined Delegate Handler {0}:{1}/{2}", module, Key.Name, PrologArity);
                         return null;
                     }
 
@@ -168,12 +168,12 @@ namespace Swicli.Library
                 }
                 catch (AccessViolationException e)
                 {
-                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
+                    Embedded.Warn("CallProlog: {0} ex: {1}", this, e);
                     return null;
                 }
                 catch (Exception e)
                 {
-                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
+                    Embedded.Warn("CallProlog: {0} ex: {1}", this, e);
 
                     return null;
                 }

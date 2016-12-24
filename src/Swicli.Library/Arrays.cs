@@ -28,8 +28,9 @@
 using MushDLR223.Utilities;
 #endif
 #if USE_IKVM
-using jpl;
+//using jpl;
 using Class = java.lang.Class;
+using Type = System.Type;
 #else
 using System.Reflection;
 using Class = System.Type;
@@ -61,10 +62,10 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliNewArray(clazzSpec, indexes, plvar) && SpecialUnify(valueOut, plvar);
             }
-            Type c = GetType(clazzSpec);
+            Type c = getInstanceTypeFromClass(GetType(clazzSpec));
             if (c == null)
             {
-                Warn("Cant find type {0}", clazzSpec);
+                Embedded.Warn("Cant find type {0}", clazzSpec);
                 return false;
             }
             var dims = ToTermArray(indexes);
@@ -113,7 +114,7 @@ namespace Swicli.Library
             Array value = GetArrayValue(getInstance);
             if (value == null)
             {
-                Error("Cant find array from {0} as {1}", arrayValue, getInstance.GetType());
+                Embedded.Error("Cant find array from {0} as {1}", arrayValue, getInstance.GetType());
                 return false;
             }
             return unifyArrayToTerm(value, valueOut);
@@ -186,13 +187,13 @@ namespace Swicli.Library
             Array value = GetArrayValue(getInstance);
             if (value == null)
             {
-                Error("Cant find array from {0} as {1}", arrayValue, getInstance.GetType());
+                Embedded.Error("Cant find array from {0} as {1}", arrayValue, getInstance.GetType());
                 return false;
             }
             Type arrayType = value.GetType();
             if (arrayType.GetArrayRank() != 1)
             {
-                Error("Non rank==1 " + arrayType);
+                Embedded.Error("Non rank==1 " + arrayType);
             }
             int len = value.Length;
             var termv = ATOM_NIL;
@@ -219,7 +220,7 @@ namespace Swicli.Library
             Type elementType = ResolveType(arrayValue.Name);
             if (elementType == null)
             {
-                Error("Cant find vector from {0}", arrayValue);
+                Embedded.Error("Cant find vector from {0}", arrayValue);
                 return false;
             }
             var value = CreateArrayOfTypeRankOneFilled(arrayValue, elementType.MakeArrayType());
@@ -250,7 +251,7 @@ namespace Swicli.Library
                 }
                 catch (Exception ex)
                 {
-                    WriteException(ex);
+                    Embedded.WriteException(ex);
                     throw;
                 }
             }
@@ -289,11 +290,11 @@ namespace Swicli.Library
                 catch (Exception ex)
                 {
                     string warn = "CopyTo " + ex;
-                    Warn(warn);
+                    Embedded.Warn(warn);
                     int count2 = collection.Count;
                     if (count2 != count)
                     {
-                        ConsoleWriteLine("Collection Modified while in CopyTo! " + count + "->" + count2 + " of " +
+                        Embedded.ConsoleWriteLine("Collection Modified while in CopyTo! " + count + "->" + count2 + " of " +
                                          collection);
                         throw;
                     }
@@ -355,6 +356,7 @@ namespace Swicli.Library
             {
                 // I guess IsList makes a copy
                 PlTerm tlist = (PlTerm) enumerable;
+                if (tlist.IsNil) return ZERO_PLTERMS;
                 if (tlist.IsVar) return new PlTerm[] {tlist};
                 if (tlist.IsList)
                 {
@@ -375,12 +377,14 @@ namespace Swicli.Library
                 }
                 if (tlist.IsAtomic)
                 {
-                    if (tlist.IsAtom && tlist.Name == "[]") return new PlTerm[0];
+                    if (tlist.Name == "[]") return ZERO_PLTERMS;
                     return new PlTerm[] {tlist};
                 }
             }
             return enumerable.ToArray();
         }
+
+        public static PlTerm[] ZERO_PLTERMS  = new PlTerm[0];
 
         /// <summary>
         /// Construct an array of some type
@@ -392,7 +396,7 @@ namespace Swicli.Library
         {
             if (!arrayType.IsArray)
             {
-                Error("Not Array Type! " + arrayType);
+                Embedded.Error("Not Array Type! " + arrayType);
             }
             Type elementType = arrayType.GetElementType();
             int rank = arrayType.GetArrayRank();
@@ -409,12 +413,12 @@ namespace Swicli.Library
         {
             if (!arrayType.IsArray)
             {
-                Error("Not Array Type! " + arrayType);
+                Embedded.Error("Not Array Type! " + arrayType);
             }
             Type elementType = arrayType.GetElementType();
             if (arrayType.GetArrayRank() != 1)
             {
-                Warn("Non rank==1 " + arrayType);
+                Embedded.Warn("Non rank==1 " + arrayType);
             }
             PlTerm[] terms = ToTermArray(arrayValue);
             Array al = Array.CreateInstance(elementType, terms.Length);
@@ -525,7 +529,7 @@ namespace Swicli.Library
                 int low = lowers[i] = value.GetLowerBound(i);
                 if (low != 0)
                 {
-                    PrologCLR.Error("LowerBound !=0 in " + arrayType);
+                    Embedded.Error("LowerBound !=0 in " + arrayType);
                 }
                 int lenSize = (high - low + 1);
                 len *= lenSize;

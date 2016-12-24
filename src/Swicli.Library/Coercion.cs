@@ -24,10 +24,13 @@
 #if USE_MUSHDLR
 using MushDLR223.Utilities;
 #endif
+using org.jpl7;
 #if USE_IKVM
-using jpl;
+//using jpl;
 using Class = java.lang.Class;
 #else
+using Class = System.Type;
+#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,8 +38,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 using SbsSW.SwiPlCs;
-using Class = System.Type;
-#endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
 using OBJ_TO_OBJ = System.Func<object, object>;
 
@@ -63,11 +64,11 @@ namespace Swicli.Library
             Type type = GetType(clazzSpec);
             if (type == null)
             {
-                return Error("Cant find class {0}", clazzSpec);
+                return Embedded.Error("Cant find class {0}", clazzSpec);
             }
             if (valueIn.IsVar)
             {
-                return Error("Cant find instance {0}", valueIn);
+                return Embedded.Error("Cant find instance {0}", valueIn);
             }
             object retval = CastTerm(valueIn, type);
             return UnifyTagged(retval, valueOut);
@@ -78,7 +79,7 @@ namespace Swicli.Library
         {
             if (valueIn.IsVar)
             {
-                return Warn("Cant find instance {0}", valueIn);
+                return Embedded.Warn("Cant find instance {0}", valueIn);
             }
             if (!valueOut.IsVar)
             {
@@ -116,12 +117,12 @@ namespace Swicli.Library
             }
             catch (InvalidCastException e)
             {
-                Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
+                Embedded.Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
                 ce = e;
             }
             catch (Exception e)
             {
-                Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
+                Embedded.Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
                 ce = e;
             }
             try
@@ -165,10 +166,10 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
+                Embedded.Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
                 ce = ce ?? e;
             }
-            Warn("Having time of it convcerting {0} to {1} why {2}", r, pt, ce);
+            Embedded.Warn("Having time of it convcerting {0} to {1} why {2}", r, pt, ce);
 
 
             return r;
@@ -176,7 +177,7 @@ namespace Swicli.Library
 
         private static List<OBJ_TO_OBJ> GetConvertCache(Type from, Type to)
         {
-            string key = "" + from + "->" + to;
+            string key = "" + @from + "->" + to;
             List<OBJ_TO_OBJ> found;
             bool wasNew = true;
             lock (convertCache)
@@ -189,7 +190,7 @@ namespace Swicli.Library
             }
             if (wasNew)
             {
-                findConversions(from, to, found);
+                findConversions(@from, to, found);
             }
             return found;
         }
@@ -200,12 +201,12 @@ namespace Swicli.Library
             {
                 to = converterMethod.ReturnType;
             }
-            if (from == null)
+            if (@from == null)
             {
-                from = (converterMethod.GetParameters()[fromArg]).ParameterType;
+                @from = (converterMethod.GetParameters()[fromArg]).ParameterType;
             }
             OBJ_TO_OBJ meth = (a) => converterMethod.Invoke(null, new[] { a });
-            string key = "" + from + "->" + to;
+            string key = "" + @from + "->" + to;
             List<OBJ_TO_OBJ> found;
             bool wasNew = true;
             lock (convertCache)
@@ -247,7 +248,7 @@ namespace Swicli.Library
         private static OBJ_TO_OBJ findConversions(Type from, Type to, ICollection<OBJ_TO_OBJ> allMethods)
         {
             OBJ_TO_OBJ meth;
-            if (to.IsAssignableFrom(from))
+            if (to.IsAssignableFrom(@from))
             {
                 meth = (r) => r;
                 if (allMethods != null) allMethods.Add(meth);
@@ -297,10 +298,10 @@ namespace Swicli.Library
                 if (allMethods != null) allMethods.Add(meth);
                 else return meth;
             }
-            if (to.IsArray && from.IsArray)
+            if (to.IsArray && @from.IsArray)
             {
                 var eto = to.GetElementType();
-                var efrom = from.GetElementType();
+                var efrom = @from.GetElementType();
                 meth = ((r) =>
                             {
                                 Array ar = ((Array)r);
@@ -315,7 +316,7 @@ namespace Swicli.Library
                 if (allMethods != null) allMethods.Add(meth);
                 else return meth;
             }
-            ConstructorInfo ci = to.GetConstructor(new Type[] { from });
+            ConstructorInfo ci = to.GetConstructor(new Type[] { @from });
             if (ci != null)
             {
                 meth = (r) => ci.Invoke(new object[] { r });
@@ -334,7 +335,7 @@ namespace Swicli.Library
                 if (ps.Length == 1)
                 {
                     Type pt = ps[0].ParameterType;
-                    if (pt.IsAssignableFrom(from))
+                    if (pt.IsAssignableFrom(@from))
                     {
                         ConstructorInfo info = mi;
                         meth = (r) => info.Invoke(new object[] { r });
@@ -344,10 +345,10 @@ namespace Swicli.Library
                 }
             }
             // search for op_Implicit/Explicit
-            var someStatic = SomeConversionStaticMethod(to, to, from, allMethods, false);
+            var someStatic = SomeConversionStaticMethod(to, to, @from, allMethods, false);
             if (someStatic != null) return someStatic;
             // search for op_Implicit/Explicit
-            someStatic = SomeConversionStaticMethod(to, from, from, allMethods, false);
+            someStatic = SomeConversionStaticMethod(to, @from, @from, allMethods, false);
             if (someStatic != null) return someStatic;
 
             if (ConvertorClasses.Count == 0)
@@ -358,7 +359,7 @@ namespace Swicli.Library
             }
             foreach (Type convertorClasse in ConvertorClasses)
             {
-                var someStaticM = SomeConversionStaticMethod(to, convertorClasse, from, allMethods, false);
+                var someStaticM = SomeConversionStaticMethod(to, convertorClasse, @from, allMethods, false);
                 if (someStaticM != null) return someStatic;
             }
             //if (PrologBinder.CanConvertFrom(from, to))
@@ -368,7 +369,7 @@ namespace Swicli.Library
                 else return meth;
             }
             // search for toWhatnot (very bad should be done last)
-            foreach (MethodInfo mi in from.GetMethods(BindingFlagsInstance))
+            foreach (MethodInfo mi in @from.GetMethods(BindingFlagsInstance))
             {
                 if (!mi.IsStatic)
                 {
@@ -445,7 +446,7 @@ namespace Swicli.Library
                             if (tca == null || tca.Length == 0) continue;
                         }
                         Type pt = ps[0].ParameterType;
-                        if (pt.IsAssignableFrom(from))
+                        if (pt.IsAssignableFrom(@from))
                         {
                             MethodInfo info = mi;
                             meth = (r) => info.Invoke(null, new object[] { r });
@@ -529,7 +530,9 @@ namespace Swicli.Library
                     }
                     break;
                 case PlType.PlNil:
-                       return CastCompoundTerm(o.Name, o.Arity, o, o, pt);
+                {
+                    return CastCompoundTerm(o.Name, 0, o, o, pt);
+                }
                 case PlType.PlAtom:
                 case PlType.PlString:
                     {
@@ -551,7 +554,7 @@ namespace Swicli.Library
                             if (pt.IsAssignableFrom(m.ReturnType) && mGetParameters.Length == 1 &&
                                 mGetParameters[0].ParameterType.IsAssignableFrom(typeof(string)))
                             {
-                                WarnMissing("using " + m);
+                                Embedded.Debug("using " + m);
                                 try
                                 {
                                     return m.Invoke(null, new object[] { s });
@@ -560,10 +563,18 @@ namespace Swicli.Library
                                 {
                                     Exception why = cliInnerException(la, -1);
                                     var issue = "Cast failed converion " + why;
-                                    Debug(issue);
+                                    Embedded.Debug(issue);
                                     continue;
                                 }
                             }
+                        } foreach (var m in pt.GetFields(BindingFlagsJustStatic))
+                        {
+
+                            if (pt.IsAssignableFrom(m.FieldType) && m.Name == s)
+                            {
+                                Embedded.Debug("using static field " + m);
+                                return m.GetValue(null);
+                            }                     
                         }
                         return s;
                     }
@@ -573,7 +584,8 @@ namespace Swicli.Library
                     {
                         lock (ToFromConvertLock)
                         {
-                            return CastCompoundTerm(o.Name, o.Arity, o[1], o, pt);
+                            var o1 = o[1];
+                            return CastCompoundTerm(o.Name, o.Arity, o1, o, pt);
                         }
                     }
                     break;
@@ -685,7 +697,7 @@ namespace Swicli.Library
                         object o = CastTerm(outto, type);
                         if (!pt.IsInstanceOfType(o))
                         {
-                            Warn(type + " (" + o + ") is not " + pt);
+                            Embedded.Warn(type + " (" + o + ") is not " + pt);
                         }
                         return o;
                     }
@@ -701,7 +713,7 @@ namespace Swicli.Library
                     }
                     return MakeDefaultInstance(pt);
                 }
-                Debug("Not sure what to convert `[]` too");
+                Embedded.Debug("Not sure what to convert `[]` too");
                 return null;
             }
             if (key == "static/1")
@@ -761,7 +773,7 @@ namespace Swicli.Library
                                 object o = tag_to_object(name);
                                 if (o == null)
                                 {
-                                    Warn("Null from tag " + name);
+                                    Embedded.Warn("Null from tag " + name);
                                 }
                                 return o;
 #if plvar_pins                                
@@ -812,7 +824,7 @@ namespace Swicli.Library
                 Type type = GetType(arg1);
                 PlTerm arg2 = orig.Arg(1);
                 object value = Enum.Parse(type, arg2.Name, true);
-                if (value == null) Warn("cant parse enum: {0} for type {1}", arg2, type);
+                if (value == null) Embedded.Warn("cant parse enum: {0} for type {1}", arg2, type);
                 return value;
             }
             if (key == "array/2")
@@ -829,7 +841,7 @@ namespace Swicli.Library
             }
             if (name == "values")
             {
-                Warn("Values array");
+                Embedded.Warn("Values array");
             }
             if (name == "struct" || name == "event" || name == "object")
             {
@@ -841,20 +853,20 @@ namespace Swicli.Library
             {
                 if (arg1.IsInteger || arg1.IsAtom)
                 {
-                    Debug("maybe this is a string {0}", orig);
+                    Embedded.Debug("maybe this is a string {0}", orig);
                 }
                 if (pt == null)
                 {
                     var o1 = GetInstance(arg1);
                     if (false && o1 != null && IsTaggedObject(arg1) && arg1.IsCompound && !o1.GetType().IsPrimitive)
                     {                        
-                        Warn(" send a list into cliGet0 ", orig);
+                        Embedded.Warn(" send a list into cliGet0 ", orig);
                         bool found;
                         var res = cliGet0(arg1, orig.Arg(1), o1.GetType(), out found,
                                           BindingFlagsALL3 | BindingFlagsALL);
                         if (found) return res;
                     }
-                    Debug("Return as array of object[]?", orig);
+                    Embedded.Debug("Return as array of object[]?", orig);
                     var o = CreateArrayNarrowest(ToObjectArray(ToTermArray(orig)));
                     return o;
                 }
@@ -866,7 +878,7 @@ namespace Swicli.Library
                     }
                     if (!typeof(IEnumerable).IsAssignableFrom(pt))
                     {
-                        Warn("Return as collection?", orig);
+                        Embedded.Warn("Return as collection?", orig);
                     }
                     return CreateCollectionOfType(orig, pt);
                 }
@@ -889,7 +901,7 @@ namespace Swicli.Library
                     object tagObj = findTaggedObject(pt, arg1, orig[arity]);
                     if (tagObj != null) return tagObj;
                 }
-                WarnMissing(String.Format("Cant GetInstance from {0}", orig));
+                Embedded.WarnMissing(String.Format("Cant GetInstance from {0}", orig));
                 return orig;
             }
             if (pt == null || pt.IsAssignableFrom(t))
@@ -906,7 +918,7 @@ namespace Swicli.Library
                         Action postCallHook;
                         try
                         {
-                            WarnMissing("using contructor {0}", m);
+                            Embedded.WarnMissing("using contructor {0}", m);
                             var values = PlListToCastedArray(orig, mGetParameters, out postCallHook);
                             var retval = m.Invoke(values);
                             Dictionary<string, object> threadLocals = cliTLMem();
@@ -920,7 +932,7 @@ namespace Swicli.Library
                     }
                 }
             }
-            Debug("Get Instance fallthru");
+            Embedded.Debug("Get Instance fallthru");
             MemberInfo[] ofs = GetStructFormat(t);
             return CreateInstance(t, ofs, orig, 1);
         }

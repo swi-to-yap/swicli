@@ -24,10 +24,12 @@
 #if USE_MUSHDLR
 using MushDLR223.Utilities;
 #endif
+using ikvm.extensions;
 #if USE_IKVM
 using Class = java.lang.Class;
 #endif
 using System;
+using System.Collections;
 using System.Collections.Generic;
 //using System.Linq;
 using System.Reflection;
@@ -105,35 +107,7 @@ namespace Swicli.Library
                                                                     BindingFlagsALL3 | BindingFlagsJustStatic,
                                                                     BindingFlagsALL3 | BindingFlagsJustStatic | ICASE,
                                                                 };
-
-        const string ExportModule = "swicli";
-
-        public unsafe static bool Warn(string text, params object[] ps)
-        {
-            text = PlStringFormat(text, ps);
-            return libpl.PL_warning(text) != 0;
-        }
-        public unsafe static bool Error(string text, params object[] ps)
-        {
-            text = PlStringFormat(text, ps);
-            return libpl.PL_warning(text) != 0;
-        }
-        private static bool WarnMissing(string text, params object[] ps)
-        {
-            text = PlStringFormat(text, ps);
-            if (true)
-            {
-                Debug(text);
-                return false;
-            }
-            return Warn(text);
-        }
-        public static void Debug(string text, params object[] ps)
-        {
-            text = PlStringFormat(text, ps);
-            System.Console.Error.WriteLine(text);
-        }
-
+        
         [PrologVisible]
         public static bool cliThrow(PlTerm ex)
         {
@@ -143,7 +117,7 @@ namespace Swicli.Library
         public static bool cliBreak(PlTerm ex)
         {
             Trace();
-            return WarnMissing(ToString(ex)) || true;
+            return Embedded.WarnMissing(ToString(ex)) || true;
         }
         private static void Trace()
         {
@@ -164,35 +138,6 @@ namespace Swicli.Library
             return p != libpl.PL_fail;
         }
 
-        private static string PlStringFormat(string text, params object[] ps)
-        {
-            RegisterCurrentThread();
-            try
-            {
-                if (ps != null && ps.Length > 0)
-                {
-                    for (int i = 0; i < ps.Length; i++)
-                    {
-                        var o = ps[i];
-                        if (o==null)
-                        {
-                            ps[i] = "NULL";
-                        }
-                        else if (o is Exception)
-                        {
-                            ps[i] = PrologCLR.ExceptionString((Exception)o);
-                        }
-                    }
-                    text = String.Format(text, ps);
-                }
-            }
-            catch (Exception)            
-            {
-            }
-            DeregisterThread(Thread.CurrentThread);
-            return text;
-        }
-
         private static string ToString(object o)
         {
             try
@@ -208,9 +153,9 @@ namespace Swicli.Library
         {
             if (o == null) return "null";
             if (o is IConvertible || o is PlTerm || o is ValueType) return o.ToString();
-            if (o is System.Collections.IEnumerable)
+            if (o is IEnumerable)
             {
-                var oc = (System.Collections.IEnumerable)o;
+                var oc = (IEnumerable)o;
                 int count = 0;
                 string ret = "[";
                 foreach (var o1 in oc)
@@ -248,7 +193,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                Warn("cliToString: {0}", e);
+                Embedded.Warn("cliToString: {0}", e);
                 object o = GetInstance(obj);
                 if (o == null) return str.FromObject("" + obj);
                 return str.FromObject(ToString(o));
@@ -286,7 +231,7 @@ namespace Swicli.Library
             {
                 if (term.IsVar)
                 {
-                    return Error("Is var {0}", term);
+                    return Embedded.Error("Is var {0}", term);
                 }
             }
             return true;
@@ -342,13 +287,13 @@ namespace Swicli.Library
             {
                 c = null;
                 getInstance = null;
-                return Error("Cant find instance {0}", clazzOrInstance);
+                return Embedded.Error("Cant find instance {0}", clazzOrInstance);
             }
             getInstance = GetInstance(clazzOrInstance);
             c = GetTypeFromInstance(getInstance, clazzOrInstance);
             if (getInstance == null && c == null)
             {
-                return Error("Cant find instance or type {0}", clazzOrInstance);
+                return Embedded.Error("Cant find instance or type {0}", clazzOrInstance);
             }
             return true;
         }

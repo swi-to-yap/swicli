@@ -23,6 +23,7 @@
 *********************************************************/
 
 using System.Linq;
+using IKVM.Attributes;
 #if USE_IKVM
 using ikvm.extensions;
 using IKVM.Internal;
@@ -30,17 +31,18 @@ using ikvm.runtime;
 using java.net;
 using java.util;
 //using jpl;
-using jpl;
 using Hashtable = java.util.Hashtable;
 using ClassLoader = java.lang.ClassLoader;
 using Class = java.lang.Class;
 using sun.reflect.misc;
 using Util = ikvm.runtime.Util;
+using System;
 #else
 using SbsSW.SwiPlCs.Callback;
-using Class = System.Type;
-#endif
+using Type = System.Type;
 using System;
+#endif
+
 using System.Collections.Generic;
 using System.Reflection;
 using SbsSW.SwiPlCs;
@@ -51,6 +53,26 @@ namespace Swicli.Library
 {
     public partial class PrologCLR
     {
+
+        [Modifiers(Modifiers.Public | Modifiers.Static | Modifiers.Native)]
+        public static Class getClassFromTypeHandle(RuntimeTypeHandle handle, int rank)
+        {
+            return ikvm.runtime.Util.getClassFromTypeHandle(handle, rank);
+        }
+
+        [Modifiers(Modifiers.Public | Modifiers.Static | Modifiers.Native)]
+        public static System.Type getInstanceTypeFromClass(Type classObject)
+        {
+            return ikvm.runtime.Util.getInstanceTypeFromClass(classObject);
+        }
+
+        [Modifiers(Modifiers.Public | Modifiers.Static | Modifiers.Native)]
+        public static Class getFriendlyClassFromType(Type classObject)
+        {
+            //getInstanceTypeFromClass(classObject);
+            return ikvm.runtime.Util.getFriendlyClassFromType(classObject);
+        }
+
         
         [PrologVisible]
         static public bool cliTypeToTypespec(PlTerm clazzSpec, PlTerm valueOut)
@@ -58,7 +80,7 @@ namespace Swicli.Library
             return valueOut.Unify(typeToSpec(GetType(clazzSpec)));
         }
 
-        public static Class GetTypeThrowIfMissing(PlTerm clazzSpec)
+        public static Type GetTypeThrowIfMissing(PlTerm clazzSpec)
         {
             Type fi = GetType(clazzSpec);
             if (fi == null)
@@ -67,16 +89,16 @@ namespace Swicli.Library
             }
             return fi;
         }
-        public static Class GetType(PlTerm clazzSpec)
+        public static Type GetType(PlTerm clazzSpec)
         {
             return GetType(clazzSpec, false);
         }
         
-        public static Class GetType(PlTerm clazzSpec, bool canBeObjects)
+        public static Type GetType(PlTerm clazzSpec, bool canBeObjects)
         {
             if (clazzSpec.IsVar)
             {
-                Error("GetType IsVar {0}", clazzSpec);
+                Embedded.Error("GetType IsVar {0}", clazzSpec);
                 return null;
             }
             if (IsTaggedObject(clazzSpec))
@@ -86,7 +108,7 @@ namespace Swicli.Library
                 if (r != null) return r;
                 if (!canBeObjects)
                 {
-                    Warn("cant find tagged object as class: {0}=>{1}", clazzSpec, tagObj);
+                    Embedded.Warn("cant find tagged object as class: {0}=>{1}", clazzSpec, tagObj);
                 }
                 if (tagObj != null)
                 {
@@ -95,7 +117,7 @@ namespace Swicli.Library
                 return null;
             }
             Type type = null;
-            if (clazzSpec.IsAtom || clazzSpec.IsString)
+            if (clazzSpec.IsAtomOrString)
             {
                 if (canBeObjects) return typeof (string);
                 string name = (string)clazzSpec;
@@ -103,7 +125,7 @@ namespace Swicli.Library
                 if (type != null) return type;
                 if (!canBeObjects)
                 {
-                    Warn("cant find atom/string as class: {0}", clazzSpec);
+                    Embedded.Warn("cant find atom/string as class: {0}", clazzSpec);
                     type = ResolveType(name);
                 }
                 return null;
@@ -162,7 +184,7 @@ namespace Swicli.Library
                         }
                         catch (Exception e)
                         {
-                            Warn("GetGenericParameterConstraints: {0}", e);
+                            Embedded.Warn("GetGenericParameterConstraints: {0}", e);
                         }
                         try
                         {
@@ -170,7 +192,7 @@ namespace Swicli.Library
                         }
                         catch (Exception e)
                         {
-                            Warn("GetGenericTypeDefinition: {0}", e);
+                            Embedded.Warn("GetGenericTypeDefinition: {0}", e);
                         }
 
                         if (arity == genr.Length)
@@ -198,7 +220,7 @@ namespace Swicli.Library
                         return layout.ToType;
                     }
                 }
-                WarnMissing("cant find compound as class: " + clazzSpec);
+                Embedded.WarnMissing("cant find compound as class: " + clazzSpec);
             }
             object toObject = GetInstance(clazzSpec);
             if (toObject is Type) return (Type)toObject;
@@ -206,7 +228,7 @@ namespace Swicli.Library
             {
                 return toObject.GetType();
             }
-            Warn("@TODO cant figure type from {0}", clazzSpec);
+            Embedded.Warn("@TODO cant figure type from {0}", clazzSpec);
             return typeof(object);
             //return null;
         }
@@ -251,10 +273,10 @@ namespace Swicli.Library
         [PrologVisible]
         public static bool cliFindClass(PlTerm clazzName, PlTerm clazzObjectOut)
         {
-            if (clazzName.IsAtom)
+            if (clazzName.IsAtomOrString)
             {
                 string className = clazzName.Name;
-                Type c = ResolveClass(className);
+                Class c = ResolveClass(className);
                 if (c != null)
                 {
                     ConsoleTrace("cliFindClass:" + className + " class:" + c);
@@ -267,9 +289,9 @@ namespace Swicli.Library
             Type t = GetType(clazzName);
             if (t != null)
             {
-                Type c = null;
+                Class c = null;
 #if USE_IKVM
-                c = ikvm.runtime.Util.getFriendlyClassFromType(t);
+                c =  getFriendlyClassFromType(t);
 #else
                 c = t;
 #endif
@@ -279,11 +301,11 @@ namespace Swicli.Library
             return false;
         }
 
-        private static IDictionary<string, Class> ShortNameType;
-        private static readonly Dictionary<Class, string> TypeShortName = new Dictionary<Class, string>();
+        private static IDictionary<string, Type> ShortNameType;
+        private static readonly Dictionary<Type, string> TypeShortName = new Dictionary<Type, string>();
         private static object NEW_OBJECTFORTYPE = new object();
 
-        private static PlTerm typeToSpec(Class type)
+        private static PlTerm typeToSpec(Type type)
         {
             if (type == null) return PLNULL;
             if (type.IsArray && type.HasElementType)
@@ -312,7 +334,7 @@ namespace Swicli.Library
             // @todo if false , use IsGenericType
             if (false) if (typeof(Nullable<>).IsAssignableFrom(type))
             {
-                Error("@todo Not Implemented NULLABLE");
+                Embedded.Error("@todo Not Implemented NULLABLE");
                 Type gt = type.GetElementType();
                 return PlC("nullable", typeToSpec(gt));
             }
@@ -331,22 +353,22 @@ namespace Swicli.Library
                 }
                 else
                 {
-                    Debug("cant chop arity {0} off string '{1}' ", gtpLength, typeName);
+                    Embedded.Debug("cant chop arity {0} off string '{1}' ", gtpLength, typeName);
                 }
                 return PlC(typeName, vt);
             }
             if (type.HasElementType)
             {
                 string named = typeToName(type);
-                Error("@todo Not Implemented " + named);
+                Embedded.Error("@todo Not Implemented " + named);
                 Type gt = type.GetElementType();
                 if (gt == type) gt = typeof(object);
                 return PlC("elementType", PlTerm.PlAtom(named), typeToSpec(gt));
             }
-            if (type.IsSpecialName || string.IsNullOrEmpty(type.Name) || string.IsNullOrEmpty(type.FullName) || string.IsNullOrEmpty(type.Namespace))
+            if (type.IsSpecialName || String.IsNullOrEmpty(type.Name) || String.IsNullOrEmpty(type.FullName) || String.IsNullOrEmpty(type.Namespace))
             {
                 string named = typeToName(type);
-                Error("@todo Not Implemented " + named);
+                Embedded.Error("@todo Not Implemented " + named);
                 Type gt = type.UnderlyingSystemType;
                 if (gt == type) gt = typeof (object);
                 return PlC("static", PlTerm.PlAtom(named), typeToSpec(gt));
@@ -362,10 +384,15 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliGetType(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
+            if (valueIn.IsAtom)
+            {
+                Type t = GetType(valueIn);
+                return valueOut.FromObject(t);
+            }
             object val = GetInstance(valueIn);
             if (val == null)
             {
-                Error("Cannot get object for {0}", valueIn);
+                Embedded.Error("Cannot get object for {0}", valueIn);
                 return true;
             }
             return valueOut.FromObject((val.GetType()));
@@ -400,7 +427,7 @@ namespace Swicli.Library
             Type val = GetType(valueIn);
             if (val == null) return false;
 #if USE_IKVM
-            Class c = ikvm.runtime.Util.getFriendlyClassFromType(val);
+            Class c = getFriendlyClassFromType(val);
             return valueOut.FromObject((c));
 #else
             return valueOut.FromObject((val));
@@ -427,7 +454,7 @@ namespace Swicli.Library
         [PrologVisible]
         static public bool cliAddShorttype(PlTerm valueName, PlTerm valueIn)
         {
-            if (!valueName.IsString && !valueName.IsAtom) return Warn("valueName must be string or atom {0}", valueName);
+            if (!valueName.IsAtomOrString) return Embedded.Warn("valueName must be string or atom {0}", valueName);
             string name = valueName.Name;
             Type otherType;
             lock (ShortNameType)
@@ -475,7 +502,7 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliGetClassname(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            Type val = CastTerm(valueIn, typeof(Type)) as Type;
+            Class val = CastTerm(valueIn, typeof(Type)) as Type;
             if (val == null) return false;
 
 #if USE_IKVM
@@ -497,7 +524,7 @@ namespace Swicli.Library
             return valueOut.Unify(val.FullName);
         }
 
-        private static string typeToName(Class type)
+        private static string typeToName(Type type)
         {
             if (type.IsArray && type.HasElementType)
             {
@@ -531,14 +558,14 @@ namespace Swicli.Library
             if (name == "@" || name == "$cli_object" || name == "array" || name == null) return null;
             Type t = ResolveClassAsType(name);
 #if USE_IKVM
-            Class c = ikvm.runtime.Util.getFriendlyClassFromType((Type)t);
+            Class c = getFriendlyClassFromType((Type)t);
             return c;
 #else
             return t;
 #endif
 
         }
-        private static Class ResolveClassAsType(string name)
+        private static Type ResolveClassAsType(string name)
         {
             Type s1 = ResolveType(name);
             if (s1 != null) return s1;
@@ -562,8 +589,15 @@ namespace Swicli.Library
             return null;
         }
 
-        static readonly private Dictionary<string, Class> typeCache = new Dictionary<string, Class>();
-        private static Class ResolveType(string name)
+        static readonly private Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
+        private static Type ResolveType(string name)
+        {
+                Type type = ResolveJClass(
+                    name);
+                return getInstanceTypeFromClass(type);
+        }
+
+        public static Type ResolveJClass(string name)
         {
             lock (typeCache)
             {
@@ -576,7 +610,7 @@ namespace Swicli.Library
             }
         }
 
-        private static Class ResolveType0(string name)
+        private static Type ResolveType0(string name)
         {
             if (name == "@" || name == "[]" || name == "$cli_object" || name == "array" || name == null) return null;
             if (name.EndsWith("[]"))
@@ -615,11 +649,11 @@ namespace Swicli.Library
             return null;
         }
 
-        public static Class ResolveType1(string typeName)
+        public static Type ResolveType1(string typeName)
         {
             try
             {
-                Class s1 = ResolveType2(typeName);
+                Type s1 = ResolveType2(typeName);
                 if (s1 != null) return s1;
                 return null;
             }
@@ -644,7 +678,7 @@ namespace Swicli.Library
             }
         }
 
-        public static Class ResolveType2(string typeName)
+        public static Type ResolveType2(string typeName)
         {
             Type type = null;
             if (!typeName.Contains("."))
@@ -662,7 +696,7 @@ namespace Swicli.Library
             {
                 type = ResolveTypeInNameSpaces(typeName, false) ?? ResolveTypeInNameSpaces(typeName, true);
 
-                Type obj = null;
+                Class obj = null;
 #if USE_IKVM
                 try
                 {
@@ -736,7 +770,7 @@ namespace Swicli.Library
         }
 
 
-        public static Class GetPrimitiveType(String name)
+        public static Type GetPrimitiveType(String name)
         {
             if (name.StartsWith("["))
             {

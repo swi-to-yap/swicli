@@ -30,7 +30,7 @@ namespace SWICLITestDLL
                 PrologCLR.DoQuery("flush");
 
                 PrologCLR.PlAssert("father(martin, inka)");
-                if (!PrologCLR.PlCsDisabled)
+                if (!Embedded.PlCsDisabled)
                 {
                     PlQuery.PlCall("assert(father(uwe, gloria))");
                     PlQuery.PlCall("assert(father(uwe, melanie))");

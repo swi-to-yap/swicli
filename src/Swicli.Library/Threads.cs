@@ -25,7 +25,7 @@
 using IKVM.Internal;
 using ikvm.runtime;
 using java.net;
-using jpl;
+//using jpl;
 using Hashtable = java.util.Hashtable;
 using ClassLoader = java.lang.ClassLoader;
 using Class = java.lang.Class;
@@ -125,7 +125,7 @@ namespace Swicli.Library
                     }
                 } else
                 {
-                    Debug("Not installing ThreadExit hook to System.Windows.Forms.Application");
+                    Embedded.Debug("Not installing ThreadExit hook to System.Windows.Forms.Application");
                 }
                 var t = Thread.CurrentThread.ManagedThreadId;
                 //libpl.PL_thread_at_exit((DelegateParameter0)PrologThreadAtExitGlobal, IntPtr.Zero, 1);
@@ -361,12 +361,12 @@ namespace Swicli.Library
                 {
                     if (self < 1)
                     {
-                        Debug("self < 1: {0}", thread);
+                        Embedded.Debug("self < 1: {0}", thread);
                         return; //maybe mnot fine                       
                     }
                     if (plThreadHasDifferntThread)
                     {
-                        Debug("plThreadHasDifferntThread {0}", thread);
+                        Embedded.Debug("plThreadHasDifferntThread {0}", thread);
                         return; //maybe mnot fine       
                     }
                     if (thread == CreatorThread) return;
@@ -444,12 +444,12 @@ namespace Swicli.Library
                 {
                     if (self < 1)
                     {
-                        Debug("self < 1: {0}", thread);
+                        Embedded.Debug("self < 1: {0}", thread);
                         return; //maybe mnot fine                       
                     }
                     if (plThreadHasDifferntThread)
                     {
-                        Debug("plThreadHasDifferntThread {0}", thread);
+                        Embedded.Debug("plThreadHasDifferntThread {0}", thread);
                         return; //maybe mnot fine       
                     }
                     //return; // all was fine;

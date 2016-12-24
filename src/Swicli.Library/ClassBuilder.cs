@@ -110,7 +110,7 @@ namespace Swicli.Library
 
             foreach (object o in Enum.GetValues(finished))
             {
-                Debug("{0}.{1} = {2}", finished, o, (int) o);
+                Embedded.Debug("{0}.{1} = {2}", finished, o, (int) o);
             }
             return finished;
         }
@@ -192,7 +192,7 @@ namespace Swicli.Library
 
             foreach (var o in finished.GetMembers(BindingFlagsALL3))
             {
-                Debug("{0}.{1} = {2}", finished, o, o.GetType());
+                Embedded.Debug("{0}.{1} = {2}", finished, o, o.GetType());
             }
             return finished;
         }
@@ -281,7 +281,7 @@ namespace Swicli.Library
                             callingConventions, rt, returnRTypeCM , returnType_OCM, paramTypes,
                             paramTypes_RCM, paramTypes_OCM);
                         */
-                    var cb = typeBuilder.DefineMethod(memberName, PrologCLR.getMethodAttributes(access_pafv), rt,
+                    var cb = typeBuilder.DefineMethod(memberName, getMethodAttributes(access_pafv), rt,
                         paramTypes);
                     //cb.DefineParameter
                     return cb;
@@ -468,7 +468,7 @@ namespace Swicli.Library
             return cab0;
         }
 
-        private CustomAttributeBuilder BuildCustomAttribute(System.Attribute attribute)
+        private CustomAttributeBuilder BuildCustomAttribute(Attribute attribute)
         {
             Type type = attribute.GetType();
             var constructor = type.GetConstructor(Type.EmptyTypes);

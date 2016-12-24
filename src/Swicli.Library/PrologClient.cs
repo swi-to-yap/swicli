@@ -21,17 +21,21 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+
+using System.Collections;
+
 #if USE_IKVM
+using org.jpl7;
 using IKVM.Internal;
 using ikvm.runtime;
 using java.net;
-using jpl;
-#endif
-#if USE_IKVM
-using Hashtable = java.util.Hashtable;
+using Iterator= java.util.Iterator;
+using java.util;
+//using Hashtable = java.util.Hashtable;
 using ClassLoader = java.lang.ClassLoader;
 using Class = java.lang.Class;
 using sun.reflect.misc;
+//usign Query = org.jpl7.Query;
 #endif
 using System;
 using System.Collections.Generic;
@@ -41,8 +45,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Callback;
+using Hashtable = java.util.Hashtable;
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
-
 namespace Swicli.Library
 {
     public partial class PrologCLR
@@ -60,12 +64,12 @@ namespace Swicli.Library
             return target;
         }
 
-        internal static jpl.fli.term_t ToFLI(PlTermV args)
+        internal static org.jpl7.fli.term_t ToFLI(PlTermV args)
         {
             return ToFLI(args.A0);
         }
 
-        internal static jpl.fli.term_t ToFLI(PlTerm args)
+        internal static org.jpl7.fli.term_t ToFLI(PlTerm args)
         {
             return ToFLI(args.TermRef);
         }
@@ -73,13 +77,13 @@ namespace Swicli.Library
         internal static PlTerm ToPLCS(Term args)
         {
             if (args is Atom) return new PlTerm(args.name());
-            if (args is jpl.Variable) return new PlTerm((uint)GetField(args, "term_"));
-            if (args is jpl.Float) return new PlTerm(args.doubleValue());
-            if (args is jpl.Integer) return new PlTerm(args.longValue());
-            if (args is jpl.Compound) return PlTerm.PlCompound(args.name(), ToPLCSV(args.args()));
-            if (args is jpl.JRef)
+            if (args is org.jpl7.Variable) return new PlTerm((uint)GetField(args, "term_"));
+            if (args is org.jpl7.Float) return new PlTerm(args.doubleValue());
+            if (args is org.jpl7.Integer) return new PlTerm(args.longValue());
+            if (args is org.jpl7.Compound) return PlTerm.PlCompound(args.name(), ToPLCSV(args.args()));
+            if (args is org.jpl7.JRef)
             {
-                var jref = (jpl.JRef)args;// return new PlTerm(args.doubleValue());
+                var jref = (org.jpl7.JRef)args;// return new PlTerm(args.doubleValue());
                 var obj = jref.@ref();
                 var t = new PlTerm();
                 t.FromObject(obj);
@@ -126,13 +130,13 @@ namespace Swicli.Library
 
         private static object GetField(object term, string s)
         {
-            return term.GetType().GetField(s, PrologCLR.BindingFlagsALL).GetValue(term);
+            return term.GetType().GetField(s, BindingFlagsALL).GetValue(term);
         }
 
 #if USE_IKVM
-        private static jpl.fli.term_t ToFLI(uint hndle)
+        private static org.jpl7.fli.term_t ToFLI(uint hndle)
         {
-            jpl.fli.term_t t = new jpl.fli.term_t();
+            org.jpl7.fli.term_t t = new org.jpl7.fli.term_t();
             t.value = hndle;
             return t;
         }
@@ -148,24 +152,25 @@ namespace Swicli.Library
                     break;
                 case PlType.PlInteger:
                     {
-                        return new jpl.Integer((long)o);
+                        return new org.jpl7.Integer((long)o);
                     }
                     break;
                 case PlType.PlFloat:
                     {
-                        return new jpl.Float((double)o);
+                        return new org.jpl7.Float((double)o);
                     }
                     break;
                 case PlType.PlString:
                     {
-                        return new jpl.Atom((string)o);
+                        return new org.jpl7.Atom((string)o);
                     }
                     break;
                 case PlType.PlTerm:
                 case PlType.PlListPair:
                     {
                         var a = o.Arity;
-                        var c = new jpl.Compound(o.Name, a);
+                        Term[] termArray = new Term[a];
+                        var c = new org.jpl7.Compound(o.Name, termArray);
                         for (int i = 1; i <= a; i++)
                         {
                             c.setArg(i, ToJPL(o[i]));
@@ -175,14 +180,14 @@ namespace Swicli.Library
                     break;
                 case PlType.PlVariable:
                     {
-                        var v = new jpl.Variable();
+                        var v = new org.jpl7.Variable();
                         SetField(v, "term_", o.TermRef);
                         return v;
                     }
                     break;
                 case PlType.PlUnknown:
                     {
-                        return jpl.Util.textToTerm((string)o);
+                        return org.jpl7.Util.textToTerm((string)o);
                     }
                     break;
                 default:
@@ -199,10 +204,10 @@ namespace Swicli.Library
         }
 
 #if USE_IKVM
-        public static jpl.Term InModule(string s, jpl.Term o)
+        public static org.jpl7.Term InModule(string s, org.jpl7.Term o)
         {
             if (s == null || s == "" || s == "user") return o;
-            return new jpl.Compound(":", new Term[] { new jpl.Atom(s), o });
+            return new org.jpl7.Compound(":", new Term[] { new org.jpl7.Atom(s), o });
         }
 #endif
         ///<summary>
@@ -357,10 +362,10 @@ namespace Swicli.Library
                 }
                 if (!PlQuery.PlCall(module, name, args))
                 {
-                    if (!IsVoid) Warn("Failed Event Handler {0} failed", target);
+                    if (!IsVoid) Embedded.Warn("Failed Event Handler {0} failed", target);
                 }
                 if (IsVoid) return null;
-                object ret = PrologCLR.CastTerm(args[fillAt], returnType);
+                object ret = CastTerm(args[fillAt], returnType);
                 return ret;
             }, discard);
         }
@@ -392,7 +397,7 @@ namespace Swicli.Library
             }
             PlTerm termout = PlTerm.PlVar();
             if (!ModuleCall("Eval", termin, termout)) return null;
-            return PrologCLR.CastTerm(termout, typeof(System.Object));
+            return CastTerm(termout, typeof(Object));
         }
 
         public void Intern(string varname, object value)
@@ -412,7 +417,7 @@ namespace Swicli.Library
         {
             PlTerm termout = PlTerm.PlVar();
             if (!ModuleCall("GetSymbol", PlNamed(name), termout)) return null;
-            return PrologCLR.CastTerm(termout, typeof(System.Object));
+            return CastTerm(termout, typeof(Object));
         }
 
         public object Read(string line, TextWriter @delegate)
@@ -424,11 +429,11 @@ namespace Swicli.Library
         {
             try
             {
-                if (!JplDisabled)
+                if (!Embedded.JplDisabled)
                 {
                     return DoQuery(s);
                 }
-                if (PlCsDisabled)
+                if (Embedded.PlCsDisabled)
                 {
                     WriteDebug("Disabled PlCall " + s);
                     return false;
@@ -437,7 +442,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                WriteException(e);
+                Embedded.WriteException(e);
                 throw e;
             }
         }
@@ -446,13 +451,13 @@ namespace Swicli.Library
         {
             try
             {
-                if (!JplDisabled)
+                if (!Embedded.JplDisabled)
                 {
 #if USE_IKVM
                     return DoQuery(m, f, args);
 #endif
                 }
-                if (PlCsDisabled)
+                if (Embedded.PlCsDisabled)
                 {
                     WriteDebug("Disabled PlCall " + f);
                     return false;
@@ -461,14 +466,14 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                WriteException(e);
+                Embedded.WriteException(e);
                 throw e;
             }
         }
 
         public static bool DoQuery(string query)
         {
-            if (JplDisabled) return PlCall(query);
+            if (Embedded.JplDisabled) return PlCall(query);
 #if USE_IKVM
             Query q;
             try
@@ -477,7 +482,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                WriteException(e);
+                Embedded.WriteException(e);
                 return false;
             }
             return DoQuery(q);
@@ -489,7 +494,7 @@ namespace Swicli.Library
 #if USE_IKVM
         public static bool DoQuery(string m, string f, PlTermV args)
         {
-            if (JplDisabled) return PlCall(m, f, args);
+            if (Embedded.JplDisabled) return PlCall(m, f, args);
             Query q;
             try
             {
@@ -497,7 +502,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                WriteException(e);
+                Embedded.WriteException(e);
                 return false;
             }
             return DoQuery(q);
@@ -512,8 +517,8 @@ namespace Swicli.Library
                 while (query.hasMoreSolutions())
                 {
                     any = true;
-                    Hashtable ht = query.nextSolution();
-                    foreach (var list in ToEnumer(ht.elements()))
+                    var ht = query.nextSolution();
+                    foreach (var list in ht.entrySet().toArray())
                     {
                         string s = "" + list;
                         ConsoleTrace(s);
@@ -523,39 +528,13 @@ namespace Swicli.Library
             }
             catch (Exception exception)
             {
-                WriteException(exception);
+                Embedded.WriteException(exception);
                 return false;
             }
 
         }
 #endif
-        public static void ConsoleWriteLine(string text)
-        {
-            Console.Error.WriteLine(text);
-        }
 
-        public static void WriteException(Exception exception)
-        {
-#if USE_IKVM
-            java.lang.Exception ex = exception as java.lang.Exception;
-            if (ex != null)
-            {
-                ex.printStackTrace();
-
-            }
-#endif
-            //else
-            {
-                Exception inner = exception.InnerException;
-                if (inner != null && inner != exception)
-                {
-                    WriteException(inner);
-                }
-                ConsoleWriteLine("ST: " + exception.StackTrace);
-            }
-
-            ConsoleWriteLine("PrologCLR: " + exception);
-        }
 #if USE_IKVM
         private static IEnumerable ToEnumer(java.util.Enumeration enumeration)
         {
@@ -603,7 +582,7 @@ namespace Swicli.Library
 
         public static void PlAssert(string s)
         {
-            if (PlCsDisabled)
+            if (Embedded.PlCsDisabled)
             {
                 WriteDebug("Disabled PlAssert " + s);
                 return;
@@ -627,7 +606,7 @@ namespace Swicli.Library
 
         public bool ConsultIfExists(string file)
         {
-            return PrologCLR.InvokeFromC(() => File.Exists(file) && Consult(file), false);
+            return InvokeFromC(() => File.Exists(file) && Consult(file), false);
         }
     }
 }

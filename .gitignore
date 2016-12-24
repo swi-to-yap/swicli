@@ -1,6 +1,10 @@
 **/obj/
 **/bin/
+**/lib/
+**/Debug/
+**/Release/
 **/vc90*
+**/temp/
 *.suo
 *~
 vc100.pdb
@@ -15,10 +19,7 @@ vc100.pdb
 *.filters
 *.obj
 *.exp
-temp/
 *.bak
-bin
-lib
 *.exe
 build
 Makefile
@@ -27,21 +28,5 @@ CMakeCache.txt
 cmake_install.cmake
 
 **/BuildLog.htm
-c/SWICLI.sln.cache
 PInvokeSignatureGeneratorSource/
 null
-lib/amd64/swicli.dll
-lib/amd64/swicli.pdb
-lib/amd64/swicli32.dll
-lib/amd64/swicli32.pdb
-lib/i386-linux/swicli.dll
-lib/i386-linux/swicli.pdb
-lib/i386-linux/swicli32.dll
-lib/i386-linux/swicli32.pdb
-
-lib/i386-win32/swicli.dll
-lib/i386-win32/swicli.pdb
-lib/x86_64-linux/swicli.dll
-lib/x86_64-linux/swicli.pdb
-lib/x86_64-linux/swicli32.dll
-lib/x86_64-linux/swicli32.pdb

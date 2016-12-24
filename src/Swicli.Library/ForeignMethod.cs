@@ -230,7 +230,7 @@ typedef struct // define a context structure  { ... } context;
                 }
                 catch (Exception e)
                 {
-                    Error("{0} caused {1}", m, e);
+                    Embedded.Error("{0} caused {1}", m, e);
                 }
                 return;
             }
@@ -252,7 +252,7 @@ typedef struct // define a context structure  { ... } context;
                     }
                     catch (Exception e)
                     {
-                        Error("{0} caused {1}", m, e);
+                        Embedded.Error("{0} caused {1}", m, e);
                     }
                     return;
                 }
@@ -270,7 +270,7 @@ typedef struct // define a context structure  { ... } context;
                 }
                 catch (Exception e)
                 {
-                    Error("{0} caused {1}", m, e);
+                    Embedded.Error("{0} caused {1}", m, e);
                 }
             }
         }
@@ -279,7 +279,7 @@ typedef struct // define a context structure  { ... } context;
         {
             if (pm.Name == null)
             {
-                if (char.IsLower(m.Name[0]))
+                if (Char.IsLower(m.Name[0]))
                 {
                     string mName = m.Name;
                     if (ForceJanCase)
@@ -332,7 +332,7 @@ typedef struct // define a context structure  { ... } context;
             }
             if (!minfo.IsStatic && defaultInstanceWhenMissing == null)
             {
-                throw new NotSupportedException(string.Format(
+                throw new NotSupportedException(String.Format(
                                                     "Interning a dynamic method without a target {0}:{1} -> {2}", module,
                                                     pn, minfo));
             }
@@ -548,7 +548,11 @@ typedef struct // define a context structure  { ... } context;
             {
                 return false;
             }
-            return (bool)obj;
+            bool tf = (bool)obj;
+            if (tf) return true;
+            BP();
+            obj = InvokeCaught0(info, o, os, Do_NOTHING);
+            return false;
         }
         private static object InvokeCaught(MethodInfo info, object o, object[] os, Action todo)
         {
@@ -559,7 +563,7 @@ typedef struct // define a context structure  { ... } context;
         {
             if (!ClientReady)
             {
-                Warn("Client not Ready");
+                Embedded.Warn("Client not Ready");
                 return null;
             }
             Thread threadCurrentThread = Thread.CurrentThread;
@@ -607,7 +611,7 @@ typedef struct // define a context structure  { ... } context;
                 }
                 if (ps.Length != os.Length)
                 {
-                    Warn("ArgCount mismatch " + info + ": call count=" + os.Length);
+                    Embedded.Warn("ArgCount mismatch " + info + ": call count=" + os.Length);
                 }
                 if (!info.DeclaringType.IsInstanceOfType(o)) to = null;
                 object ret = info.Invoke(to, os);
@@ -615,7 +619,7 @@ typedef struct // define a context structure  { ... } context;
                 if (ret == null)
                 {
                     if (info.ReturnType == typeof(void)) return null;
-                    Warn("VoidOrNull " + info);
+                    Embedded.Warn("VoidOrNull " + info);
                     return VoidOrNull(info);
                 }
                 return ret;
@@ -624,7 +628,7 @@ typedef struct // define a context structure  { ... } context;
             {
                 string s = ExceptionString(ex);
                 var callTerm = MakeCallTerm(info, to, os);
-                Error("{0} caused {1}", info, s);
+                Embedded.Error("{0} caused {1}", info, s);
                 //throw pe;
                 return false;// pe;
             }

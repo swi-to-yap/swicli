@@ -25,9 +25,12 @@
 using MushDLR223.Utilities;
 #endif
 #if USE_IKVM
-using jpl;
 using Class = java.lang.Class;
+using Type = System.Type;
 #else
+using Class = System.Type;
+using Type = System.Type;
+#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,8 +38,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 using SbsSW.SwiPlCs;
-using Class = System.Type;
-#endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
 
 namespace Swicli.Library
@@ -285,7 +286,7 @@ namespace Swicli.Library
             }
             if (tGetFields.Length == 0)
             {
-                Warn("No fields in {0}", t);
+                Embedded.Warn("No fields in {0}", t);
             }
             return tGetFields;
         }
@@ -357,7 +358,7 @@ namespace Swicli.Library
                 MethodInfo setterMethod = ((PropertyInfo)field).GetSetMethod(true);
                 if (setterMethod == null)
                 {
-                    Warn("No setter method on {0}", field);
+                    Embedded.Warn("No setter method on {0}", field);
                     return;
                 }
                 setterMethod.Invoke(o, new object[] { value });
@@ -439,7 +440,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                Error("MakeDefaultInstance: " + type + " caused " + e);
+                Embedded.Error("MakeDefaultInstance: " + type + " caused " + e);
                 throw;
             }
         }
@@ -484,7 +485,7 @@ namespace Swicli.Library
             if (orig.Arity < fisLength)
             {
                 fisLength = orig.Arity;
-                Warn("Struct length mismatch");
+                Embedded.Warn("Struct length mismatch");
             }
             object[] paramz = new object[fisLength];
             for (int i = 0; i < fisLength; i++)
@@ -499,7 +500,7 @@ namespace Swicli.Library
             {
                 newStruct = MakeDefaultInstance(type);
             }
-            catch (System.MissingMethodException)
+            catch (MissingMethodException)
             {
                 foreach (ConstructorInfo ci in type.GetConstructors(BindingFlagsALL))
                 {
@@ -520,7 +521,7 @@ namespace Swicli.Library
             return newStruct;
         }
 
-        static System.Collections.IEnumerable Unfold(object value, out bool unFolded)
+        static IEnumerable Unfold(object value, out bool unFolded)
         {
             IList<object> results = new List<object>();
             var type = value.GetType();
@@ -600,7 +601,7 @@ namespace Swicli.Library
             }
             else
             {
-                throw new NotSupportedException();
+                throw new NotSupportedException("Unfold: " + utype );
             }
             return results;
         }
@@ -615,7 +616,7 @@ namespace Swicli.Library
                 withValue(fort);
                 return;
             }
-            Array pTypeValues = System.Enum.GetValues(pType);
+            Array pTypeValues = Enum.GetValues(pType);
             Array.Reverse(pTypeValues);
 
             if (p is byte)

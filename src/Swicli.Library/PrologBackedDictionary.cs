@@ -54,12 +54,12 @@ namespace Swicli.Library
         static public bool cliTestPbd(PlTerm pred, PlTerm counted)
         {
             var id = CreatePrologBackedDictionary<string, object>(pred);
-            string s = string.Empty;
+            string s = String.Empty;
             var enumer = id.GetEnumerator();
             while (enumer.MoveNext())
             {
                 var o = enumer.Current;
-                s += string.Format("{0}={1},", o.Key, o.Value);
+                s += String.Format("{0}={1},", o.Key, o.Value);
             }
             counted.UnifyAtom(s);
             return true;
@@ -68,7 +68,7 @@ namespace Swicli.Library
         static public bool cliTestPbdt(PlTerm pred, PlTerm counted)
         {
             var id = CreatePrologBackedDictionary<string, object>(pred);
-            string s = string.Empty;
+            string s = String.Empty;
             AutoResetEvent are = new AutoResetEvent(false);
             (new Thread(() =>
                            {
@@ -76,7 +76,7 @@ namespace Swicli.Library
                                while (enumer.MoveNext())
                                {
                                    var o = enumer.Current;
-                                   s += string.Format("{0}={1},", o.Key, o.Value);
+                                   s += String.Format("{0}={1},", o.Key, o.Value);
                                }
                                are.Set();
                            })).Start();
@@ -88,7 +88,7 @@ namespace Swicli.Library
         static public bool cliTestPbct(PlTerm pred, PlTerm counted)
         {
             var id = CreatePrologBackedCollection<object>(pred);
-            string s = string.Empty;
+            string s = String.Empty;
             AutoResetEvent are = new AutoResetEvent(false);
             (new Thread(() =>
             {
@@ -96,7 +96,7 @@ namespace Swicli.Library
                 while (enumer.MoveNext())
                 {
                     var o = enumer.Current;
-                    s += string.Format("{0},", o);
+                    s += String.Format("{0},", o);
                 }
                 are.Set();
             })).Start();
@@ -108,11 +108,11 @@ namespace Swicli.Library
         static public bool cliTestPbc(PlTerm pred, PlTerm counted)
         {
             var id = CreatePrologBackedCollection<object>(pred);
-            string s = string.Empty;
+            string s = String.Empty;
             IEnumerator<object> enumer = id.GetEnumerator();
             while (enumer.MoveNext())
             {
-                s += string.Format("{0},", enumer.Current);
+                s += String.Format("{0},", enumer.Current);
             }
             counted.UnifyAtom(s);
             return true;

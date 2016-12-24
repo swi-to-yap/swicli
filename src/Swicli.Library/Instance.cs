@@ -24,10 +24,16 @@
 #if USE_MUSHDLR
 using MushDLR223.Utilities;
 #endif
+using org.jpl7;
+using SbsSW.SwiPlCs;
 #if USE_IKVM
-using jpl;
+//using jpl;
 using Class = java.lang.Class;
+using Type = System.Type;
 #else
+using Class = System.Type;
+using Type = System.Type;
+#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,8 +41,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 using SbsSW.SwiPlCs;
-using Class = System.Type;
-#endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
 
 namespace Swicli.Library
@@ -61,7 +65,7 @@ namespace Swicli.Library
         {
             if (classOrInstance.IsVar)
             {
-                Warn("GetInstance(PlVar) {0}", classOrInstance);
+                Embedded.Warn("GetInstance(PlVar) {0}", classOrInstance);
                 return null;
             }
             if (!classOrInstance.IsCompound)
@@ -71,19 +75,20 @@ namespace Swicli.Library
                     String str = (string)classOrInstance;
                     return str;
                 }
+                if (classOrInstance.IsNil)
+                {
+                    return CastCompoundTerm("[]", 0, classOrInstance, classOrInstance, null);
+                }
                 if (classOrInstance.IsAtom)
                 {
-                    if (classOrInstance.Name == "[]")
-                    {
-                        return CastCompoundTerm("[]", 0, classOrInstance, classOrInstance, null);
-                    }
-                    Type t = GetType(classOrInstance);
+                    Class t = GetType(classOrInstance);
                     // we do this for static invokations like: cliGet('java.lang.Integer','MAX_VALUE',...)
                     // the arg1 denotes a type, then return null!
                     if (t != null) return null;
-                    Warn("GetInstance(atom) {0}", classOrInstance);
+                    Embedded.Warn("GetInstance(atom) {0}", classOrInstance);
                     // possibly should always return null?!
                 }
+
                 return CastTerm(classOrInstance, null);
             }
             string name = classOrInstance.Name;
@@ -104,28 +109,30 @@ namespace Swicli.Library
         /// <returns></returns>
         private static Type GetTypeFromInstance(object instanceMaybe, PlTerm classOrInstance)
         {
-            if (classOrInstance.IsAtom)
+            if (!classOrInstance.IsNil)
             {
-                return GetType(classOrInstance);
-            }
-            if (classOrInstance.IsString)
-            {
-                if (instanceMaybe != null) return instanceMaybe.GetType();
-                return typeof(string);
-            }
-            if (classOrInstance.IsCompound)
-            {
-                if (classOrInstance.Name == "static")
+                if (classOrInstance.IsAtom)
                 {
-                    return GetType(classOrInstance[1]);
+                    return GetType(classOrInstance);
+                }
+                if (classOrInstance.IsString)
+                {
+                    if (instanceMaybe != null) return instanceMaybe.GetType();
+                    return typeof (string);
+                }
+                if (classOrInstance.IsCompound)
+                {
+                    if (classOrInstance.Name == "static")
+                    {
+                        return GetType(classOrInstance[1]);
+                    }
                 }
             }
-
             object val = instanceMaybe ?? GetInstance(classOrInstance);
             //if (val is Type) return (Type)val;
             if (val == null)
             {
-                Warn("GetTypeFromInstance: {0}", classOrInstance);
+                Embedded.Warn("GetTypeFromInstance: {0}", classOrInstance);
                 return null;
             }
             return val.GetType();
@@ -181,18 +188,19 @@ namespace Swicli.Library
         {
             if (!term.IsVar)
             {
-                Warn("Not a free var {0}", term);
+                Embedded.Warn("Not a free var {0}", term);
                 return libpl.PL_fail;
             }
             uint TermRef = term.TermRef;
             if (TermRef == 0)
             {
-                Warn("Not a allocated term {0}", o);
+                Embedded.Warn("Not a allocated term {0}", o);
                 return libpl.PL_fail;
             }
 
 #if USE_IKVM
-            if (o is Term) return UnifyToProlog(ToPLCS((Term)o), term);
+            org.jpl7.Term args = o as org.jpl7.Term;
+            if (args != null) return UnifyToProlog(ToPLCS(args), term);
 #endif
             if (PreserveObjectType)
             {
@@ -201,7 +209,7 @@ namespace Swicli.Library
             return UnifyToPrologImmediate(o, term);
         }
 
-        public static Object ToFromConvertLock = new object();
+        public static object ToFromConvertLock = new object();
         public static int UnifyToPrologImmediate(object o, PlTerm term)
         {
             uint TermRef = term.TermRef;
@@ -212,7 +220,7 @@ namespace Swicli.Library
             if (o is string)
             {
                 string s = (string)o;
-                switch (VMStringsAsAtoms)
+                switch (Embedded.VMStringsAsAtoms)
                 {
                     case libpl.CVT_STRING:
                         {
@@ -239,7 +247,7 @@ namespace Swicli.Library
                     case libpl.CVT_LIST:
                         return libpl.PL_unify_list_chars(TermRef, (string)o);
                     default:
-                        Warn("UNKNOWN VMStringsAsAtoms {0}", VMStringsAsAtoms);
+                        Embedded.Warn("UNKNOWN VMStringsAsAtoms {0}", Embedded.VMStringsAsAtoms);
                         return libpl.PL_fail;
                 }
             }
@@ -280,7 +288,7 @@ namespace Swicli.Library
                     {
                         char ch = (char)o;
                         string cs = new string(ch, 1);
-                        switch (VMStringsAsAtoms)
+                        switch (Embedded.VMStringsAsAtoms)
                         {
                             case libpl.CVT_STRING:
                                 return libpl.PL_unify_atom_chars(TermRef, cs);
@@ -289,13 +297,13 @@ namespace Swicli.Library
                             case libpl.CVT_LIST:
                                 return libpl.PL_unify_integer(TermRef, (int)ch);
                             default:
-                                Warn("UNKNOWN VMStringsAsAtoms {0}", VMStringsAsAtoms);
+                                Embedded.Warn("UNKNOWN VMStringsAsAtoms {0}", Embedded.VMStringsAsAtoms);
                                 return libpl.PL_fail;
                         }
                     }
                     catch (Exception e)
                     {
-                        Warn("@TODO unmappable errors? {0} type {1}", o, t);
+                        Embedded.Warn("@TODO unmappable errors? {0} type {1}", o, t);
                         //
                     }
                 }
@@ -319,12 +327,12 @@ namespace Swicli.Library
                         }
                         if (t.IsPrimitive)
                         {
-                            Warn("@TODO Missing code for primitive? {0} type {1}", o, t);
+                            Embedded.Warn("@TODO Missing code for primitive? {0} type {1}", o, t);
                         }
                     }
                     catch (Exception e)
                     {
-                        Warn("@TODO unmappable errors? {0} type {1}", o, t);
+                        Embedded.Warn("@TODO unmappable errors? {0} type {1}", o, t);
                     }
                 }
             }
@@ -356,7 +364,7 @@ namespace Swicli.Library
                         AddTagged(newref, tag);
                         PlTerm into = new PlTerm(newref);
                         PlTerm outto = new PlTerm(newref + 1);
-                        var ret = PlQuery.PlCall(layout.module, layout.obj2r, new PlTermV(into, outto));
+                        var ret = PlQuery.PlCall(layout.module, layout.obj2r, new PlTermV(@into, outto));
                         if (ret)
                         {
                             return term.Unify(outto) ? libpl.PL_succeed
@@ -495,8 +503,8 @@ namespace Swicli.Library
 #if USE_IKVM
             return new java.math.BigInteger(value);
 #else
-            if (!value.StartsWith("-")) return ulong.Parse(value);
-            return long.Parse(value);
+            if (!value.StartsWith("-")) return UInt64.Parse(value);
+            return Int64.Parse(value);
 #endif
         }
         static object ToBigDecimal(string value)
@@ -533,7 +541,7 @@ namespace Swicli.Library
 #if USE_IKVM
             return new java.math.BigDecimal(value);
 #else
-            return double.Parse(value);
+            return Double.Parse(value);
 #endif
         }
 

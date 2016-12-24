@@ -204,17 +204,18 @@ namespace SbsSW.SwiPlCs
         private uint _qid;		// <qid_t/>
         private PlTermV _av;	// Argument vector
 
-        private static string _query_string;
+        string _query_string;
         /// <summary>the list of prolog record's (the copies to store the variable bindings over backtracking)</summary>
         private List<uint> _records = new List<uint>();
         private PlQueryVariables _queryVariables = new PlQueryVariables();
+        private static string _buffer_string;
 
         #endregion private members
 
 
         static private long Sread(IntPtr handle, System.IntPtr buffer, long buffersize)
         {
-            byte[] array = System.Text.Encoding.Unicode.GetBytes(_query_string);
+            byte[] array = System.Text.Encoding.Unicode.GetBytes(_buffer_string);
             System.Runtime.InteropServices.Marshal.Copy(array, 0, buffer, array.Length);
             return array.Length;
         }
@@ -270,7 +271,7 @@ namespace SbsSW.SwiPlCs
             }
             catch (Exception e)
             {
-                PrologCLR.Warn("dispose casued {0}", e);                
+                Embedded.Warn("dispose casued {0}", e);                
             }
         }
 
@@ -295,7 +296,7 @@ namespace SbsSW.SwiPlCs
                 }
                 catch (Exception e)
                 {
-                    PrologCLR.Warn("Free caused: " + PrologCLR.ExceptionString(e));
+                    Embedded.Warn("Free caused: " + PrologCLR.ExceptionString(e));
                 }
             }
             _qid = 0;
@@ -342,7 +343,7 @@ namespace SbsSW.SwiPlCs
 
         public PlQuery(string goal)
             : this("user", goal)
-        {
+        {            
         }
 
 #pragma warning disable 1573
@@ -361,7 +362,7 @@ namespace SbsSW.SwiPlCs
             // redirect read stream
             DelegateStreamReadFunction old_read_function = PlEngine._function_read;
             DelegateStreamReadFunction rf = new DelegateStreamReadFunction(Sread);
-            if (PrologCLR.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, rf);
+            if (Embedded.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, rf);
 
             try
             {
@@ -378,7 +379,7 @@ namespace SbsSW.SwiPlCs
                     throw new PlLibException("PlCall read_term fails! goal:" + _query_string);
 
                 // restore stream function
-                if (PrologCLR.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, old_read_function);
+                if (Embedded.RedirectStreams) PlEngine.SetStreamFunctionRead(PlStreamType.Input, old_read_function);
 
                 // set list of variables and variable_names into _queryVariables
                 foreach (PlTerm t in variablenames_list.ToList())
@@ -498,6 +499,7 @@ namespace SbsSW.SwiPlCs
                 PlTerm exceptionTerm = new PlTerm(ex);
                 PlException etmp = new PlException(exceptionTerm);
                 _qid = 0; // to avoid an AccessViolationException on Dispose. E.g. if the query is miss spelled.
+                Embedded.Debug("exception from " + _query_string);
                 etmp.Throw();
             }
         }

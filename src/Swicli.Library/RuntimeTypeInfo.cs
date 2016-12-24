@@ -184,7 +184,7 @@ namespace Swicli.Library
                 }
                 catch (Exception e)
                 {
-                    Debug("Warn exclude.Contains {0}: {1}", info, e);
+                    Embedded.Debug("Warn exclude.Contains {0}: {1}", info, e);
                     continue;
                 }
                 AddMemberToList(info, list, cname, ordinal++);
@@ -356,7 +356,7 @@ namespace Swicli.Library
                     }
                     catch (Exception e)
                     {
-                        Debug("Cannot doc {0} {1}", typeAssembly, e);
+                        Embedded.Debug("Cannot doc {0} {1}", typeAssembly, e);
                         AssmblyXDoics[typeAssembly] = ele = null;
                     }
                 }

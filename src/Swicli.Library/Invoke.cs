@@ -96,7 +96,7 @@ namespace Swicli.Library
         {
             if (memberSpec.IsVar)
             {
-                WarnMissing("findEventInfo IsVar {0} on type {1}", memberSpec, c);
+                Embedded.WarnMissing("findEventInfo IsVar {0} on type {1}", memberSpec, c);
                 return null;
             }
             if (memberSpec.IsInteger)
@@ -167,7 +167,7 @@ namespace Swicli.Library
             if (!mi.IsGenericMethodDefinition) return mi;
             var typeparams = mi.GetGenericArguments() ?? ZERO_TYPES;
             if (typeparams.Length == 0) return mi;
-            if (memberSpec.IsAtom)
+            if (memberSpec.IsAtomOrString)
             {
                 {
                     var ps = mi.GetParameters();
@@ -180,7 +180,7 @@ namespace Swicli.Library
                         {
                             continue;
                         }
-                        Warn("Trying to find a generic methods without type specifiers {0}",
+                        Embedded.Warn("Trying to find a generic methods without type specifiers {0}",
                              ToString(typeparams));
                     }
                 }
@@ -205,12 +205,12 @@ namespace Swicli.Library
         {
             if (c == null)
             {
-                Warn("findMethod no class for {0}", memberSpec);
+                Embedded.Warn("findMethod no class for {0}", memberSpec);
                 return null;
             }
             if (memberSpec.IsVar)
             {
-                Warn("findMethod IsVar {0} on type {1}", memberSpec, c);
+                Embedded.Warn("findMethod IsVar {0} on type {1}", memberSpec, c);
                 return null;
             }
             if (memberSpec.IsInteger)
@@ -236,7 +236,7 @@ namespace Swicli.Library
             }
             if (paramz == null)
             {
-                Warn("using paramSpec {0}", ToString(memberSpec));
+                Embedded.Warn("using paramSpec {0}", ToString(memberSpec));
                 paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             }
             try
@@ -261,7 +261,7 @@ namespace Swicli.Library
             }
             catch ( /*AmbiguousMatch*/ Exception e)
             {
-                Debug("AME: {0} fn = {1}", e, fn);
+                Embedded.Debug("AME: {0} fn = {1}", e, fn);
             }
             MethodInfo[] members = c.GetMethods(searchFlags);
             if (arity < 0) arity = (paramz != null) ? paramz.Length : memberSpec.Arity;
@@ -296,7 +296,7 @@ namespace Swicli.Library
         {
             if (c == null)
             {
-                Warn("findConstructor no class for {0}", memberSpec);
+                Embedded.Warn("findConstructor no class for {0}", memberSpec);
                 return null;
             }
             if (IsTaggedObject(memberSpec))
@@ -311,7 +311,7 @@ namespace Swicli.Library
             }
             if (paramz == null)
             {
-                Warn("using paramSpec {0}", ToString(memberSpec));
+                Embedded.Warn("using paramSpec {0}", ToString(memberSpec));
                 paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
             }
             if (paramz != null)
@@ -397,7 +397,7 @@ namespace Swicli.Library
             Type c = GetType(clazzSpec);
             if (c == null)
             {
-                Error("Cant resolve clazzSpec {0}", clazzSpec);
+                Embedded.Error("Cant resolve clazzSpec {0}", clazzSpec);
                 {
 
                     return false;
@@ -405,12 +405,19 @@ namespace Swicli.Library
             }
             Action postCallHook;
             object res;
+            
             if (!TryConstructObject(c, memberSpec, paramsIn, out postCallHook, out res))
             {
+                Embedded.Error("Cant TryConstructObject {0}", clazzSpec);
                 return false;
             }
             var ret = valueOut.FromObject(res);
-            CommitPostCall(postCallHook);
+            if (ret)
+            {
+                CommitPostCall(postCallHook);
+                return true;
+            }
+            BP();
             return ret;
         }
 
@@ -461,7 +468,7 @@ namespace Swicli.Library
             }
             if (mi == null)
             {
-                Error("Cant find constructor {0} on {1}", memberSpec, c);
+                Embedded.Error("Cant find constructor {0} on {1}", memberSpec, c);
 
                 res = null;
                 return false;
@@ -481,7 +488,7 @@ namespace Swicli.Library
             {
                 res = mi.Invoke(null, values);
             }
-            return false;
+            return res!=null;
         }
 
         private static MethodBase BestMethod(Type[] paramz, IEnumerable<MethodInfo> members, Type returnType, bool mustStatic)
@@ -597,8 +604,8 @@ namespace Swicli.Library
             {
                 var ei = findEventInfo(memberSpec, c, ref paramz, searchFlags);
                 if (ei != null) return RaiseEvent(getInstance, memberSpec, paramIn, valueOut, ei, c);
-                if (paramsIn.IsAtom && paramsIn.Name == "[]") return cliGetRaw(clazzOrInstance, memberSpec, valueOut);
-                Warn("Cant find method {0} on {1}", memberSpec, c);
+                if (paramsIn.IsNil) return cliGetRaw(clazzOrInstance, memberSpec, valueOut);
+                Embedded.Warn("Cant find method {0} on {1}", memberSpec, c);
                 return false;
             }
             Action postCallHook;
@@ -621,12 +628,12 @@ namespace Swicli.Library
         {
             if (memberSpec.IsVar)
             {
-                Error("GetMemberName IsVar {0} ", memberSpec);
+                Embedded.Error("GetMemberName IsVar {0} ", memberSpec);
                 return null;
             }
             if (memberSpec.IsInteger)
             {
-                Error("GetMemberName IsInteger {0} ", memberSpec);
+                Embedded.Error("GetMemberName IsInteger {0} ", memberSpec);
                 return null;
             }
             if (IsTaggedObject(memberSpec))
@@ -672,7 +679,7 @@ namespace Swicli.Library
         {
             if (evi == null)
             {
-                return Warn("Cant find event {0} on {1}", memberSpec, c);
+                return Embedded.Warn("Cant find event {0} on {1}", memberSpec, c);
             }
             ParameterInfo[] paramInfos = GetParmeters(evi);
             MethodInfo mi = evi.GetRaiseMethod();
@@ -722,7 +729,7 @@ namespace Swicli.Library
             }
             if (mi == null)
             {
-                Warn("Cant find event raising for  {0} on {1}", evi, c);
+                Embedded.Warn("Cant find event raising for  {0} on {1}", evi, c);
                 return false;
             }
             Action postCallHook0;
@@ -810,7 +817,7 @@ namespace Swicli.Library
                     var ooo = CastTerm(arg, type);
                     if (ooo == null)
                     {
-                        Debug("idx {0} ({1}) for {2} is null", idx, type, arg);
+                        Embedded.Debug("idx {0} ({1}) for {2} is null", idx, type, arg);
                     }
                     ret[idx] = ooo;
                     wasOut = true;
@@ -839,7 +846,7 @@ namespace Swicli.Library
                     var ooo1 = CastTerm(arg, type);
                     if (ooo1 == null)
                     {
-                        Debug("idx {0} ({1}) for {2} is null", idx, type, arg);
+                        Embedded.Debug("idx {0} ({1}) for {2} is null", idx, type, arg);
                     }
                     ret[idx] = ooo1;
                 }
@@ -850,7 +857,7 @@ namespace Swicli.Library
                         var ooo1 = CastTerm(arg, type);
                         if (ooo1 == null)
                         {
-                            Debug("idx {0} ({1}) for {2} is null", idx, type, arg);
+                            Embedded.Debug("idx {0} ({1}) for {2} is null", idx, type, arg);
                         }
                         ret[idx] = ooo1;
                     }

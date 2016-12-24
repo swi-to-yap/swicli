@@ -27,13 +27,26 @@
 using MushDLR223.Utilities;
 #endif
 #if USE_IKVM
-using jpl;
 using Class = java.lang.Class;
+using Type = System.Type;
+using ClassLoader = java.lang.ClassLoader;
+using sun.reflect.misc;
+using IKVM.Internal;
+using Hashtable = java.util.Hashtable;
+using ikvm.runtime;
+using java.net;
 #else
-using System.Reflection;
 using Class = System.Type;
+using Type = System.Type;
 #endif
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
+using SbsSW.SwiPlCs;
+using SbsSW.SwiPlCs.Callback;
 using System.Collections;
 using System.Collections.Generic;
 //using System.Linq;
@@ -82,7 +95,7 @@ namespace Swicli.Library
             }
             if (!typeof(IEnumerable).IsAssignableFrom(colType))
             {
-                Error("Return as collection?", fromTerm);
+                Embedded.Error("Return as collection?", fromTerm);
                 return null;
             }
             PlTerm[] terms = ToTermArray(fromTerm);
@@ -305,13 +318,13 @@ namespace Swicli.Library
             reflectCache0 = reflectCache[1];
             if (reflectCache0 != null && reflectCache0 != MissingMI)
             {
-                return Error("Cant even find Count on {0}", enumerable);
+                return Embedded.Error("Cant even find Count on {0}", enumerable);
             }
             int size = (int)reflectCache[1].Invoke(enumerable, ZERO_OBJECTS);
             // append elements
             if (AsInt(i) != size)
             {
-                return Error("wrong size for element {0} on {1} with count of {2}", i, enumerable, size);
+                return Embedded.Error("wrong size for element {0} on {1} with count of {2}", i, enumerable, size);
             }
             return AppendReflectively(type, enumerable, value, reflectCache);
         }
@@ -319,7 +332,7 @@ namespace Swicli.Library
         {
             if (i is int) return (int) i;
             if (i is int[]) return ((int[]) i)[0];
-            Error("not an index " + i);
+            Embedded.Error("not an index " + i);
             return -1;
         }
 
@@ -354,7 +367,7 @@ namespace Swicli.Library
             {
                 reflectCache[2] = MissingMI;
             }
-            return Error("No append method on {0}", enumerable);
+            return Embedded.Error("No append method on {0}", enumerable);
         }
 
     }

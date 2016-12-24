@@ -66,7 +66,7 @@ namespace Swicli.Library
                         EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
                         if (fi == null)
                         {
-                            return Error("Cant find event {0} on {1}", memberSpec, (object)c ?? clazzOrInstance) ? 3 : 0;
+                            return Embedded.Error("Cant find event {0} on {1}", memberSpec, (object)c ?? clazzOrInstance) ? 3 : 0;
                         }
                         ClosureDelegate newClosureDelegate = new ClosureDelegate(fi, getInstance, closureTerm);
                         var v = NondetContextHandle.ObtainHandle(control, newClosureDelegate);

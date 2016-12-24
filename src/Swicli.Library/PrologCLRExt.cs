@@ -48,11 +48,14 @@
 
 -------------------------------------------------------------------------------------------*/
 
+using System.Runtime.InteropServices;
 #if USE_IKVM
 using java.lang;
 #endif
 #if USE_IKVM
 using Class = java.lang.Class;
+using Type = System.Type;
+using Object = System.Object;
 #else
 using Class = System.Type;
 #endif
@@ -61,6 +64,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using Exception = System.Exception;
 //SbsSW.SwiPlCs.PrologEngine;
 using Term = SbsSW.SwiPlCs.PlTerm;
 public class A
@@ -85,7 +89,7 @@ namespace Swicli.Library
 #endif
     {
         private static readonly Dictionary<Class, Func<Term, /*CONTEXT,*/ Object>> TermTypeConvertor =
-            new Dictionary<Type, Func<Term,  /*CONTEXT,*/ object>>();
+            new Dictionary<Class, Func<Term,  /*CONTEXT,*/ object>>();
 
         static Binder defaultBinder = System.Type.DefaultBinder;
         static PrologBinder prologBinder = new PrologBinder();
@@ -130,7 +134,7 @@ namespace Swicli.Library
 
 
         [TermConversion]
-        static public Type ResolveToType(Term t0)
+        static public Class ResolveToType(Term t0)
         {
             return PrologCLR.GetType(t0);
 #if false
@@ -173,12 +177,12 @@ namespace Swicli.Library
 #endif
         }
 
-        private static Type ResolveType0(string typeName)
+        private static Class ResolveType0(string typeName)
         {
-            Type type = Type.GetType(typeName, false, false) ?? Type.GetType(typeName, false, true);
+            Class type = Type.GetType(typeName, false, false) ?? Type.GetType(typeName, false, true);
             if (type == null)
             {
-                Type obj = null;
+                Class obj = null;
                 try
                 {
 #if USE_IKVM
@@ -194,7 +198,7 @@ namespace Swicli.Library
                     type = ikvm.runtime.Util.getInstanceTypeFromClass((Class)obj);
 #endif
                 }
-                if (type == null && !PrologCLR.IsLinux)
+                if (type == null && !Embedded.IsLinux)
                 {
                     type = Type.GetTypeFromProgID(typeName);
                 }
@@ -216,9 +220,9 @@ namespace Swicli.Library
             return type;
         }
 
-        private static Type ResolveType(string typeName)
+        private static Class ResolveType(string typeName)
         {
-            Type type = ResolveType0(typeName);
+            Class type = ResolveType0(typeName);
             if (type == null)
             {
                 int len = typeName.Length;
@@ -254,7 +258,7 @@ namespace Swicli.Library
             throw new NotImplementedException("JCALL0");
             return JCALL0(term.Name, term.Args/*ctx*/);
         }
-        public bool JCALL0(String functor, Term[] args/*CONTEXT*/)
+        public bool JCALL0(string functor, Term[] args/*CONTEXT*/)
         {
             throw new NotImplementedException("JCALL0/2");
 #if false
@@ -308,7 +312,7 @@ namespace Swicli.Library
                 }
                 return terms.ToArray();
             }
-            if (t.IsAtom && t.Name == "[]")
+            if (t.IsNil)
             {
                 return new Term[0];
             }
@@ -368,7 +372,7 @@ namespace Swicli.Library
 #endif
             return (ICollection)ObjectFromTerm(term/*ctx*/);
         }
-        private object CompoundToObject(String value, Term[] args/*CONTEXT*/)
+        private object CompoundToObject(string value, Term[] args/*CONTEXT*/)
         {
             int arity = args.Length;
             if (arity == 1)
@@ -397,7 +401,7 @@ namespace Swicli.Library
             }
             if (value == "array")
             {
-                Type t = ResolveToType(args[0]);
+                Class t = ResolveToType(args[0]);
                 var tas = terms_to_objects(vector_rest(args)/*ctx*/);
 
             }
@@ -407,7 +411,7 @@ namespace Swicli.Library
             }
             if (value == "new")
             {
-                Type t = ResolveToType(args[0]);
+                Class t = ResolveToType(args[0]);
                 return JNEW(t, vector_rest(args)/*ctx*/);
             }
             if (arity > 1) return ObjectFromTerm(args[2]/*ctx*/);
@@ -462,7 +466,7 @@ namespace Swicli.Library
             {
                 return term.longValue();
             }
-            if (term.IsAtom)
+            if (term.IsAtomOrString)
             {
                 return AtomAsObject(term.Name);
             }
@@ -572,14 +576,14 @@ namespace Swicli.Library
             return true;
         }
 
-        public object JNEW(Type clz, Term[] termArray/*CONTEXT*/)
+        public object JNEW(Class clz, Term[] termArray/*CONTEXT*/)
         {
-            Type type = clz;
+            Class type = clz;
             //object[] termArray = toTermList(lis);
             Exception lastException = null;
             object[] argarray = terms_to_objects(termArray/*ctx*/);
             Type[] argtypes = Type.GetTypeArray(argarray);
-            ConstructorInfo[] typeGetConstructors = type.GetConstructors();
+            ConstructorInfo[] typeGetConstructors = ((_Type)(object)type).GetConstructors();
             foreach (var search in typeGetConstructors)
             {
                 try
@@ -606,7 +610,7 @@ namespace Swicli.Library
                 }
             }
             if (lastException != null) throw lastException;
-            throw new Exception("Can't find matching costructor for: " + type.Name +
+            throw new Exception("Can't find matching costructor for: " + type +
                                 " taking those arguments " + argtypes.Length);
         }
 
@@ -1134,7 +1138,7 @@ namespace Swicli.Library
                         if (names.Length != args.Length)
                             throw new ArgumentException("names and args must have the same number of elements.");
                         for (int k = 0; k < names.Length; k++)
-                            if (String.Compare(parameters[j].Name, names[k].ToString()) == 0)
+                            if (string.Compare(parameters[j].Name, names[k].ToString().ToString()) == 0)
                                 args[j] = myBinderState.args[k];
                     }
                     // Determine whether the types specified by the user can be converted to the parameter type.

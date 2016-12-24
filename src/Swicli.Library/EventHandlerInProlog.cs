@@ -61,7 +61,7 @@ namespace Swicli.Library
             EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
-                return Error("Cant find event {0} on {1}", memberSpec, c);
+                return Embedded.Error("Cant find event {0} on {1}", memberSpec, c);
             }
             var Key = new EventHandlerInPrologKey
             {
@@ -97,7 +97,7 @@ namespace Swicli.Library
             EventInfo fi = findEventInfo(memberSpec, c, ref paramz, BindingFlagsALL);
             if (fi == null)
             {
-                return Error("Cant find event {0} on {1}", memberSpec, c);
+                return Embedded.Error("Cant find event {0} on {1}", memberSpec, c);
             }
             var Key = new EventHandlerInPrologKey
             {
@@ -115,7 +115,7 @@ namespace Swicli.Library
                     PrologEventHandlers.Remove(Key);
                     return true;
                 }
-            return Error("Cant find registered handler {0} for {1} on {2}", prologPred, memberSpec, c);
+            return Embedded.Error("Cant find registered handler {0} for {1} on {2}", prologPred, memberSpec, c);
         }
 
     }
@@ -163,12 +163,12 @@ namespace Swicli.Library
                 }
                 catch (AccessViolationException e)
                 {
-                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
+                    Embedded.Warn("CallProlog: {0} ex: {1}", this, e);
                     return null;
                 }
                 catch (Exception e)
                 {
-                    PrologCLR.Warn("CallProlog: {0} ex: {1}", this, e);
+                    Embedded.Warn("CallProlog: {0} ex: {1}", this, e);
 
                     return null;
                 }

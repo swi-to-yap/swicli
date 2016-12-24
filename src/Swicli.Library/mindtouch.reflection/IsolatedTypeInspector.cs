@@ -38,22 +38,22 @@ namespace Swicli.Library {
 
         //--- Constructors ---
         public IsolatedTypeInspector() {
-            PrologCLR.Debug("set up appdomain");
+            Embedded.Debug("set up appdomain");
             var appDomainSetup = new AppDomainSetup();
             string currentBase = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
             appDomainSetup.ApplicationBase = currentBase;
             _assemblyInspectorDomain = AppDomain.CreateDomain("assembly-inspector", null, appDomainSetup);
             _typeInspector = (ITypeInspector)_assemblyInspectorDomain.CreateInstanceAndUnwrap("mindtouch.reflection", "MindTouch.Reflection.TypeInspector");
-            PrologCLR.Debug("app domain created");
+            Embedded.Debug("app domain created");
         }
 
         //--- Properties ---
         public IEnumerable<ReflectedTypeInfo> Types {
             get {
                 if(_types == null) {
-                    PrologCLR.Debug("get types");
+                    Embedded.Debug("get types");
                     _types = _typeInspector.Types.ToList();
-                    PrologCLR.Debug("got types");
+                    Embedded.Debug("got types");
                 }
                 return _types;
             }
@@ -61,10 +61,10 @@ namespace Swicli.Library {
 
         //--- Methods ---
         public string InspectAssembly(string assemblyPath) {
-            PrologCLR.Debug("start inspect");
+            Embedded.Debug("start inspect");
             _types = null;
             var assembly = _typeInspector.InspectAssembly(assemblyPath);
-            PrologCLR.Debug("finished inspect");
+            Embedded.Debug("finished inspect");
             return assembly;
         }
 

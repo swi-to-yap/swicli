@@ -21,53 +21,38 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 *********************************************************/
+
+using System;
+using System.Collections;
+using System.Runtime.InteropServices;
 #if USE_IKVM
+/*
 using ikvm.extensions;
 using IKVM.Internal;
 using ikvm.runtime;
 using java.net;
-using java.util;
+using java.util;*/
 //using jpl;
-using jpl;
+//using jpl;
 using Hashtable = java.util.Hashtable;
 using ClassLoader = java.lang.ClassLoader;
-using Class = java.lang.Class;
 using sun.reflect.misc;
 using Util = ikvm.runtime.Util;
+using Exception = System.Exception;
+using Class = java.lang.Class;
+using Type = System.Type;
 #else
 using System;
+using Class = System.Type;
+#endif
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using SbsSW.SwiPlCs;
-using Class = System.Type;
-#endif
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
 
 namespace Swicli.Library
 {
-    public static class Embedded
-    {
-        static public int install()
-        {
-            try
-            {
-                PrologCLR.IsPLWin = Type.GetType("Mono.Runtime") == null;
-                PrologCLR.RedirectStreams = false;
-                PrologCLR.SetupProlog();
-                PrologCLR.ConsoleWriteLine(typeof(Embedded).FullName + ".install suceeded");
-                PrologCLR.ClientReady = true;
-                return libpl.PL_succeed;
-            }
-            catch (Exception e)
-            {
-                PrologCLR.WriteException(e);
-                PrologCLR.ConsoleWriteLine(typeof(Embedded).FullName + ".install failed");
-                return libpl.PL_fail;
-            }
-        }
-    }
 }
 namespace Swicli.Library
 {
@@ -139,6 +124,7 @@ namespace Swicli.Library
                     if (dir.StartsWith("file://"))
                     {
                         dir = dir.Substring(7);
+
                     }
                     if (dir == lastTested) continue;
                     lastTested = dir;
@@ -307,7 +293,7 @@ namespace Swicli.Library
                     catch (Exception)
                     {
                     }
-                    Warn("LoadReferencedAssemblies:{0} caused {1}", assemblyName, e);
+                    Embedded.Warn("LoadReferencedAssemblies:{0} caused {1}", assemblyName, e);
                 }
             }
         }
@@ -352,7 +338,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                Warn("cliLoadAssembly: {0} caused {1}", term1, e);
+                Embedded.Warn("cliLoadAssembly: {0} caused {1}", term1, e);
                 return false;
             }
         }
@@ -374,7 +360,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                Warn("cliAddAssemblySearchPath: {0} caused {1}", term1, e);
+                Embedded.Warn("cliAddAssemblySearchPath: {0} caused {1}", term1, e);
                 return false;
             }
             return true;
@@ -397,7 +383,7 @@ namespace Swicli.Library
             }
             catch (Exception e)
             {
-                Warn("cliRemoveAssemblySearchPath: {0} caused {1}", term1, e);
+                Embedded.Warn("cliRemoveAssemblySearchPath: {0} caused {1}", term1, e);
                 return false;
             }
             return true;
@@ -407,7 +393,7 @@ namespace Swicli.Library
         {
             if (term1.IsVar)
             {
-                Warn("AsString IsVar {0}", term1);
+                Embedded.Warn("AsString IsVar {0}", term1);
                 return null;
             }
             if (IsTaggedObject(term1))
@@ -416,8 +402,8 @@ namespace Swicli.Library
                 if (obj != null) return "" + obj;
             }
             if (term1.IsCompound) return term1.Name;
-            if (term1.IsAtom) return term1.Name;
             if (term1.IsString) return (string)term1;
+            if (term1.IsAtomOrNil) return term1.Name;            
             return (string)term1;
         }
 
@@ -427,7 +413,7 @@ namespace Swicli.Library
             {
                 if (term1.IsVar)
                 {
-                    Warn("cliLoadAssembly IsVar {0}", term1);
+                    Embedded.Warn("cliLoadAssembly IsVar {0}", term1);
                     return false;
                 }
                 if (IsTaggedObject(term1))
@@ -441,7 +427,7 @@ namespace Swicli.Library
                     {
                         return ResolveAssembly(((Type)assemblyOrType).Assembly);
                     }
-                    return Warn("Cannot get assembly from {0} for {1}", assemblyOrType, term1);
+                    return Embedded.Warn("Cannot get assembly from {0} for {1}", assemblyOrType, term1);
                 }
                 string name = term1.Name;
                 Assembly assembly = null;
@@ -465,7 +451,7 @@ namespace Swicli.Library
                     }
                     catch (Exception e)
                     {
-                        Warn("LoadFile: {0} caused {1}", fiFullName, e);
+                        Embedded.Warn("LoadFile: {0} caused {1}", fiFullName, e);
                     }
                 }
                 try
@@ -474,9 +460,9 @@ namespace Swicli.Library
                 }
                 catch (Exception e)
                 {
-                    Warn("LoadWithPartialName: {0} caused {1}", name, e);
+                    Embedded.Warn("LoadWithPartialName: {0} caused {1}", name, e);
                 }
-                if (assembly == null) return Warn("Cannot get assembly from {0} for {1}", name, term1);
+                if (assembly == null) return Embedded.Warn("Cannot get assembly from {0} for {1}", name, term1);
                 return ResolveAssembly(assembly);
 
             }
@@ -496,7 +482,7 @@ namespace Swicli.Library
                 return list.ToArray();
             }
         }
-        public static IEnumerable<object> CopyOf<T>(System.Collections.ICollection list)
+        public static IEnumerable<object> CopyOf<T>(ICollection list)
         {
             var copy = new List<object>();
             if (list == null) return copy;
@@ -535,9 +521,9 @@ namespace Swicli.Library
             return copy;
         }
 
-        internal static void BP()
+        internal static bool BP()
         {
-            return;
+            return false;
         }
     }
 }

@@ -42,14 +42,14 @@ namespace Swicli.Library {
         //--- Properties ---
         public IEnumerable<ReflectedTypeInfo> Types {
             get {
-                PrologCLR.Debug("getting types");
+                Embedded.Debug("getting types");
                 return _documentedTypes;
             }
         }
 
         //--- Methods ---
         public string InspectAssembly(string assemblyPath) {
-            PrologCLR.Debug("starting inspection");
+            Embedded.Debug("starting inspection");
             var assembly = Assembly.LoadFrom(assemblyPath);
 
             // handle any downstream dependencies that the preload doesn't handle
@@ -86,18 +86,18 @@ namespace Swicli.Library {
 
             // queue up all types that should be visible
             _typesToBuild = new Queue<Type>(assembly.GetExportedTypes());
-            PrologCLR.Debug("discover types");
+            Embedded.Debug("discover types");
 
             foreach(var dependency in dependentAssemblies) {
                 foreach(var type in dependency.GetExportedTypes()) {
                     _typesToBuild.Enqueue(type);
                 }
             }
-            PrologCLR.Debug("build types");
+            Embedded.Debug("build types");
             foreach(var type in GetUnBuiltTypes()) {
                 BuildType(type);
             }
-            PrologCLR.Debug("post build markup");
+            Embedded.Debug("post build markup");
             foreach(var typeInfo in _documentedTypes) {
                 foreach(var methodInfo in typeInfo.Methods.Where(x => x.IsInherited)) {
                     var newMethod = typeInfo.Methods.Where(x => !x.IsOverride && !x.IsInherited && x.LocalSignature == methodInfo.LocalSignature).FirstOrDefault();
@@ -116,7 +116,7 @@ namespace Swicli.Library {
                     newProperty.IsNew = true;
                 }
             }
-            PrologCLR.Debug("finished inspection");
+            Embedded.Debug("finished inspection");
             return assembly.GetName().Name;
         }
 
