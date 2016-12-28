@@ -4,15 +4,116 @@
         <name>Swicli.Library</name>
     </assembly>
     <members>
-        <member name="M:Swicli.Library.PrologCLR.SomeConversionStaticMethod(System.Type,System.Type,System.Type,System.Collections.Generic.ICollection{System.Func{System.Object,System.Object}},System.Boolean)">
+        <member name="M:Swicli.Library.PrologCLR.cliLoadAssembly(SbsSW.SwiPlCs.PlTerm)">
             <summary>
-            This finds things like op_Implicit/op_Explicition to
+            cliLoadAssembly('SwiPlCs.dll').
+            cliLoadAssembly('Cogbot.exe').
             </summary>
-            <param name="to"></param>
-            <param name="srch"></param>
-            <param name="from"></param>
-            <param name="allMethods"></param>
-            <param name="onlyConverionAttribute"></param>
+            <param name="term1"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliAddAssemblySearchPath(SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            ?- cliAddAssemblySearchPath('.').
+            </summary>
+            <param name="term1"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliRemoveAssemblySearchPath(SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            cliRemoveAssemblySearchPath('.').
+            </summary>
+            <param name="term1"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliGetProperty(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            
+            </summary>
+            <param name="clazzOrInstance"></param>
+            <param name="memberSpec">[] = 'Item'</param>
+            <param name="indexValues"></param>
+            <param name="valueOut"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.SetupProlog1">
+            <summary>
+            This after the SwiPrologDir and IKVMHome is set up will update the environment
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliNew(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            ?- cliNew('java.lang.Long',[long],[44],Out),cliToString(Out,Str).
+            </summary>
+            <param name="memberSpec"></param>
+            <param name="paramIn"></param>
+            <param name="valueOut"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.GetTypeFromInstance(System.Object,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            Returns the Type when denoated by a 'namespace.type' (usefull for static instance specification)
+               if a @C#234234  the type of the object unless its a a class
+               c(a) => System.Char   "sdfsdf" =>  System.String   uint(5) => System.UInt32
+            
+               instanceMaybe maybe Null.. it is passed in so the method code doesn't have to call GetInstance again
+                  on classOrInstance
+            </summary>
+            <param name="instanceMaybe"></param>
+            <param name="classOrInstance"></param>
+            <returns></returns>
+        </member>
+        <member name="F:Swicli.Library.PrologCLR.MissingMI">
+            <summary>
+            this is just stuffed with a random MethodInfo
+            </summary>
+        </member>
+        <member name="F:Swicli.Library.PrologCLR.reflectCachesForTypes">
+            <summary>
+            0 = SetValue
+            1 = Count
+            2 = add/append
+            3 = GetValue
+            4 = removeValue
+            5 = removeAll
+            6 = cliAddElementGeneric
+            7 = cliSetElementGeneric
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliPropsForType(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            Retreves the ClazzSpec Fields and Properties into a MemberSpecList
+            </summary>
+            <param name="clazzSpec"></param>
+            <param name="memberSpecs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliMembers(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            Retreves the clazzOrInstance Members into MemberSpec List
+            
+            used by cli_memb/2
+            </summary>
+            <param name="clazzOrInstance"></param>
+            <param name="membersSpecListOut"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliMemberDoc(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            =Attempt to find assembly doc of member
+            </summary>
+            <param name="memb"></param>
+            <param name="doc"></param>
+            <param name="xml"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliNewDelegate(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            
+            </summary>
+            <param name="delegateClass"></param>
+            <param name="prologPred"></param>
+            <param name="valueOut"></param>
             <returns></returns>
         </member>
         <member name="M:Swicli.Library.PrologCLR.cliNewArray(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
@@ -32,17 +133,40 @@
             <param name="arrayType">The parent array type .. not the Element type</param>
             <returns></returns>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.GetTypeFromInstance(System.Object,SbsSW.SwiPlCs.PlTerm)">
+        <member name="M:Swicli.Library.PrologCLR.SomeConversionStaticMethod(System.Type,System.Type,System.Type,System.Collections.Generic.ICollection{System.Func{System.Object,System.Object}},System.Boolean)">
             <summary>
-            Returns the Type when denoated by a 'namespace.type' (usefull for static instance specification)
-               if a @C#234234  the type of the object unless its a a class
-               c(a) => System.Char   "sdfsdf" =>  System.String   uint(5) => System.UInt32
-            
-               instanceMaybe maybe Null.. it is passed in so the method code doesn't have to call GetInstance again
-                  on classOrInstance
+            This finds things like op_Implicit/op_Explicition to
             </summary>
-            <param name="instanceMaybe"></param>
-            <param name="classOrInstance"></param>
+            <param name="to"></param>
+            <param name="srch"></param>
+            <param name="from"></param>
+            <param name="allMethods"></param>
+            <param name="onlyConverionAttribute"></param>
+            <returns></returns>
+        </member>
+        <member name="F:Swicli.Library.PrologCLR.AlwaysUsePerThreadObjectTracker">
+            <summary>
+            This is no longer needed since we use atom GC (maybe)
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.Dispose">
+            <summary>
+            </summary>
+            <exception cref="T:System.NotImplementedException"></exception>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.RegisterThread12Many(System.Threading.Thread)">
+            <summary>
+            FIX ME!!
+            </summary>
+            <param name="thread"></param>
+        </member>
+        <member name="M:Swicli.Library.PrologCLR.cliToStrRaw(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            1 ?- cliToString(-1,X).
+            X = "4294967295".
+            </summary>
+            <param name="obj"></param>
+            <param name="str"></param>
             <returns></returns>
         </member>
         <member name="M:Swicli.Library.PrologCLR.cliAddEventHandler(SbsSW.SwiPlCs.PlTerm,System.Int32,System.IntPtr)">
@@ -55,23 +179,6 @@
             <param name="blockOn"></param>
             <param name="control"></param>
             <returns></returns>
-        </member>
-        <member name="F:Swicli.Library.PrologCLR.MissingMI">
-            <summary>
-            this is just stuffed with a random MethodInfo
-            </summary>
-        </member>
-        <member name="F:Swicli.Library.PrologCLR.reflectCachesForTypes">
-            <summary>
-            0 = SetValue
-            1 = Count
-            2 = add/append
-            3 = GetValue
-            4 = removeValue
-            5 = removeAll
-            6 = cliAddElementGeneric
-            7 = cliSetElementGeneric
-            </summary>
         </member>
         <member name="M:Swicli.Library.PrologCLR.cliNewEventWaiter(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
             <summary>
@@ -102,112 +209,440 @@
             <param name="exitCode"></param>
             <returns></returns>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliToStrRaw(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+        <member name="T:Swicli.Library.ClassBuilder">
             <summary>
-            1 ?- cliToString(-1,X).
-            X = "4294967295".
+            THIS IS ALL @TODO
             </summary>
-            <param name="obj"></param>
-            <param name="str"></param>
+        </member>
+        <member name="M:Swicli.Library.ClassBuilder.CreatePassThroughConstuctors(System.Reflection.Emit.TypeBuilder,System.Type)">
+            <summary>Creates one constructor for each public constructor in the base class. Each constructor simply
+            forwards its arguments to the base constructor, and matches the base constructor's signature.
+            Supports optional values, and custom attributes on constructors and parameters.
+            Does not support n-ary (variadic) constructors</summary>
+        </member>
+        <member name="M:Swicli.Library.Embedded.Is64BitRuntime">
+            <summary>
+            the .Net process (Not OS)
+            </summary>
             <returns></returns>
         </member>
-        <member name="F:Swicli.Library.PrologCLR.AlwaysUsePerThreadObjectTracker">
+        <member name="M:Swicli.Library.Embedded.Is64BitComputer">
             <summary>
-            This is no longer needed since we use atom GC (maybe)
+            The OS and not the .Net process
+             therefore "Program Files" are either for 64bit or 32bit apps
             </summary>
-        </member>
-        <member name="M:Swicli.Library.PrologCLR.cliNew(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
-            <summary>
-            ?- cliNew('java.lang.Long',[long],[44],Out),cliToString(Out,Str).
-            </summary>
-            <param name="memberSpec"></param>
-            <param name="paramIn"></param>
-            <param name="valueOut"></param>
             <returns></returns>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.SetupProlog1">
+        <member name="T:Swicli.Library.Properties.Resources">
             <summary>
-            This after the SwiPrologDir and IKVMHome is set up will update the environment
+              A strongly-typed resource class, for looking up localized strings, etc.
             </summary>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliNewDelegate(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+        <member name="P:Swicli.Library.Properties.Resources.ResourceManager">
             <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Swicli.Library.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="F:Swicli.Library.PrologGenericDelegate.PrologArity">
+            <summary>
+            prolog predicate arity (invokeMethod.IsStatic ? 0 : 1) + ParamArity + (IsVoid ? 0 : 1);
+            </summary>       
+        </member>
+        <member name="T:SbsSW.DesignByContract.Check">
+             <summary>
+             Design By Contract Checks.
+             
+             Each method generates an exception or
+             a trace assertion statement if the contract is broken.
+             </summary>
+             <remarks>
+             This example shows how to call the Require method.
+             <code>
+             public void Test(int x)
+             {
+             	try
+             	{
+            			Check.Require(x > 1, "x must be > 1");
+            		}
+            		catch (System.Exception ex)
+            		{
+            			PrologCLR.ConsoleTrace(ex.ToString());
+            		}
+            	}
+             </code>
             
+             You can direct output to a Trace listener. For example, you could insert
+             <code>
+             Trace.Cogbot.Clear();
+             Trace.Cogbot.Add(new TextWriterTraceListener(Console.Out));
+             </code>
+             
+             or direct output to a file or the Event Log.
+             
+             (Note: For ASP.NET clients use the Cogbot collection
+             of the Debug, not the Trace, object and, for a Release build, only exception-handling
+             is possible.)
+             </remarks>
+             
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Require(System.Boolean,System.String)">
+            <summary>
+            Precondition check - should run regardless of preprocessor directives.
             </summary>
-            <param name="delegateClass"></param>
-            <param name="prologPred"></param>
-            <param name="valueOut"></param>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Require(System.Boolean,System.String,System.Exception)">
+            <summary>
+            Precondition check - should run regardless of preprocessor directives.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Require(System.Boolean)">
+            <summary>
+            Precondition check - should run regardless of preprocessor directives.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Ensure(System.Boolean,System.String)">
+            <summary>
+            Postcondition check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Ensure(System.Boolean,System.String,System.Exception)">
+            <summary>
+            Postcondition check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Ensure(System.Boolean)">
+            <summary>
+            Postcondition check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Invariant(System.Boolean,System.String)">
+            <summary>
+            Invariant check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Invariant(System.Boolean,System.String,System.Exception)">
+            <summary>
+            Invariant check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Invariant(System.Boolean)">
+            <summary>
+            Invariant check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Assert(System.Boolean,System.String)">
+            <summary>
+            Assertion check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Assert(System.Boolean,System.String,System.Exception)">
+            <summary>
+            Assertion check.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.Check.Assert(System.Boolean)">
+            <summary>
+            Assertion check.
+            </summary>
+        </member>
+        <member name="P:SbsSW.DesignByContract.Check.UseAssertions">
+            <summary>
+            Set this if you wish to use Trace Assert statements 
+            instead of exception handling. 
+            (The Check class uses exception handling by default.)
+            </summary>
+        </member>
+        <member name="P:SbsSW.DesignByContract.Check.UseExceptions">
+            <summary>
+            Is exception handling being used?
+            </summary>
+        </member>
+        <member name="T:SbsSW.DesignByContract.DesignByContractException">
+            <summary>
+            Exception raised when a contract is broken.
+            Catch this exception type if you wish to differentiate between 
+            any DesignByContract exception and other runtime exceptions.
+             
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor(System.String,System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.DesignByContractException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="T:SbsSW.DesignByContract.PreconditionException">
+            <summary>
+            Exception raised when a precondition fails.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor">
+            <summary>
+            Precondition Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor(System.String)">
+            <summary>
+            Precondition Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor(System.String,System.Exception)">
+            <summary>
+            Precondition Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.PreconditionException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="T:SbsSW.DesignByContract.PostConditionException">
+            <summary>
+            Exception raised when a postcondition fails.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor">
+            <summary>
+            Postcondition Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor(System.String)">
+            <summary>
+            Postcondition Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor(System.String,System.Exception)">
+            <summary>
+            Postcondition Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.PostConditionException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="T:SbsSW.DesignByContract.InvariantException">
+            <summary>
+            Exception raised when an invariant fails.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor">
+            <summary>
+            Invariant Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor(System.String)">
+            <summary>
+            Invariant Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor(System.String,System.Exception)">
+            <summary>
+            Invariant Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.InvariantException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="T:SbsSW.DesignByContract.AssertionException">
+            <summary>
+            Exception raised when an assertion fails.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor">
+            <summary>
+            Assertion Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor(System.String)">
+            <summary>
+            Assertion Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor(System.String,System.Exception)">
+            <summary>
+            Assertion Exception.
+            </summary>
+        </member>
+        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.DesignByContract.AssertionException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="T:SbsSW.SwiPlCs.Exceptions.NamespaceDoc">
+            <summary>
+            <para>These are the namespace comments for <b>SbsSW.SwiPlCs.Exceptions</b>.</para>
+            <para>The namespace SbsSW.SwiPlCs.Exceptions provides the Exception classes to catch a prolog exception 
+            see <see href="http://gollem.science.uva.nl/SWI-Prolog/Manual/exception.html">SWI-Prolog Manual - 4.9 ISO compliant Exception handling</see>
+            </para>
+            <para>Prolog exceptions are mapped to C# exceptions using the subclass PlException of <see cref="T:System.Exception"/>
+            to represent the Prolog exception term.</para>
+            <para>All type-conversion functions of the interface raise Prolog-compliant exceptions, 
+            providing decent error-handling support at no extra work for the programmer.</para>
+            <para>For some commonly used exceptions, subclasses of PlException have been created to exploit 
+            both their constructors for easy creation of these exceptions as well as selective trapping in C#.</para>
+            <para>Currently, these are <see cref="T:SbsSW.SwiPlCs.Exceptions.PlTypeException"/> and <see cref="T:SbsSW.SwiPlCs.Exceptions.PlDomainException"/>.</para>
+            </summary>
+            <remarks>
+            </remarks>
+            <todo>To throw an exception, create an instance of PlException and use throw() or cppThrow(). The latter refines the C# exception class according to the represented Prolog exception before calling throw(). 
+            </todo>
+        </member>
+        <member name="T:SbsSW.SwiPlCs.Exceptions.PlLibException">
+            <summary>This exception is thrown if something in the interface went wrong.</summary>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor(System.String,System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="T:SbsSW.SwiPlCs.Exceptions.PlException">
+            <inheritdoc/>
+            <summary>
+            <para>This class is the base class to catch exceptions thrown by prolog in C#.</para>
+            </summary>
+            <example>
+                <code source="..\..\TestSwiPl\PlException.cs" region="prolog_exception_sample_doc"/>
+            </example>
+            <seealso cref="T:SbsSW.SwiPlCs.Exceptions.PlTypeException"/>
+            <seealso href="http://gollem.science.uva.nl/SWI-Prolog/Manual/exception.html">SWI-Prolog Manual - 4.9 ISO compliant Exception handling</seealso>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(System.String,System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+            <para>To catch a exception thrown by prolog</para>
+            <para>For a example see <see cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>.</para>
+            </summary>
+            <param name="term">A PlTerm containing the Prolog exception</param>
+            <see cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.ToString">
+            <inheritdoc />
+            <summary>
+            The exception is translated into a message as produced by print_message/2. The character data is stored in a ring.
+            </summary>
             <returns></returns>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliLoadAssembly(SbsSW.SwiPlCs.PlTerm)">
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.PlThrow">
             <summary>
-            cliLoadAssembly('SwiPlCs.dll').
-            cliLoadAssembly('Cogbot.exe').
+            TODO
             </summary>
-            <param name="term1"></param>
+            <remarks>Used in the PREDICATE() wrapper to pass the exception to Prolog. See PL_raise_exeption().</remarks>
             <returns></returns>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliAddAssemblySearchPath(SbsSW.SwiPlCs.PlTerm)">
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.Throw">
             <summary>
-            ?- cliAddAssemblySearchPath('.').
+            TODO
             </summary>
-            <param name="term1"></param>
-            <returns></returns>
+            <remarks>see <see href="http://www.swi-prolog.org/packages/pl2cpp.html#cppThrow()"/></remarks>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliRemoveAssemblySearchPath(SbsSW.SwiPlCs.PlTerm)">
-            <summary>
-            cliRemoveAssemblySearchPath('.').
-            </summary>
-            <param name="term1"></param>
-            <returns></returns>
+        <member name="P:SbsSW.SwiPlCs.Exceptions.PlException.MessagePl">
+            <summary>provide somtimes some additional information about the exceptions reason.</summary>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliPropsForType(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+        <member name="P:SbsSW.SwiPlCs.Exceptions.PlException.Term">
             <summary>
-            Retreves the ClazzSpec Fields and Properties into a MemberSpecList
+            Get the <see cref="T:SbsSW.SwiPlCs.PlTerm"/> of this exception.
             </summary>
-            <param name="clazzSpec"></param>
-            <param name="memberSpecs"></param>
-            <returns></returns>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliMembers(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
-            <summary>
-            Retreves the clazzOrInstance Members into MemberSpec List
-            
-            used by cli_memb/2
-            </summary>
-            <param name="clazzOrInstance"></param>
-            <param name="membersSpecListOut"></param>
-            <returns></returns>
+        <member name="P:SbsSW.SwiPlCs.Exceptions.PlException.Message">
+            <inheritdoc />
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliMemberDoc(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+        <member name="T:SbsSW.SwiPlCs.Exceptions.PlTypeException">
+            <inheritdoc />
             <summary>
-            =Attempt to find assembly doc of member
+            A type error expresses that a term does not satisfy the expected basic Prolog type.
             </summary>
-            <param name="memb"></param>
-            <param name="doc"></param>
-            <param name="xml"></param>
-            <returns></returns>
+            <example>
+            This sample demonstrate how to catch a PlTypeException in C# that is thrown somewhere int the prolog code.
+                <code source="..\..\TestSwiPl\PlException.cs" region="prolog_type_exception_sample_doc" />
+            </example>
         </member>
-        <member name="M:Swicli.Library.PrologCLR.Dispose">
-            <summary>
-            </summary>
-            <exception cref="T:System.NotImplementedException"></exception>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor">
+            <inheritdoc />
         </member>
-        <member name="M:Swicli.Library.PrologCLR.RegisterThread12Many(System.Threading.Thread)">
-            <summary>
-            FIX ME!!
-            </summary>
-            <param name="thread"></param>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.String)">
+            <inheritdoc />
         </member>
-        <member name="M:Swicli.Library.PrologCLR.cliGetProperty(SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm,SbsSW.SwiPlCs.PlTerm)">
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.String,System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(SbsSW.SwiPlCs.PlTerm)">
+            <inheritdoc />
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.String,SbsSW.SwiPlCs.PlTerm)">
             <summary>
-            
+            Creates an ISO standard Prolog error term expressing the expected type and actual term that does not satisfy this type.
             </summary>
-            <param name="clazzOrInstance"></param>
-            <param name="memberSpec">[] = 'Item'</param>
-            <param name="indexValues"></param>
-            <param name="valueOut"></param>
-            <returns></returns>
+            <param name="expected">The type which was expected</param>
+            <param name="actual">The actual term</param>
+        </member>
+        <member name="T:SbsSW.SwiPlCs.Exceptions.PlDomainException">
+            <summary>
+            A domain exception expresses that a term satisfies the basic Prolog type expected, but is unacceptable
+            to the restricted domain expected by some operation. 
+            </summary>
+            <example>
+            For example, the standard Prolog open/3 call expect an IO-Mode (read, write, append, ...).
+            If an integer is provided, this is a type error, if an atom other than one of the defined IO-modes is provided it is a domain error.
+                <code source="..\..\TestSwiPl\PlException.cs" region="prolog_domain_exception_sample_doc" />
+            </example>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlDomainException.#ctor">
+            <inheritdoc cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlDomainException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.Exceptions.PlDomainException.#ctor(SbsSW.SwiPlCs.PlTerm)">
+            <inheritdoc cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
         </member>
         <member name="F:SbsSW.SwiPlCs.libpl.m_hLibrary">
              libpl
@@ -287,6 +722,442 @@
         </member>
         <member name="F:SbsSW.SwiPlCs.libpl.StreamsFunction.Write">
             <summary>1 - Swrite_function.</summary>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.PL_initialise(System.Int32,System.String[])">
+             libpl
+            
+        </member>
+        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.S__getiob">
+            <summary>
+            0 -> Sinput
+            1 -> Soutput
+            2 -> Serror
+            </summary>
+            <returns>a array of IOSTREAM * pointers</returns>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.Snew(System.IntPtr,System.Int32,System.IntPtr)">
+            <summary>
+            
+            </summary>
+            <param name="handle"></param>
+            <param name="flags">defined in pl-stream.h all with prefix SIO_</param>
+            <param name="functions">A set of function pointers see IOFUNCTIONS in pl-stream.h</param>
+            <returns> a SWI-PROLOG IOSTREAM defined in pl-stream.h</returns>
+        </member>
+        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.PL_unify_stream(System.UInt32,System.IntPtr)">
+            <summary>
+            
+            </summary>
+            <param name="t"></param>
+            <param name="iostream">the return value from Snew</param>
+            <returns></returns>
+        </member>
+        <member name="M:Swicli.Library.ArrayIndexEnumerator.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            </summary>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.ArrayIndexEnumerator.MoveNext">
+            <summary>
+            Advances the enumerator to the next element of the collection.
+            </summary>
+            <returns>
+            true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.ArrayIndexEnumerator.Reset">
+            <summary>
+            Sets the enumerator to its initial position, which is before the first element in the collection.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="P:Swicli.Library.ArrayIndexEnumerator.Current">
+            <summary>
+            Gets the element in the collection at the current position of the enumerator.
+            </summary>
+            <returns>
+            The element in the collection at the current position of the enumerator.
+            </returns>
+        </member>
+        <member name="P:Swicli.Library.ArrayIndexEnumerator.System#Collections#IEnumerator#Current">
+            <summary>
+            Gets the current element in the collection.
+            </summary>
+            <returns>
+            The current element in the collection.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">The enumerator is positioned before the first element of the collection or after the last element.
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through the collection.
+            </summary>
+            <returns>
+            A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            </returns>
+            <filterpriority>1</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.System#Collections#IEnumerable#GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through a collection.
+            </summary>
+            <returns>
+            An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+            </returns>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.Add(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <summary>
+            Adds an item to the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+            </summary>
+            <param name="item">The object to add to the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+                            </param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
+                            </exception>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.Clear">
+            <summary>
+            Removes all items from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+            </summary>
+            <exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only. 
+                            </exception>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.Contains(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <summary>
+            Determines whether the <see cref="T:System.Collections.Generic.ICollection`1"/> contains a specific value.
+            </summary>
+            <returns>
+            true if <paramref name="item"/> is found in the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false.
+            </returns>
+            <param name="item">The object to locate in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+                            </param>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.CopyTo(System.Collections.Generic.KeyValuePair{`0,`1}[],System.Int32)">
+            <summary>
+            Copies the elements of the <see cref="T:System.Collections.Generic.ICollection`1"/> to an <see cref="T:System.Array"/>, starting at a particular <see cref="T:System.Array"/> index.
+            </summary>
+            <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of the elements copied from <see cref="T:System.Collections.Generic.ICollection`1"/>. The <see cref="T:System.Array"/> must have zero-based indexing.
+                            </param><param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.
+                            </param><exception cref="T:System.ArgumentNullException"><paramref name="array"/> is null.
+                            </exception><exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex"/> is less than 0.
+                            </exception><exception cref="T:System.ArgumentException"><paramref name="array"/> is multidimensional.
+                                -or-
+                            <paramref name="arrayIndex"/> is equal to or greater than the length of <paramref name="array"/>.
+                                -or-
+                                The number of elements in the source <see cref="T:System.Collections.Generic.ICollection`1"/> is greater than the available space from <paramref name="arrayIndex"/> to the end of the destination <paramref name="array"/>.
+                                -or-
+                                Type <paramref name="T"/> cannot be cast automatically to the type of the destination <paramref name="array"/>.
+                            </exception>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.Remove(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <summary>
+            Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+            </summary>
+            <returns>
+            true if <paramref name="item"/> was successfully removed from the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false. This method also returns false if <paramref name="item"/> is not found in the original <see cref="T:System.Collections.Generic.ICollection`1"/>.
+            </returns>
+            <param name="item">The object to remove from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+                            </param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
+                            </exception>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.ContainsKey(`0)">
+            <summary>
+            Determines whether the <see cref="T:System.Collections.Generic.IDictionary`2"/> contains an element with the specified key.
+            </summary>
+            <returns>
+            true if the <see cref="T:System.Collections.Generic.IDictionary`2"/> contains an element with the key; otherwise, false.
+            </returns>
+            <param name="key">The key to locate in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
+                            </exception>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.Add(`0,`1)">
+            <summary>
+            Adds an element with the provided key and value to the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </summary>
+            <param name="key">The object to use as the key of the element to add.
+                            </param><param name="value">The object to use as the value of the element to add.
+                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
+                            </exception><exception cref="T:System.ArgumentException">An element with the same key already exists in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+                            </exception><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
+                            </exception>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.Remove(`0)">
+            <summary>
+            Removes the element with the specified key from the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </summary>
+            <returns>
+            true if the element is successfully removed; otherwise, false.  This method also returns false if <paramref name="key"/> was not found in the original <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </returns>
+            <param name="key">The key of the element to remove.
+                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
+                            </exception><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
+                            </exception>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.TryGetValue(`0,`1@)">
+            <summary>
+            Gets the value associated with the specified key.
+            </summary>
+            <returns>
+            true if the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/> contains an element with the specified key; otherwise, false.
+            </returns>
+            <param name="key">The key whose value to get.
+                            </param><param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the <paramref name="value"/> parameter. This parameter is passed uninitialized.
+                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
+                            </exception>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedDictionary`2.Count">
+            <summary>
+            Gets the number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+            </summary>
+            <returns>
+            The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+            </returns>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedDictionary`2.IsReadOnly">
+            <summary>
+            Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
+            </summary>
+            <returns>
+            true if the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only; otherwise, false.
+            </returns>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedDictionary`2.Item(`0)">
+            <summary>
+            Gets or sets the element with the specified key.
+            </summary>
+            <returns>
+            The element with the specified key.
+            </returns>
+            <param name="key">The key of the element to get or set.
+                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
+                            </exception><exception cref="T:System.Collections.Generic.KeyNotFoundException">The property is retrieved and <paramref name="key"/> is not found.
+                            </exception><exception cref="T:System.NotSupportedException">The property is set and the <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
+                            </exception>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedDictionary`2.Keys">
+            <summary>
+            Gets an <see cref="T:System.Collections.Generic.ICollection`1"/> containing the keys of the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </summary>
+            <returns>
+            An <see cref="T:System.Collections.Generic.ICollection`1"/> containing the keys of the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </returns>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedDictionary`2.Values">
+            <summary>
+            Gets an <see cref="T:System.Collections.Generic.ICollection`1"/> containing the values in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </summary>
+            <returns>
+            An <see cref="T:System.Collections.Generic.ICollection`1"/> containing the values in the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+            </returns>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            </summary>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.MoveNext">
+            <summary>
+            Advances the enumerator to the next element of the collection.
+            </summary>
+            <returns>
+            true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.Reset">
+            <summary>
+            Sets the enumerator to its initial position, which is before the first element in the collection.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.Current">
+            <summary>
+            Gets the element in the collection at the current position of the enumerator.
+            </summary>
+            <returns>
+            The element in the collection at the current position of the enumerator.
+            </returns>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.System#Collections#IEnumerator#Current">
+            <summary>
+            Gets the current element in the collection.
+            </summary>
+            <returns>
+            The current element in the collection.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">The enumerator is positioned before the first element of the collection or after the last element.
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedCollection`1.CopyTo(System.Array,System.Int32)">
+            <summary>
+            Copies the elements of the <see cref="T:System.Collections.ICollection"/> to an <see cref="T:System.Array"/>, starting at a particular <see cref="T:System.Array"/> index.
+            </summary>
+            <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection"/>. The <see cref="T:System.Array"/> must have zero-based indexing. 
+                            </param><param name="index">The zero-based index in <paramref name="array"/> at which copying begins. 
+                            </param><exception cref="T:System.ArgumentNullException"><paramref name="array"/> is null. 
+                            </exception><exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index"/> is less than zero. 
+                            </exception><exception cref="T:System.ArgumentException"><paramref name="array"/> is multidimensional.
+                                -or- 
+                            <paramref name="index"/> is equal to or greater than the length of <paramref name="array"/>.
+                                -or- 
+                                The number of elements in the source <see cref="T:System.Collections.ICollection"/> is greater than the available space from <paramref name="index"/> to the end of the destination <paramref name="array"/>. 
+                            </exception><exception cref="T:System.ArgumentException">The type of the source <see cref="T:System.Collections.ICollection"/> cannot be cast automatically to the type of the destination <paramref name="array"/>. 
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedCollection`1.SyncRoot">
+            <summary>
+            Gets an object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection"/>.
+            </summary>
+            <returns>
+            An object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection"/>.
+            </returns>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedCollection`1.IsSynchronized">
+            <summary>
+            Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection"/> is synchronized (thread safe).
+            </summary>
+            <returns>
+            true if access to the <see cref="T:System.Collections.ICollection"/> is synchronized (thread safe); otherwise, false.
+            </returns>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            </summary>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.MoveNext">
+            <summary>
+            Advances the enumerator to the next element of the collection.
+            </summary>
+            <returns>
+            true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.Reset">
+            <summary>
+            Sets the enumerator to its initial position, which is before the first element in the collection.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.Current">
+            <summary>
+            Gets the element in the collection at the current position of the enumerator.
+            </summary>
+            <returns>
+            The element in the collection at the current position of the enumerator.
+            </returns>
+        </member>
+        <member name="P:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.System#Collections#IEnumerator#Current">
+            <summary>
+            Gets the current element in the collection.
+            </summary>
+            <returns>
+            The current element in the collection.
+            </returns>
+            <exception cref="T:System.InvalidOperationException">The enumerator is positioned before the first element of the collection or after the last element.
+                            </exception><filterpriority>2</filterpriority>
+        </member>
+        <member name="M:Swicli.Library.ClosureDelegate.#ctor(System.Reflection.EventInfo,System.Object,SbsSW.SwiPlCs.PlTerm)">
+            <summary>
+             ?- closure(v(V1,V2),format('I was called with ~q ~q ...',[V1,V2]).
+            </summary>
+            <param name="info"></param>
+            <param name="instance"></param>
+            <param name="closureTerm"></param>
+        </member>
+        <member name="M:Swicli.Library.ClosureDelegate.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            </summary>
+            <filterpriority>2</filterpriority>
+        </member>
+        <member name="T:Swicli.Library.BlockingQueue`1">
+            <summary>
+            Same as Queue except Dequeue function blocks until there is an object to return.
+            Note: This class does not need to be synchronized
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.#ctor(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Create new BlockingQueue.
+            </summary>
+            <param name="col">The System.Collections.ICollection to copy elements from</param>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.#ctor(System.Int32)">
+            <summary>
+            Create new BlockingQueue.
+            </summary>
+            <param name="capacity">The initial number of elements that the queue can contain</param>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.#ctor">
+            <summary>
+            Create new BlockingQueue.
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Finalize">
+            <summary>
+            BlockingQueue Destructor (Close queue, resume any waiting thread).
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Clear">
+            <summary>
+            Remove all objects from the Queue.
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Close">
+            <summary>
+            Remove all objects from the Queue, resume all dequeue threads.
+            </summary>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Dequeue">
+            <summary>
+            Removes and returns the object at the beginning of the Queue.
+            </summary>
+            <returns>Object in queue.</returns>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Dequeue(System.TimeSpan)">
+            <summary>
+            Removes and returns the object at the beginning of the Queue.
+            </summary>
+            <param name="timeout">time to wait before returning</param>
+            <returns>Object in queue.</returns>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Dequeue(System.Int32)">
+            <summary>
+            Removes and returns the object at the beginning of the Queue.
+            </summary>
+            <param name="timeout">time to wait before returning (in milliseconds)</param>
+            <returns>Object in queue.</returns>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Enqueue(System.String,`0)">
+            <summary>
+            Adds an object to the end of the Queue
+            </summary>
+            <param name="obj">Object to put in queue</param>
+        </member>
+        <member name="M:Swicli.Library.BlockingQueue`1.Open">
+            <summary>
+            Open Queue.
+            </summary>
+        </member>
+        <member name="P:Swicli.Library.BlockingQueue`1.Closed">
+            <summary>
+            Gets flag indicating if queue has been closed.
+            </summary>
         </member>
         <member name="T:SbsSW.SwiPlCs.PlQuerySwitch">
             <summary>
@@ -579,856 +1450,6 @@
                 <code source="..\..\TestSwiPl\LinqSwiPl.cs" region="compound_query_SolutionVariables_doc"/>
             </example>
             <seealso cref="M:SbsSW.SwiPlCs.PlQuery.NextSolution"/>
-        </member>
-        <member name="M:Swicli.Library.ArrayIndexEnumerator.Dispose">
-            <summary>
-            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            </summary>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.ArrayIndexEnumerator.MoveNext">
-            <summary>
-            Advances the enumerator to the next element of the collection.
-            </summary>
-            <returns>
-            true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
-            </returns>
-            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.ArrayIndexEnumerator.Reset">
-            <summary>
-            Sets the enumerator to its initial position, which is before the first element in the collection.
-            </summary>
-            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="P:Swicli.Library.ArrayIndexEnumerator.Current">
-            <summary>
-            Gets the element in the collection at the current position of the enumerator.
-            </summary>
-            <returns>
-            The element in the collection at the current position of the enumerator.
-            </returns>
-        </member>
-        <member name="P:Swicli.Library.ArrayIndexEnumerator.System#Collections#IEnumerator#Current">
-            <summary>
-            Gets the current element in the collection.
-            </summary>
-            <returns>
-            The current element in the collection.
-            </returns>
-            <exception cref="T:System.InvalidOperationException">The enumerator is positioned before the first element of the collection or after the last element.
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.PL_initialise(System.Int32,System.String[])">
-             libpl
-            
-        </member>
-        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.S__getiob">
-            <summary>
-            0 -> Sinput
-            1 -> Soutput
-            2 -> Serror
-            </summary>
-            <returns>a array of IOSTREAM * pointers</returns>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.Snew(System.IntPtr,System.Int32,System.IntPtr)">
-            <summary>
-            
-            </summary>
-            <param name="handle"></param>
-            <param name="flags">defined in pl-stream.h all with prefix SIO_</param>
-            <param name="functions">A set of function pointers see IOFUNCTIONS in pl-stream.h</param>
-            <returns> a SWI-PROLOG IOSTREAM defined in pl-stream.h</returns>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.SafeNativeMethods.PL_unify_stream(System.UInt32,System.IntPtr)">
-            <summary>
-            
-            </summary>
-            <param name="t"></param>
-            <param name="iostream">the return value from Snew</param>
-            <returns></returns>
-        </member>
-        <member name="M:Swicli.Library.Embedded.Is64BitRuntime">
-            <summary>
-            the .Net process (Not OS)
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:Swicli.Library.Embedded.Is64BitComputer">
-            <summary>
-            The OS and not the .Net process
-             therefore "Program Files" are either for 64bit or 32bit apps
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="F:Swicli.Library.PrologGenericDelegate.PrologArity">
-            <summary>
-            prolog predicate arity (invokeMethod.IsStatic ? 0 : 1) + ParamArity + (IsVoid ? 0 : 1);
-            </summary>       
-        </member>
-        <member name="M:Swicli.Library.ClosureDelegate.#ctor(System.Reflection.EventInfo,System.Object,SbsSW.SwiPlCs.PlTerm)">
-            <summary>
-             ?- closure(v(V1,V2),format('I was called with ~q ~q ...',[V1,V2]).
-            </summary>
-            <param name="info"></param>
-            <param name="instance"></param>
-            <param name="closureTerm"></param>
-        </member>
-        <member name="M:Swicli.Library.ClosureDelegate.Dispose">
-            <summary>
-            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            </summary>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="T:Swicli.Library.BlockingQueue`1">
-            <summary>
-            Same as Queue except Dequeue function blocks until there is an object to return.
-            Note: This class does not need to be synchronized
-            </summary>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.#ctor(System.Collections.Generic.IEnumerable{`0})">
-            <summary>
-            Create new BlockingQueue.
-            </summary>
-            <param name="col">The System.Collections.ICollection to copy elements from</param>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.#ctor(System.Int32)">
-            <summary>
-            Create new BlockingQueue.
-            </summary>
-            <param name="capacity">The initial number of elements that the queue can contain</param>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.#ctor">
-            <summary>
-            Create new BlockingQueue.
-            </summary>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Finalize">
-            <summary>
-            BlockingQueue Destructor (Close queue, resume any waiting thread).
-            </summary>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Clear">
-            <summary>
-            Remove all objects from the Queue.
-            </summary>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Close">
-            <summary>
-            Remove all objects from the Queue, resume all dequeue threads.
-            </summary>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Dequeue">
-            <summary>
-            Removes and returns the object at the beginning of the Queue.
-            </summary>
-            <returns>Object in queue.</returns>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Dequeue(System.TimeSpan)">
-            <summary>
-            Removes and returns the object at the beginning of the Queue.
-            </summary>
-            <param name="timeout">time to wait before returning</param>
-            <returns>Object in queue.</returns>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Dequeue(System.Int32)">
-            <summary>
-            Removes and returns the object at the beginning of the Queue.
-            </summary>
-            <param name="timeout">time to wait before returning (in milliseconds)</param>
-            <returns>Object in queue.</returns>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Enqueue(System.String,`0)">
-            <summary>
-            Adds an object to the end of the Queue
-            </summary>
-            <param name="obj">Object to put in queue</param>
-        </member>
-        <member name="M:Swicli.Library.BlockingQueue`1.Open">
-            <summary>
-            Open Queue.
-            </summary>
-        </member>
-        <member name="P:Swicli.Library.BlockingQueue`1.Closed">
-            <summary>
-            Gets flag indicating if queue has been closed.
-            </summary>
-        </member>
-        <member name="M:Swicli.Library.WaitUntilDelegate.Dispose">
-            <summary>
-            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            </summary>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="T:SbsSW.SwiPlCs.Exceptions.NamespaceDoc">
-            <summary>
-            <para>These are the namespace comments for <b>SbsSW.SwiPlCs.Exceptions</b>.</para>
-            <para>The namespace SbsSW.SwiPlCs.Exceptions provides the Exception classes to catch a prolog exception 
-            see <see href="http://gollem.science.uva.nl/SWI-Prolog/Manual/exception.html">SWI-Prolog Manual - 4.9 ISO compliant Exception handling</see>
-            </para>
-            <para>Prolog exceptions are mapped to C# exceptions using the subclass PlException of <see cref="T:System.Exception"/>
-            to represent the Prolog exception term.</para>
-            <para>All type-conversion functions of the interface raise Prolog-compliant exceptions, 
-            providing decent error-handling support at no extra work for the programmer.</para>
-            <para>For some commonly used exceptions, subclasses of PlException have been created to exploit 
-            both their constructors for easy creation of these exceptions as well as selective trapping in C#.</para>
-            <para>Currently, these are <see cref="T:SbsSW.SwiPlCs.Exceptions.PlTypeException"/> and <see cref="T:SbsSW.SwiPlCs.Exceptions.PlDomainException"/>.</para>
-            </summary>
-            <remarks>
-            </remarks>
-            <todo>To throw an exception, create an instance of PlException and use throw() or cppThrow(). The latter refines the C# exception class according to the represented Prolog exception before calling throw(). 
-            </todo>
-        </member>
-        <member name="T:SbsSW.SwiPlCs.Exceptions.PlLibException">
-            <summary>This exception is thrown if something in the interface went wrong.</summary>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor(System.String,System.Exception)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlLibException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="T:SbsSW.SwiPlCs.Exceptions.PlException">
-            <inheritdoc/>
-            <summary>
-            <para>This class is the base class to catch exceptions thrown by prolog in C#.</para>
-            </summary>
-            <example>
-                <code source="..\..\TestSwiPl\PlException.cs" region="prolog_exception_sample_doc"/>
-            </example>
-            <seealso cref="T:SbsSW.SwiPlCs.Exceptions.PlTypeException"/>
-            <seealso href="http://gollem.science.uva.nl/SWI-Prolog/Manual/exception.html">SWI-Prolog Manual - 4.9 ISO compliant Exception handling</seealso>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(System.String,System.Exception)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.#ctor(SbsSW.SwiPlCs.PlTerm)">
-            <summary>
-            <para>To catch a exception thrown by prolog</para>
-            <para>For a example see <see cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>.</para>
-            </summary>
-            <param name="term">A PlTerm containing the Prolog exception</param>
-            <see cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.ToString">
-            <inheritdoc />
-            <summary>
-            The exception is translated into a message as produced by print_message/2. The character data is stored in a ring.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.PlThrow">
-            <summary>
-            TODO
-            </summary>
-            <remarks>Used in the PREDICATE() wrapper to pass the exception to Prolog. See PL_raise_exeption().</remarks>
-            <returns></returns>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlException.Throw">
-            <summary>
-            TODO
-            </summary>
-            <remarks>see <see href="http://www.swi-prolog.org/packages/pl2cpp.html#cppThrow()"/></remarks>
-        </member>
-        <member name="P:SbsSW.SwiPlCs.Exceptions.PlException.MessagePl">
-            <summary>provide somtimes some additional information about the exceptions reason.</summary>
-        </member>
-        <member name="P:SbsSW.SwiPlCs.Exceptions.PlException.Term">
-            <summary>
-            Get the <see cref="T:SbsSW.SwiPlCs.PlTerm"/> of this exception.
-            </summary>
-        </member>
-        <member name="P:SbsSW.SwiPlCs.Exceptions.PlException.Message">
-            <inheritdoc />
-        </member>
-        <member name="T:SbsSW.SwiPlCs.Exceptions.PlTypeException">
-            <inheritdoc />
-            <summary>
-            A type error expresses that a term does not satisfy the expected basic Prolog type.
-            </summary>
-            <example>
-            This sample demonstrate how to catch a PlTypeException in C# that is thrown somewhere int the prolog code.
-                <code source="..\..\TestSwiPl\PlException.cs" region="prolog_type_exception_sample_doc" />
-            </example>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.String,System.Exception)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(SbsSW.SwiPlCs.PlTerm)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlTypeException.#ctor(System.String,SbsSW.SwiPlCs.PlTerm)">
-            <summary>
-            Creates an ISO standard Prolog error term expressing the expected type and actual term that does not satisfy this type.
-            </summary>
-            <param name="expected">The type which was expected</param>
-            <param name="actual">The actual term</param>
-        </member>
-        <member name="T:SbsSW.SwiPlCs.Exceptions.PlDomainException">
-            <summary>
-            A domain exception expresses that a term satisfies the basic Prolog type expected, but is unacceptable
-            to the restricted domain expected by some operation. 
-            </summary>
-            <example>
-            For example, the standard Prolog open/3 call expect an IO-Mode (read, write, append, ...).
-            If an integer is provided, this is a type error, if an atom other than one of the defined IO-modes is provided it is a domain error.
-                <code source="..\..\TestSwiPl\PlException.cs" region="prolog_domain_exception_sample_doc" />
-            </example>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlDomainException.#ctor">
-            <inheritdoc cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlDomainException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
-        </member>
-        <member name="M:SbsSW.SwiPlCs.Exceptions.PlDomainException.#ctor(SbsSW.SwiPlCs.PlTerm)">
-            <inheritdoc cref="T:SbsSW.SwiPlCs.Exceptions.PlException"/>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.GetEnumerator">
-            <summary>
-            Returns an enumerator that iterates through the collection.
-            </summary>
-            <returns>
-            A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
-            </returns>
-            <filterpriority>1</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.System#Collections#IEnumerable#GetEnumerator">
-            <summary>
-            Returns an enumerator that iterates through a collection.
-            </summary>
-            <returns>
-            An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
-            </returns>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.Add(System.Collections.Generic.KeyValuePair{`0,`1})">
-            <summary>
-            Adds an item to the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-            </summary>
-            <param name="item">The object to add to the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-                            </param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
-                            </exception>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.Clear">
-            <summary>
-            Removes all items from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-            </summary>
-            <exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only. 
-                            </exception>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.Contains(System.Collections.Generic.KeyValuePair{`0,`1})">
-            <summary>
-            Determines whether the <see cref="T:System.Collections.Generic.ICollection`1"/> contains a specific value.
-            </summary>
-            <returns>
-            true if <paramref name="item"/> is found in the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false.
-            </returns>
-            <param name="item">The object to locate in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-                            </param>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.CopyTo(System.Collections.Generic.KeyValuePair{`0,`1}[],System.Int32)">
-            <summary>
-            Copies the elements of the <see cref="T:System.Collections.Generic.ICollection`1"/> to an <see cref="T:System.Array"/>, starting at a particular <see cref="T:System.Array"/> index.
-            </summary>
-            <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of the elements copied from <see cref="T:System.Collections.Generic.ICollection`1"/>. The <see cref="T:System.Array"/> must have zero-based indexing.
-                            </param><param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.
-                            </param><exception cref="T:System.ArgumentNullException"><paramref name="array"/> is null.
-                            </exception><exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex"/> is less than 0.
-                            </exception><exception cref="T:System.ArgumentException"><paramref name="array"/> is multidimensional.
-                                -or-
-                            <paramref name="arrayIndex"/> is equal to or greater than the length of <paramref name="array"/>.
-                                -or-
-                                The number of elements in the source <see cref="T:System.Collections.Generic.ICollection`1"/> is greater than the available space from <paramref name="arrayIndex"/> to the end of the destination <paramref name="array"/>.
-                                -or-
-                                Type <paramref name="T"/> cannot be cast automatically to the type of the destination <paramref name="array"/>.
-                            </exception>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.Remove(System.Collections.Generic.KeyValuePair{`0,`1})">
-            <summary>
-            Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-            </summary>
-            <returns>
-            true if <paramref name="item"/> was successfully removed from the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false. This method also returns false if <paramref name="item"/> is not found in the original <see cref="T:System.Collections.Generic.ICollection`1"/>.
-            </returns>
-            <param name="item">The object to remove from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-                            </param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
-                            </exception>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.ContainsKey(`0)">
-            <summary>
-            Determines whether the <see cref="T:System.Collections.Generic.IDictionary`2"/> contains an element with the specified key.
-            </summary>
-            <returns>
-            true if the <see cref="T:System.Collections.Generic.IDictionary`2"/> contains an element with the key; otherwise, false.
-            </returns>
-            <param name="key">The key to locate in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
-                            </exception>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.Add(`0,`1)">
-            <summary>
-            Adds an element with the provided key and value to the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </summary>
-            <param name="key">The object to use as the key of the element to add.
-                            </param><param name="value">The object to use as the value of the element to add.
-                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
-                            </exception><exception cref="T:System.ArgumentException">An element with the same key already exists in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-                            </exception><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
-                            </exception>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.Remove(`0)">
-            <summary>
-            Removes the element with the specified key from the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </summary>
-            <returns>
-            true if the element is successfully removed; otherwise, false.  This method also returns false if <paramref name="key"/> was not found in the original <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </returns>
-            <param name="key">The key of the element to remove.
-                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
-                            </exception><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
-                            </exception>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.TryGetValue(`0,`1@)">
-            <summary>
-            Gets the value associated with the specified key.
-            </summary>
-            <returns>
-            true if the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/> contains an element with the specified key; otherwise, false.
-            </returns>
-            <param name="key">The key whose value to get.
-                            </param><param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the <paramref name="value"/> parameter. This parameter is passed uninitialized.
-                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
-                            </exception>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedDictionary`2.Count">
-            <summary>
-            Gets the number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-            </summary>
-            <returns>
-            The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-            </returns>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedDictionary`2.IsReadOnly">
-            <summary>
-            Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
-            </summary>
-            <returns>
-            true if the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only; otherwise, false.
-            </returns>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedDictionary`2.Item(`0)">
-            <summary>
-            Gets or sets the element with the specified key.
-            </summary>
-            <returns>
-            The element with the specified key.
-            </returns>
-            <param name="key">The key of the element to get or set.
-                            </param><exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
-                            </exception><exception cref="T:System.Collections.Generic.KeyNotFoundException">The property is retrieved and <paramref name="key"/> is not found.
-                            </exception><exception cref="T:System.NotSupportedException">The property is set and the <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
-                            </exception>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedDictionary`2.Keys">
-            <summary>
-            Gets an <see cref="T:System.Collections.Generic.ICollection`1"/> containing the keys of the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </summary>
-            <returns>
-            An <see cref="T:System.Collections.Generic.ICollection`1"/> containing the keys of the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </returns>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedDictionary`2.Values">
-            <summary>
-            Gets an <see cref="T:System.Collections.Generic.ICollection`1"/> containing the values in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </summary>
-            <returns>
-            An <see cref="T:System.Collections.Generic.ICollection`1"/> containing the values in the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </returns>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.Dispose">
-            <summary>
-            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            </summary>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.MoveNext">
-            <summary>
-            Advances the enumerator to the next element of the collection.
-            </summary>
-            <returns>
-            true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
-            </returns>
-            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.Reset">
-            <summary>
-            Sets the enumerator to its initial position, which is before the first element in the collection.
-            </summary>
-            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.Current">
-            <summary>
-            Gets the element in the collection at the current position of the enumerator.
-            </summary>
-            <returns>
-            The element in the collection at the current position of the enumerator.
-            </returns>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedDictionary`2.PrologBackedDictionaryEnumerator.System#Collections#IEnumerator#Current">
-            <summary>
-            Gets the current element in the collection.
-            </summary>
-            <returns>
-            The current element in the collection.
-            </returns>
-            <exception cref="T:System.InvalidOperationException">The enumerator is positioned before the first element of the collection or after the last element.
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedCollection`1.CopyTo(System.Array,System.Int32)">
-            <summary>
-            Copies the elements of the <see cref="T:System.Collections.ICollection"/> to an <see cref="T:System.Array"/>, starting at a particular <see cref="T:System.Array"/> index.
-            </summary>
-            <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection"/>. The <see cref="T:System.Array"/> must have zero-based indexing. 
-                            </param><param name="index">The zero-based index in <paramref name="array"/> at which copying begins. 
-                            </param><exception cref="T:System.ArgumentNullException"><paramref name="array"/> is null. 
-                            </exception><exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index"/> is less than zero. 
-                            </exception><exception cref="T:System.ArgumentException"><paramref name="array"/> is multidimensional.
-                                -or- 
-                            <paramref name="index"/> is equal to or greater than the length of <paramref name="array"/>.
-                                -or- 
-                                The number of elements in the source <see cref="T:System.Collections.ICollection"/> is greater than the available space from <paramref name="index"/> to the end of the destination <paramref name="array"/>. 
-                            </exception><exception cref="T:System.ArgumentException">The type of the source <see cref="T:System.Collections.ICollection"/> cannot be cast automatically to the type of the destination <paramref name="array"/>. 
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedCollection`1.SyncRoot">
-            <summary>
-            Gets an object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection"/>.
-            </summary>
-            <returns>
-            An object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection"/>.
-            </returns>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedCollection`1.IsSynchronized">
-            <summary>
-            Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection"/> is synchronized (thread safe).
-            </summary>
-            <returns>
-            true if access to the <see cref="T:System.Collections.ICollection"/> is synchronized (thread safe); otherwise, false.
-            </returns>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.Dispose">
-            <summary>
-            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            </summary>
-            <filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.MoveNext">
-            <summary>
-            Advances the enumerator to the next element of the collection.
-            </summary>
-            <returns>
-            true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
-            </returns>
-            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="M:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.Reset">
-            <summary>
-            Sets the enumerator to its initial position, which is before the first element in the collection.
-            </summary>
-            <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. 
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.Current">
-            <summary>
-            Gets the element in the collection at the current position of the enumerator.
-            </summary>
-            <returns>
-            The element in the collection at the current position of the enumerator.
-            </returns>
-        </member>
-        <member name="P:Swicli.Library.PrologBackedCollection`1.PrologBackedCollectionEnumerator.System#Collections#IEnumerator#Current">
-            <summary>
-            Gets the current element in the collection.
-            </summary>
-            <returns>
-            The current element in the collection.
-            </returns>
-            <exception cref="T:System.InvalidOperationException">The enumerator is positioned before the first element of the collection or after the last element.
-                            </exception><filterpriority>2</filterpriority>
-        </member>
-        <member name="T:SbsSW.DesignByContract.Check">
-             <summary>
-             Design By Contract Checks.
-             
-             Each method generates an exception or
-             a trace assertion statement if the contract is broken.
-             </summary>
-             <remarks>
-             This example shows how to call the Require method.
-             <code>
-             public void Test(int x)
-             {
-             	try
-             	{
-            			Check.Require(x > 1, "x must be > 1");
-            		}
-            		catch (System.Exception ex)
-            		{
-            			PrologCLR.ConsoleTrace(ex.ToString());
-            		}
-            	}
-             </code>
-            
-             You can direct output to a Trace listener. For example, you could insert
-             <code>
-             Trace.Cogbot.Clear();
-             Trace.Cogbot.Add(new TextWriterTraceListener(Console.Out));
-             </code>
-             
-             or direct output to a file or the Event Log.
-             
-             (Note: For ASP.NET clients use the Cogbot collection
-             of the Debug, not the Trace, object and, for a Release build, only exception-handling
-             is possible.)
-             </remarks>
-             
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Require(System.Boolean,System.String)">
-            <summary>
-            Precondition check - should run regardless of preprocessor directives.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Require(System.Boolean,System.String,System.Exception)">
-            <summary>
-            Precondition check - should run regardless of preprocessor directives.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Require(System.Boolean)">
-            <summary>
-            Precondition check - should run regardless of preprocessor directives.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Ensure(System.Boolean,System.String)">
-            <summary>
-            Postcondition check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Ensure(System.Boolean,System.String,System.Exception)">
-            <summary>
-            Postcondition check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Ensure(System.Boolean)">
-            <summary>
-            Postcondition check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Invariant(System.Boolean,System.String)">
-            <summary>
-            Invariant check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Invariant(System.Boolean,System.String,System.Exception)">
-            <summary>
-            Invariant check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Invariant(System.Boolean)">
-            <summary>
-            Invariant check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Assert(System.Boolean,System.String)">
-            <summary>
-            Assertion check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Assert(System.Boolean,System.String,System.Exception)">
-            <summary>
-            Assertion check.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.Check.Assert(System.Boolean)">
-            <summary>
-            Assertion check.
-            </summary>
-        </member>
-        <member name="P:SbsSW.DesignByContract.Check.UseAssertions">
-            <summary>
-            Set this if you wish to use Trace Assert statements 
-            instead of exception handling. 
-            (The Check class uses exception handling by default.)
-            </summary>
-        </member>
-        <member name="P:SbsSW.DesignByContract.Check.UseExceptions">
-            <summary>
-            Is exception handling being used?
-            </summary>
-        </member>
-        <member name="T:SbsSW.DesignByContract.DesignByContractException">
-            <summary>
-            Exception raised when a contract is broken.
-            Catch this exception type if you wish to differentiate between 
-            any DesignByContract exception and other runtime exceptions.
-             
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor(System.String,System.Exception)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.DesignByContractException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.DesignByContractException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="T:SbsSW.DesignByContract.PreconditionException">
-            <summary>
-            Exception raised when a precondition fails.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor">
-            <summary>
-            Precondition Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor(System.String)">
-            <summary>
-            Precondition Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor(System.String,System.Exception)">
-            <summary>
-            Precondition Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PreconditionException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.PreconditionException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="T:SbsSW.DesignByContract.PostConditionException">
-            <summary>
-            Exception raised when a postcondition fails.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor">
-            <summary>
-            Postcondition Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor(System.String)">
-            <summary>
-            Postcondition Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor(System.String,System.Exception)">
-            <summary>
-            Postcondition Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.PostConditionException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.PostConditionException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="T:SbsSW.DesignByContract.InvariantException">
-            <summary>
-            Exception raised when an invariant fails.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor">
-            <summary>
-            Invariant Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor(System.String)">
-            <summary>
-            Invariant Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor(System.String,System.Exception)">
-            <summary>
-            Invariant Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.InvariantException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.InvariantException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="T:SbsSW.DesignByContract.AssertionException">
-            <summary>
-            Exception raised when an assertion fails.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor">
-            <summary>
-            Assertion Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor(System.String)">
-            <summary>
-            Assertion Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor(System.String,System.Exception)">
-            <summary>
-            Assertion Exception.
-            </summary>
-        </member>
-        <member name="M:SbsSW.DesignByContract.AssertionException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
-        </member>
-        <member name="M:SbsSW.DesignByContract.AssertionException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
-            <inheritdoc />
         </member>
         <member name="T:SbsSW.SwiPlCs.Callback.NamespaceDoc">
             <summary>
@@ -2615,32 +2636,11 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="T:Swicli.Library.ClassBuilder">
+        <member name="M:Swicli.Library.WaitUntilDelegate.Dispose">
             <summary>
-            THIS IS ALL @TODO
+            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
             </summary>
-        </member>
-        <member name="M:Swicli.Library.ClassBuilder.CreatePassThroughConstuctors(System.Reflection.Emit.TypeBuilder,System.Type)">
-            <summary>Creates one constructor for each public constructor in the base class. Each constructor simply
-            forwards its arguments to the base constructor, and matches the base constructor's signature.
-            Supports optional values, and custom attributes on constructors and parameters.
-            Does not support n-ary (variadic) constructors</summary>
-        </member>
-        <member name="T:Swicli.Library.Properties.Resources">
-            <summary>
-              A strongly-typed resource class, for looking up localized strings, etc.
-            </summary>
-        </member>
-        <member name="P:Swicli.Library.Properties.Resources.ResourceManager">
-            <summary>
-              Returns the cached ResourceManager instance used by this class.
-            </summary>
-        </member>
-        <member name="P:Swicli.Library.Properties.Resources.Culture">
-            <summary>
-              Overrides the current thread's CurrentUICulture property for all
-              resource lookups using this strongly typed resource class.
-            </summary>
+            <filterpriority>2</filterpriority>
         </member>
     </members>
 </doc>
