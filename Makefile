@@ -53,35 +53,38 @@ LDFLAGS= $(CFLAGS) -fPIC -DBP_FREE -O3 -fomit-frame-pointer -Wall -g -O2 $(INCDI
 ifndef SOEXT
 SOEXT=so
 endif
-#
-#
-# You shouldn't need to change what follows.
-#
-#src/swicli32/.libs/libcudd-3.0.0.so.0.0.0
 
-#
 SWICLI_SO=$(LIBDIR)/swicli.$(SOEXT)
 
-all: $(SWICLI_SO)
-	@echo $(shell ./make-linux.sh) \
-	$(CC) -shared -Wno-unused-result src/swicli/swicli.c $(LDFLAGS) $(MONO_FLAGS) -o $(SWICLI_SO)
-	
-    
-#-Wl,-R,$(YAPLIBDIR) -Wl,-R,$(LIBDIR)
-#  $(CC) -export-dynamic swicli4.o  $(LDFLAGS) -o $(SWICLI_SO) ;\
-# swicli64.o : src/swicli64/swicli64.c $(CC) -c $(CFLAGSSWICLI64) src/swicli64/swicli64.c -o swicli64.o
 
+all: prepare compile
+	
+prepare:
+	@echo $(shell ./make-linux.sh prepare)
+
+compile: $(SWICLI_SO)
+	@echo $(shell ./make-linux.sh compile)
+
+$(SWICLI_SO):
+	$(CC) -shared -Wno-unused-result src/swicli/swicli.c $(LDFLAGS) $(MONO_FLAGS) -o $(SWICLI_SO)
 
 distclean: clean
 	@echo rm Makefile.bak
 
-clean:
-	rm -f $(SWICLI_SO)
+clean: prepare
+	rm -f $(SWICLI_SO) \
+	@echo $(shell ./make-linux.sh clean)
 
 check:
-	@echo "no check"
+	@echo "the check is in your mouth" \
+	@echo $(shell ./make-linux.sh check)
 
-install: all
-	cp $(SWICLI_SO) $(LIBDIR)
+install:
+	@echo install $(SWICLI_SO) $(LIBDIR) \
+	@echo $(shell ./make-linux.sh install) 
+
+uninstall:
+	@echo Uninstall $(SWICLI_SO) $(LIBDIR) \
+	@echo $(shell ./make-linux.sh uninstall)
 
 
