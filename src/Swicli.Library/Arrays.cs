@@ -29,11 +29,10 @@ using MushDLR223.Utilities;
 #endif
 #if USE_IKVM
 //using jpl;
-using Class = java.lang.Class;
 using Type = System.Type;
 #else
 using System.Reflection;
-using Class = System.Type;
+using JClass = System.Type;
 #endif
 using System;
 using System.Collections;

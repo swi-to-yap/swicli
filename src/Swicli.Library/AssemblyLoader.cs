@@ -36,14 +36,14 @@ using java.util;*/
 //using jpl;
 using Hashtable = java.util.Hashtable;
 using ClassLoader = java.lang.ClassLoader;
-using sun.reflect.misc;
-using Util = ikvm.runtime.Util;
+//using sun.reflect.misc;
+//using Util = ikvm.runtime.Util;
 using Exception = System.Exception;
-using Class = java.lang.Class;
+//using JClass = java.lang.JClass;
 using Type = System.Type;
 #else
 using System;
-using Class = System.Type;
+using JClass = System.Type;
 #endif
 using System.Collections.Generic;
 using System.IO;

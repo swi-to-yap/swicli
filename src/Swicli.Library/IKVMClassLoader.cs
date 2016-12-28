@@ -22,19 +22,19 @@
 *
 *********************************************************/
 
-using ikvm.extensions;
 using org.jpl7;
+using sun.reflect.misc;
 #if USE_IKVM
-using Class = java.lang.Class;
+using JavaClass = java.lang.Class;
 using Type = System.Type;
 using ClassLoader = java.lang.ClassLoader;
-using sun.reflect.misc;
-using IKVM.Internal;
+//using sun.reflect.misc;
+//using IKVM.Internal;
 using Hashtable = java.util.Hashtable;
 using ikvm.runtime;
 using java.net;
 #else
-using Class = System.Type;
+using JClass = System.Type;
 using Type = System.Type;
 #endif
 using System;
@@ -142,11 +142,11 @@ namespace Swicli.Library
             {
                 return base.findLibrary(libname);
             }
-            public Class LoadClass(string name, bool resolve)
+            public JavaClass LoadClass(string name, bool resolve)
             {
                 return base.loadClass(name, resolve);
             }
-            public java.lang.Class ResolveClass(java.lang.Class clz)
+            public JavaClass ResolveClass(java.lang.Class clz)
             {
                 base.resolveClass(clz);
                 return clz;
@@ -161,7 +161,7 @@ namespace Swicli.Library
             ScriptingClassLoader cl = new ScriptingClassLoader(ClassLoader.getSystemClassLoader());
 
             string s = "jpl.fli.term_t";
-            Class c;
+            JavaClass c;
             try
             {
                 c = cl.loadClass(s);

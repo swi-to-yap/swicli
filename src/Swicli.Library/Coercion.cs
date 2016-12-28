@@ -26,10 +26,9 @@ using MushDLR223.Utilities;
 #endif
 using org.jpl7;
 #if USE_IKVM
-//using jpl;
-using Class = java.lang.Class;
+//using JClass = java.lang.JClass;
 #else
-using Class = System.Type;
+using JClass = System.Type;
 #endif
 using System;
 using System.Collections;
@@ -169,8 +168,7 @@ namespace Swicli.Library
                 Embedded.Debug("conversion {0} to {1} resulted in {2}", fr, pt, e);
                 ce = ce ?? e;
             }
-            Embedded.Warn("Having time of it convcerting {0} to {1} why {2}", r, pt, ce);
-
+            Embedded.Warn("Having a time converting {0} to {1} why {2}", r, pt, ce);
 
             return r;
         }
@@ -353,8 +351,8 @@ namespace Swicli.Library
 
             if (ConvertorClasses.Count == 0)
             {
-                ConvertorClasses.Add(typeof(Convert));
-                ConvertorClasses.Add(typeof(PrologConvert));
+                cliRegisterConvertor(typeof(Convert),false);
+                cliRegisterConvertor(typeof(PrologConvert),true);
                 //ConvertorClasses.Add(typeof(PrologCLR));
             }
             foreach (Type convertorClasse in ConvertorClasses)
@@ -419,6 +417,47 @@ namespace Swicli.Library
             return sysmeth;
         }
 
+        public static void cliRegisterConvertor(Type p0)
+        {
+            cliRegisterConvertor(p0,true);
+        }
+        private static void cliRegisterConvertor(Type p0, bool addAll)
+        {
+            lock (ConvertorClasses)
+            {
+                if (ConvertorClasses.Contains(p0)) return;
+                ConvertorClasses.Insert(0,p0);
+            }
+            MethodInfo[] methods = p0.GetMethods(BindingFlagsJustStatic);
+            if (!addAll)
+            {
+
+                addAll = hadAttribute(p0, typeof(TypeConversionAttribute),false);
+   
+            }
+
+            foreach (var m in methods)
+            {
+                if (!addAll)
+                {
+                    if (!hadAttribute(m,typeof(TypeConversionAttribute), false)) continue;
+                }
+                registerConversion(m, null, null);
+            }
+
+            
+            
+
+        }
+
+
+        private static bool hadAttribute(MemberInfo p0, Type attribute, bool inherit)
+        {
+            object[] f = p0.GetCustomAttributes(attribute, inherit);
+            if (f == null || f.Length == 0) return false;
+            return true;
+        }
+
 
         /// <summary>
         /// This finds things like op_Implicit/op_Explicition to
@@ -442,8 +481,7 @@ namespace Swicli.Library
                         if (!to.IsAssignableFrom(mi.ReturnType)) continue;
                         if (onlyConverionAttribute)
                         {
-                            var tca = mi.GetCustomAttributes(typeof(TypeConversionAttribute),true);
-                            if (tca == null || tca.Length == 0) continue;
+                            if(!hadAttribute(mi,typeof(TypeConversionAttribute), true)) continue;
                         }
                         Type pt = ps[0].ParameterType;
                         if (pt.IsAssignableFrom(@from))
@@ -980,7 +1018,21 @@ namespace Swicli.Library
         [TypeConversion]
         static public Type ToType(PlTerm typeSpec)
         {
-            return PrologCLR.GetType(typeSpec);
+            return PrologCLR.GetTypeThrowIfMissing(typeSpec);
+        }
+
+        [TypeConversion]
+        unsafe static public string Convert(char* from)
+        {
+            return new string(from);
+        }
+        [TypeConversion]
+        unsafe static public char* Convert(String from)
+        {
+            fixed (char* p = from)
+            {
+                return p;
+            }
         }
     }
 

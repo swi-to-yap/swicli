@@ -28,10 +28,10 @@ using org.jpl7;
 using SbsSW.SwiPlCs;
 #if USE_IKVM
 //using jpl;
-using Class = java.lang.Class;
+//using JClass = java.lang.JavaClass;
 using Type = System.Type;
 #else
-using Class = System.Type;
+using JClass = System.Type;
 using Type = System.Type;
 #endif
 using System;
@@ -81,7 +81,7 @@ namespace Swicli.Library
                 }
                 if (classOrInstance.IsAtom)
                 {
-                    Class t = GetType(classOrInstance);
+                    Type t = GetType(classOrInstance);
                     // we do this for static invokations like: cliGet('java.lang.Integer','MAX_VALUE',...)
                     // the arg1 denotes a type, then return null!
                     if (t != null) return null;

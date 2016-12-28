@@ -26,10 +26,9 @@
 
 using System.Windows.Forms;
 #if USE_IKVM
-using Class = java.lang.Class;
 using Type = System.Type;
 #else
-using Class = System.Type;
+using JClass = System.Type;
 using Type = System.Type;
 #endif
 using System;

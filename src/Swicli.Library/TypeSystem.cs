@@ -22,20 +22,14 @@
 *
 *********************************************************/
 
+//using System.Linq;
+
 using System.Linq;
-using IKVM.Attributes;
 #if USE_IKVM
-using ikvm.extensions;
-using IKVM.Internal;
-using ikvm.runtime;
-using java.net;
-using java.util;
-//using jpl;
 using Hashtable = java.util.Hashtable;
 using ClassLoader = java.lang.ClassLoader;
-using Class = java.lang.Class;
-using sun.reflect.misc;
-using Util = ikvm.runtime.Util;
+using JClass = Dead.JClass;
+using JavaClass = java.lang.Class;
 using System;
 #else
 using SbsSW.SwiPlCs.Callback;
@@ -49,26 +43,39 @@ using SbsSW.SwiPlCs;
 using SbsSW.SwiPlCs.Exceptions;
 using PlTerm = SbsSW.SwiPlCs.PlTerm;
 
+namespace Dead
+{
+    public class JClass
+    {
+    }
+
+}
+
 namespace Swicli.Library
 {
     public partial class PrologCLR
     {
 
-        [Modifiers(Modifiers.Public | Modifiers.Static | Modifiers.Native)]
-        public static Class getClassFromTypeHandle(RuntimeTypeHandle handle, int rank)
-        {
-            return ikvm.runtime.Util.getClassFromTypeHandle(handle, rank);
-        }
+        
 
-        [Modifiers(Modifiers.Public | Modifiers.Static | Modifiers.Native)]
-        public static System.Type getInstanceTypeFromClass(Type classObject)
+        [TypeConversion]
+        public static System.Type getInstanceTypeFromClass(JavaClass classObject)
         {
-            return ikvm.runtime.Util.getInstanceTypeFromClass(classObject);
+            try
+            {
+                classObject.ToString();                
+                return ikvm.runtime.Util.getInstanceTypeFromClass(classObject);
+            }
+            catch (Exception odd)
+            {
+                Embedded.Error("getInstanceTypeFromClass", odd);
+                return null;
+            }
         }
-
-        [Modifiers(Modifiers.Public | Modifiers.Static | Modifiers.Native)]
-        public static Class getFriendlyClassFromType(Type classObject)
+        [TypeConversion]
+        public static JavaClass getFriendlyClassFromType(Type classObject)
         {
+            classObject.ToString();                
             //getInstanceTypeFromClass(classObject);
             return ikvm.runtime.Util.getFriendlyClassFromType(classObject);
         }
@@ -82,19 +89,20 @@ namespace Swicli.Library
 
         public static Type GetTypeThrowIfMissing(PlTerm clazzSpec)
         {
-            Type fi = GetType(clazzSpec);
+            Type fi = GetType(clazzSpec,false);
             if (fi == null)
             {
                 throw new PlException("cant find class" + clazzSpec);
             }
             return fi;
         }
-        public static Type GetType(PlTerm clazzSpec)
+        [PrologInvisible]
+        private static Type GetType(PlTerm clazzSpec)
         {
             return GetType(clazzSpec, false);
         }
-        
-        public static Type GetType(PlTerm clazzSpec, bool canBeObjects)
+        [PrologInvisible]
+        private static Type GetType(PlTerm clazzSpec, bool canBeObjects)
         {
             if (clazzSpec.IsVar)
             {
@@ -104,8 +112,14 @@ namespace Swicli.Library
             if (IsTaggedObject(clazzSpec))
             {
                 object tagObj = tag_to_object(clazzSpec[1].Name);
-                var r = tagObj as Type;
-                if (r != null) return r;
+                if (tagObj is Type)
+                {
+                    return (Type)tagObj;
+                }
+                if (tagObj is JavaClass)
+                {
+                    return getInstanceTypeFromClass((JavaClass) tagObj);
+                }
                 if (!canBeObjects)
                 {
                     Embedded.Warn("cant find tagged object as class: {0}=>{1}", clazzSpec, tagObj);
@@ -117,9 +131,10 @@ namespace Swicli.Library
                 return null;
             }
             Type type = null;
+            Boolean wasString = clazzSpec.IsString;
             if (clazzSpec.IsAtomOrString)
             {
-                if (canBeObjects) return typeof (string);
+                if (canBeObjects && wasString) return typeof(string);
                 string name = (string)clazzSpec;
                 type = ResolveType(name);
                 if (type != null) return type;
@@ -276,7 +291,7 @@ namespace Swicli.Library
             if (clazzName.IsAtomOrString)
             {
                 string className = clazzName.Name;
-                Class c = ResolveClass(className);
+                Type c = ResolveType(className);
                 if (c != null)
                 {
                     ConsoleTrace("cliFindClass:" + className + " class:" + c);
@@ -289,9 +304,10 @@ namespace Swicli.Library
             Type t = GetType(clazzName);
             if (t != null)
             {
-                Class c = null;
+                Type c = null;
 #if USE_IKVM
-                c =  getFriendlyClassFromType(t);
+                c = t;
+              //  JavaClass t = getFriendlyClassFromType(t);
 #else
                 c = t;
 #endif
@@ -384,16 +400,16 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliGetType(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            if (valueIn.IsAtom)
+         /*   if (valueIn.IsAtom)
             {
                 Type t = GetType(valueIn);
                 return valueOut.FromObject(t);
-            }
+            }*/
             object val = GetInstance(valueIn);
             if (val == null)
             {
                 Embedded.Error("Cannot get object for {0}", valueIn);
-                return true;
+                return false;
             }
             return valueOut.FromObject((val.GetType()));
         }
@@ -410,7 +426,8 @@ namespace Swicli.Library
             object val = GetInstance(valueIn);
             // extension method
 #if USE_IKVM
-            return valueOut.FromObject((val.getClass()));
+
+            return valueOut.FromObject((ikvm.extensions.ExtensionMethods.instancehelper_getClass(val)));
 #else
             return valueOut.FromObject((val.GetType()));
 #endif
@@ -427,7 +444,7 @@ namespace Swicli.Library
             Type val = GetType(valueIn);
             if (val == null) return false;
 #if USE_IKVM
-            Class c = getFriendlyClassFromType(val);
+            JavaClass c = getFriendlyClassFromType(val);
             return valueOut.FromObject((c));
 #else
             return valueOut.FromObject((val));
@@ -445,7 +462,7 @@ namespace Swicli.Library
             Type val = GetType(valueIn);
             if (val == null) return false;
 #if USE_IKVM
-            Type c = ikvm.runtime.Util.getInstanceTypeFromClass(val);
+            Type c = getInstanceTypeFromClass(val);
             return valueOut.FromObject((c));
 #else
             return valueOut.FromObject(val);
@@ -495,15 +512,17 @@ namespace Swicli.Library
         }
         [PrologVisible]
         [IKVMBased]
-        static public bool cliGetClassname(PlTerm valueIn, PlTerm valueOut)
+        static public bool cliTypeToClassname(PlTerm valueIn, PlTerm valueOut)
         {
             if (!valueOut.IsVar)
             {
                 var plvar = PlTerm.PlVar();
-                return cliGetClassname(valueIn, plvar) && SpecialUnify(valueOut, plvar);
+                return cliTypeToClassname(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            Class val = CastTerm(valueIn, typeof(Type)) as Type;
-            if (val == null) return false;
+            //JClass val = CastTerm(valueIn, typeof(JClass)) as JClass;
+            Type val0 = GetTypeThrowIfMissing(valueIn);
+            if (val0 == null) return false;
+            JavaClass val = getFriendlyClassFromType(val0);
 
 #if USE_IKVM
             return valueOut.Unify(val.getName());
@@ -519,7 +538,8 @@ namespace Swicli.Library
                 var plvar = PlTerm.PlVar();
                 return cliTypeToFullname(valueIn, plvar) && SpecialUnify(valueOut, plvar);
             }
-            Type val = CastTerm(valueIn, typeof(Type)) as Type;
+            Type val = GetTypeThrowIfMissing(valueIn);
+            //Type val = CastTerm(valueIn, typeof(Type)) as Type;
             if (val == null) return false;
             return valueOut.Unify(val.FullName);
         }
@@ -552,19 +572,19 @@ namespace Swicli.Library
                 return typeName;
             }
         }
-
-        private static Class ResolveClass(string name)
+        /*
+        private static Type ResolveClass(string name)
         {
             if (name == "@" || name == "$cli_object" || name == "array" || name == null) return null;
             Type t = ResolveClassAsType(name);
 #if USE_IKVM
-            Class c = getFriendlyClassFromType((Type)t);
+            JClass c = getFriendlyClassFromType((Type)t);
             return c;
 #else
             return t;
 #endif
 
-        }
+        }*/
         private static Type ResolveClassAsType(string name)
         {
             Type s1 = ResolveType(name);
@@ -590,15 +610,11 @@ namespace Swicli.Library
         }
 
         static readonly private Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
-        private static Type ResolveType(string name)
-        {
-                Type type = ResolveJClass(
-                    name);
-                return getInstanceTypeFromClass(type);
-        }
+        static public Boolean MayUseTypeCache = true;
 
-        public static Type ResolveJClass(string name)
+        public static Type ResolveType(string name)
         {
+            if (!MayUseTypeCache || typeCache == null) return ResolveType0(name);
             lock (typeCache)
             {
                 Type type;
@@ -696,21 +712,22 @@ namespace Swicli.Library
             {
                 type = ResolveTypeInNameSpaces(typeName, false) ?? ResolveTypeInNameSpaces(typeName, true);
 
-                Class obj = null;
+                //JClass obj = null;
 #if USE_IKVM
+
                 try
                 {
-                    obj = Class.forName(typeName);
+                    JavaClass obj = JavaClass.forName(typeName);
+                    if (obj != null)
+                    {
+                        type = ikvm.runtime.Util.getInstanceTypeFromClass((JavaClass)obj);
+                    }
                 }
                 catch (java.lang.ClassNotFoundException e)
                 {
                 }
                 catch (Exception e)
                 {
-                }
-                if (obj != null)
-                {
-                    type = ikvm.runtime.Util.getInstanceTypeFromClass((Class)obj);
                 }
 #endif
 // ReSharper disable once ConditionIsAlwaysTrueOrFalse

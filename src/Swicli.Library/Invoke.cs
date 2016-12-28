@@ -27,7 +27,7 @@
 using MushDLR223.Utilities;
 #endif
 #if USE_IKVM
-using Class = java.lang.Class;
+using JavaClass = java.lang.Class;
 #endif
 
 #region

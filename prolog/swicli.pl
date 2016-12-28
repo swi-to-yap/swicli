@@ -87,6 +87,7 @@ cli_trace_call(Call):- catch((Call,debug(swicli,'SUCCEED: ~q.~n',[Call])),E,(deb
 cli_tests:- debugging(swicli),!,forall(clause(swicli_test,Call),Call),!.
 cli_tests:- cli_debug,forall(clause(swicli_test,Call),cli_trace_call(Call)),cli_nodebug.
 
+
 :- discontiguous(swicli_test/0).
 
 swicli_test :- cli_debug.
@@ -621,6 +622,8 @@ swicli_test:- cli_load_assembly('Example4SWICLI').
 
 cli_load_assembly_methods_safe(A,B,C):- cli_path(A,AP),cli_load_assembly_methods(AP,B,C).
 
+
+
 % A test
 swicli_test:- cli_load_assembly_methods_safe('Example4SWICLI',@false, "excli_").
 swicli_test:- listing(excli_install).
@@ -631,6 +634,14 @@ swicli_test:- listing(excli_install).
 % A test
 swicli_test:- cli_add_foreign_methods('Example4SWICLI.Example4SWICLIClass',@false,'foo_').
 % swicli_test:- listing(foo_main/1).
+
+
+swicli_test :- cli_trace_call((
+ cli_new('java.lang.String',["a"],X),cli_get_type(X,C),cli_type_to_classname(C,_N))).
+
+swicli_test :- cli_trace_call((
+ cli_new('java.lang.String',["b"],X),cli_get_type(X,C),cli_type_to_classname(C,_N))).
+
 
 % Install our .NET GC Hook
 cli_init0:- initialization(cli_lib_call('InstallAtomGCHook',_), restore).
@@ -876,9 +887,11 @@ cli_get_typespec(Obj,TypeSpec):- cli_get_type(Obj,Type), cli_type_to_typespec(Ty
 % gets or checks the TypeRef
 cli_get_typeref(Obj,TypeRef):- cli_get_type(Obj,Type), cli_to_ref(Type,TypeRef).
 
-%% cli_get_typename(+Obj,?TypeName)
+%% cli_object_is_typename(+Obj,?TypeName)
 % gets or checks the TypeName
-cli_get_typename(Obj,TypeName):- cli_get_type(Obj,Type), cli_type_to_fullname(Type,TypeName).
+cli_object_is_typename(Obj,TypeName):- cli_get_type(Obj,Type), cli_type_to_fullname(Type,TypeName).
+% gets or checks the TypeName
+cli_object_is_classname(Obj,TypeName):- cli_get_type(Obj,Type), cli_type_to_classname(Type,TypeName).
 
 %% cli_type_to_typespec(+ClazzSpec,-Value).
 % coerces a ClazzSpec to a Value representing a TypeSpec term
@@ -1800,14 +1813,14 @@ cli_hide(PIn):- to_pi(PIn,Pred),
 cli_notrace(Call):- tracing,notrace,!,call_cleanup(call(Call),trace).
 cli_notrace(Call):- call(Call).
 
-%% cli_class_from_type(+Type,-Class).
+%% cli_class_from_type(+Type,-JClass).
+%% cli_type_from_class(+JClass,-Type).
 %% cli_find_class(+ClazzName,-ClazzObject).
 %% cli_find_type(+ClazzSpec,+ClassRef).
-%% cli_get_class(+Value,-Value).
-%% cli_get_classname(+Value,-Value).
 %% cli_get_type(+Value,-Value).
+%% cli_get_class(+Value,-Value).
+%% cli_type_to_classname(+Value,-Value).
 %% cli_type_to_fullname(+Value,-Value).
-%% cli_type_from_class(+Value,-Value).
 % todo
 
 % cli_new('System.Drawing.Color',['Red'],C),cli_get_class(C,T),cli_class_from_type(T,CN).
@@ -1985,7 +1998,7 @@ end_of_file.
 end_of_file.
 
 %
-%    ?- cli_get_type($Obj,Type),cli_get_typename(Type,Name).
+%    ?- cli_get_type($Obj,Type),cli_object_get_typename(Type,Name).
 %    Type = @'C#516939520',
 %    Name = 'System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]'.
 %

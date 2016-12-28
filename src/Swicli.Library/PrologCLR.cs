@@ -24,9 +24,8 @@
 #if USE_MUSHDLR
 using MushDLR223.Utilities;
 #endif
-using ikvm.extensions;
 #if USE_IKVM
-using Class = java.lang.Class;
+using JavaClass = java.lang.Class;
 #endif
 using System;
 using System.Collections;
@@ -211,14 +210,14 @@ namespace Swicli.Library
             object getInstance = GetInstance(paramIn);
             if (getInstance == null) return valueOut.Unify(PlTerm.PlString("null"));
 #if USE_IKVM
-            object val = getInstance as java.lang.Object;
-            if (val == null)
+            //object val = getInstance as java.lang.Object;
+         /*   if (val == null)
             {
-                Class c = ikvm.runtime.Util.getClassFromObject(getInstance);
-                string s = (string)c.getMethod("toString", new Class[0]).invoke(getInstance, ZERO_OBJECTS);
+                JClass c = ikvm.runtime.Util.getClassFromObject(getInstance);
+                string s = (string)c.getMethod("toString", new JClass[0]).invoke(getInstance, ZERO_OBJECTS);
                 return valueOut.Unify(PlTerm.PlString(s));
-            }
-            return valueOut.Unify(PlTerm.PlString(val.toString()));
+            }*/
+            return valueOut.Unify(PlTerm.PlString(ikvm.extensions.ExtensionMethods.instancehelper_toString(getInstance)));
 #else
             object val = getInstance;
             return valueOut.Unify(PlTerm.PlString(val.ToString()));

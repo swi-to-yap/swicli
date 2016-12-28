@@ -84,6 +84,11 @@ typedef struct // define a context structure  { ... } context;
     {
 
     }
+
+    public class PrologInvisible : Attribute
+    {
+    }
+
     public class PrologVisible : Attribute
     {
         public string ModuleName;
@@ -165,14 +170,14 @@ typedef struct // define a context structure  { ... } context;
             MethodInfo[] methods = t.GetMethods(BindingFlagsJustStatic);
             foreach (var m in methods)
             {
-                object[] f = m.GetCustomAttributes(typeof(PrologVisible), false);
-                if (onlyAttributed) if (f == null || f.Length == 0) continue;
+                if (hadAttribute(m, typeof(PrologInvisible), false)) continue;
+                var f = hadAttribute(m, typeof(PrologVisible), false);
+                if (onlyAttributed) if (!f) continue;
                 InternMethod(m, requiredPrefix);
             }
             foreach (var m in methods)
-            {
-                object[] f = m.GetCustomAttributes(typeof(TypeConversionAttribute), false);
-                if (f == null || f.Length == 0) continue;
+            {                
+               if (!hadAttribute(m, typeof (TypeConversionAttribute), false)) continue;
                 registerConversion(m, null, null);
             }
             if (onlyAttributed) return;
@@ -613,12 +618,24 @@ typedef struct // define a context structure  { ... } context;
                 {
                     Embedded.Warn("ArgCount mismatch " + info + ": call count=" + os.Length);
                 }
-                if (!info.DeclaringType.IsInstanceOfType(o)) to = null;
+                Type dt = info.DeclaringType;
+                if (o != null)
+                {
+                    if (dt != null && !dt.IsInstanceOfType(o))
+                    {
+                        // Assume static
+                        to = null;
+                    }
+                }
                 object ret = info.Invoke(to, os);
                 CommitPostCall(todo);
                 if (ret == null)
                 {
                     if (info.ReturnType == typeof(void)) return null;
+                    if (info.ReturnType == typeof (Type))
+                    {
+                        return null;
+                    }
                     Embedded.Warn("VoidOrNull " + info);
                     return VoidOrNull(info);
                 }

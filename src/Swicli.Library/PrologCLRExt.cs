@@ -50,14 +50,11 @@
 
 using System.Runtime.InteropServices;
 #if USE_IKVM
-using java.lang;
-#endif
-#if USE_IKVM
-using Class = java.lang.Class;
+using JavaClass = java.lang.Class;
 using Type = System.Type;
 using Object = System.Object;
 #else
-using Class = System.Type;
+using JClass = System.Type;
 #endif
 using System;
 using System.Collections;
@@ -88,8 +85,8 @@ namespace Swicli.Library
     public class Ext
 #endif
     {
-        private static readonly Dictionary<Class, Func<Term, /*CONTEXT,*/ Object>> TermTypeConvertor =
-            new Dictionary<Class, Func<Term,  /*CONTEXT,*/ object>>();
+        private static readonly Dictionary<JavaClass, Func<Term, /*CONTEXT,*/ Object>> TermTypeConvertor =
+            new Dictionary<JavaClass, Func<Term,  /*CONTEXT,*/ object>>();
 
         static Binder defaultBinder = System.Type.DefaultBinder;
         static PrologBinder prologBinder = new PrologBinder();
@@ -134,9 +131,9 @@ namespace Swicli.Library
 
 
         [TermConversion]
-        static public Class ResolveToType(Term t0)
+        static public Type ResolveToType(Term t0)
         {
-            return PrologCLR.GetType(t0);
+            return PrologCLR.GetTypeThrowIfMissing(t0);
 #if false
             t0 = t0.Value;
             object obj = t0._functor;
@@ -177,25 +174,28 @@ namespace Swicli.Library
 #endif
         }
 
-        private static Class ResolveType0(string typeName)
+
+        private static Type ResolveType0(string typeName)
         {
-            Class type = Type.GetType(typeName, false, false) ?? Type.GetType(typeName, false, true);
+            Type type = Type.GetType(typeName, false, false) ?? Type.GetType(typeName, false, true);
             if (type == null)
             {
-                Class obj = null;
+                Type obj = null;
+                JavaClass jc = null;
+                
                 try
                 {
 #if USE_IKVM
-                    obj = Class.forName(typeName);
+                    jc = JavaClass.forName(typeName);
 #endif
                 }
                 catch (Exception e)
                 {
                 }
-                if (obj != null)
+                if (jc != null)
                 {
 #if USE_IKVM
-                    type = ikvm.runtime.Util.getInstanceTypeFromClass((Class)obj);
+                    type = ikvm.runtime.Util.getInstanceTypeFromClass(jc);
 #endif
                 }
                 if (type == null && !Embedded.IsLinux)
@@ -220,9 +220,9 @@ namespace Swicli.Library
             return type;
         }
 
-        private static Class ResolveType(string typeName)
+        private static Type ResolveType(string typeName)
         {
-            Class type = ResolveType0(typeName);
+            Type type = ResolveType0(typeName);
             if (type == null)
             {
                 int len = typeName.Length;
@@ -401,7 +401,7 @@ namespace Swicli.Library
             }
             if (value == "array")
             {
-                Class t = ResolveToType(args[0]);
+                Type t = ResolveToType(args[0]);
                 var tas = terms_to_objects(vector_rest(args)/*ctx*/);
 
             }
@@ -411,7 +411,7 @@ namespace Swicli.Library
             }
             if (value == "new")
             {
-                Class t = ResolveToType(args[0]);
+                Type t = ResolveToType(args[0]);
                 return JNEW(t, vector_rest(args)/*ctx*/);
             }
             if (arity > 1) return ObjectFromTerm(args[2]/*ctx*/);
@@ -576,9 +576,9 @@ namespace Swicli.Library
             return true;
         }
 
-        public object JNEW(Class clz, Term[] termArray/*CONTEXT*/)
+        public object JNEW(Type clz, Term[] termArray/*CONTEXT*/)
         {
-            Class type = clz;
+            Type type = clz;
             //object[] termArray = toTermList(lis);
             Exception lastException = null;
             object[] argarray = terms_to_objects(termArray/*ctx*/);

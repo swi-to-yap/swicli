@@ -25,10 +25,9 @@
 using System.Diagnostics;
 using org.jpl7.fli;
 #if USE_IKVM
-using Class=java.lang.Class;
 using Type = System.Type;
 #else
-using Class = System.Type;
+using JClass = System.Type;
 using Type = System.Type;
 #endif
 using System.Collections;
