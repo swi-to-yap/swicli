@@ -584,6 +584,24 @@ namespace Swicli.Library
             if (!GetInstanceAndType(clazzOrInstance, out getInstance, out c)) return false;
             if (!CheckBound(memberSpec, paramsIn)) return false;
             Type[] paramz = GetParamSpec(memberSpec) ?? ZERO_TYPES;
+            if (paramz.Length == 0)
+            {
+                if (c != null)
+                {
+                    string mspecName = GetMemberName(memberSpec);
+                    var candidates = c.GetMember(mspecName);
+                    if (candidates.Length == 1 && candidates[0] is MethodInfo)
+                    {
+
+                        MethodInfo mi0 = (MethodInfo) candidates[0];
+                        Action postCallHook0;
+                        object[] value0 = PlListToCastedArray(ToTermArray(paramsIn), mi0.GetParameters(), out postCallHook0);
+                        object target0 = mi0.IsStatic ? null : getInstance;
+                        object retval0 = InvokeCaught0(mi0, target0, value0, postCallHook0);
+                        return valueOut.FromObject(retval0 ?? VoidOrNull(mi0));
+                    }
+                }
+            }
             PlTerm[] paramIn = ToTermArray(paramsIn);
             if (paramz.Length == 0 && paramIn.Length > paramz.Length)
             {

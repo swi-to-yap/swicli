@@ -24,6 +24,8 @@
             module_functor/4,
             to_string/2,
             member_elipse/2,
+            %'$dict_dot'/3,
+            %'$dict_dot'/4,
             op(600,fx,'@'),
 					  cli_init/0
           ]).
@@ -417,7 +419,7 @@ user:file_search_path(path, Dir) :-
 %	specified depth.  If this depth is exceeded an exception is raised.
 %	TBD: bread-first search?
 
-user:expand_file_search_path(Spec, Expanded) :- 
+user_expand_file_search_path(Spec, Expanded) :- 
 	catch('$expand_file_search_path'(Spec, Expanded, 0, []),
 	      loop(Used),
 	      throw(error(loop_error(Spec), file_search(Used)))).
@@ -548,6 +550,7 @@ cli_env(N,_):- getenv_safe(N,V,'(missing)'),format('~N~q.~n',[N=V]).
 cli_env(N):- getenv_safe(N,V,'(missing)'),format('~N~q.~n',[N=V]).
 
 cli_env:-    
+   add_lib_to_ldpath('C:/pf/Mono/bin'),
    cli_env('MONO_PATH','/usr/lib/mono/4.5'),
    cli_env('LD_LIBRARY_PATH','/usr/local/lib/Yap:/usr/lib/mono/4.5:.'),
    cli_env('PATH').
@@ -701,7 +704,7 @@ cli_is_type(Obj):- nonvar(Obj),cli_is_type(Obj,'System.Type').
 %
 % is Object a CLR object and not null or void (includes struct,enum,object,event)
 
-cli_is_object([_|_]):- !,fail.
+cli_is_object(Var):- \+ compound(Var),!,var(Var),!,get_attr(Var,cli,_),!.
 cli_is_object('@'(O)):- !,O\=void,O\=null.
 cli_is_object(O):- functor(O,CLRF,_),hcli_clr_functor(CLRF).
 
@@ -1274,11 +1277,14 @@ member_elipse(NV,NV).
 
 cli_expanded(In,Out):- cli_expand(In,Out),!,In\==Out,!.
 
-cli_expand(Value,Value):- (var(Value);atomic(Value);cli_is_ref(Value)),!.
+cli_expand(Obj,RObj):- var(Obj),once(get_attr(Obj,oo,binding(_Var,RObj));Obj=RObj),!.
+cli_expand(Value,Value):- (atomic(Value);cli_is_ref(Value)),!.
 cli_expand(eval(Call),Result):- nonvar(Call),!,call(Call,Result).
 %%cli_expand([A|B],Result):- cli_get(A,B,Result),!.
 %%cli_expand(Call,Result):- call(Call,Result),!.
 cli_expand(Value,Value).
+
+
 
 
 %% cli_to_data(+Ref,-Term).
@@ -1448,15 +1454,16 @@ cli_new(Clazz,ConstArgs,Out):- Clazz=..[BasicType|ParmSpc],cli_new(BasicType,Par
 %
 %   finally, an attempt will be made to unify Result with the returned result
 
-
 cli_call(Obj,[Prop|CallTerm],Out):- cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Out).
 cli_call(Obj,CallTerm,Out):- CallTerm=..[MethodName|Args],cli_call(Obj,MethodName,Args,Out).
 
 % arity 4
 cli_call(Obj,[Prop|CallTerm],Params,Out):- cli_get(Obj,Prop,Mid),!,cli_call(Mid,CallTerm,Params,Out).
 
-% cli_call(Obj,MethodSpec,Params,Out):- cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
-cli_call(Obj,MethodSpec,Params,Out):- cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out).
+% UNUSED: cli_call(Obj,MethodSpec,Params,Out):- cli_expand(Obj,ObjO),cli_call_raw(ObjO,MethodSpec,Params,Out_raw),!,cli_unify(Out,Out_raw).
+
+cli_call(Obj,MethodSpec,Params,Out):- cli_expand(Obj,ObjO),
+   cli_call_raw(ObjO,MethodSpec,Params,Out).
 
 
 %=========================================

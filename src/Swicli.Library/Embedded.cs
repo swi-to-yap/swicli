@@ -63,6 +63,8 @@ namespace Swicli.Library
                 Embedded.IsEmbeddedFromProlog = true;
                 PrologCLR.SetupProlog();
                 ConsoleWriteLine(typeof (Embedded).Name + ".install suceeded");
+                (new Thread(PrologCLR.cliStartJmx)).Start();
+                (new Thread(PrologCLR.cliStartDbg)).Start();
                 PrologCLR.ClientReady = true;
                 return libpl.PL_succeed;
             }

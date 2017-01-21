@@ -103,7 +103,8 @@ namespace Swicli.Library
 
         public static readonly Dictionary<string, List<OBJ_TO_OBJ>> convertCache =
             new Dictionary<string, List<OBJ_TO_OBJ>>();
-        private static object RecastObject(Type pt, object r, Type fr)
+
+        public static object RecastObject(Type pt, object r, Type fr)
         {
             Exception ce = null;
             try
@@ -569,14 +570,14 @@ namespace Swicli.Library
                     break;
                 case PlType.PlNil:
                 {
-                    return CastCompoundTerm(o.Name, 0, o, o, pt);
+                    return CoerceNil(pt);
                 }
                 case PlType.PlAtom:
                 case PlType.PlString:
                     {
                         if (plType == PlType.PlAtom && o.Name == "[]")
                         {
-                            return CastCompoundTerm(o.Name, o.Arity, o, o, pt);
+                            return CoerceNil(pt);
                         }
                         string s = (string)o;
                         if (pt == null) return s;
@@ -630,6 +631,24 @@ namespace Swicli.Library
                 default:
                     throw new ArgumentOutOfRangeException("plType=" + plType + " " + o.GetType() + " -> " + pt);
             }
+        }
+
+        private static object CoerceNil( Type pt)
+        {
+            if (pt != null && pt.IsArray)
+            {
+                return Array.CreateInstance(pt.GetElementType(), 0);
+            } 
+            return GetDefault(pt);
+        }
+
+        public static object GetDefault(Type type)
+        {
+            if (type.IsValueType)
+            {
+                return Activator.CreateInstance(type);
+            }
+            return null;
         }
 
         public static Exception cliInnerException(Exception la, int depth)
@@ -1026,13 +1045,21 @@ namespace Swicli.Library
         {
             return new string(from);
         }
+
         [TypeConversion]
-        unsafe static public char* Convert(String from)
+        unsafe static public char* Convert(Pointer from)
+        {
+            void* vp = Pointer.Unbox(from);
+            char* cp;
+            cp = (char*) vp;
+            return cp;
+        }
+
+        [TypeConversion]
+        public static unsafe char* Convert(String from)
         {
             fixed (char* p = from)
-            {
                 return p;
-            }
         }
     }
 

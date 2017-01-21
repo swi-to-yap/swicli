@@ -36,6 +36,10 @@ Windows: remember "Not Using Precompiled Headers"
 #endif
 
 #ifndef WINDOWS_CPP
+#define USE_MONO 1
+#endif
+
+#ifdef USE_MONO
   #include <mono/jit/jit.h>
   #include <mono/metadata/environment.h>
   #include <mono/metadata/debug-helpers.h>
@@ -45,7 +49,7 @@ Windows: remember "Not Using Precompiled Headers"
   #include <stdlib.h>
   #include <string.h>
 typedef char gchar;
-#endif // !WINDOWS_CPP
+#endif // USE_MONO
 
 #include "stdafx.h"
 #include <SWI-Prolog.h>
@@ -57,12 +61,10 @@ typedef char gchar;
 extern "C" {
 #endif //WINDOWS_CPP
 
-  static int MonoInited = 0;
-#ifndef WINDOWS_CPP
-  static MonoDomain* domain;
+#ifdef USE_MONO
+	static int MonoInited = 0;
+	static MonoDomain* domain;
 #endif
-
-
 
   // install_t == __declspec( dllexport )
 
@@ -79,7 +81,7 @@ extern "C" {
     UN_STR(ename, enamestr);
     UN_STR(lname, lnamestr);
 
-#ifndef WINDOWS_CPP
+#ifdef USE_MONO
     if ( !MonoInited )
     {
       MonoInited = 1;
@@ -103,7 +105,7 @@ extern "C" {
 
   static foreign_t cli_mono_jit_cleanup() 
   {
-#ifndef WINDOWS_CPP
+#ifdef USE_MONO
 	  if(domain) mono_jit_cleanup (domain);
 #endif
     return TRUE;
@@ -125,7 +127,7 @@ extern "C" {
     char *mnamestr;
     if ( PL_get_atom_chars(dname, &dnamestr) && PL_get_atom_chars(aname, &anamestr) && PL_get_atom_chars(cname, &cnamestr) && PL_get_atom_chars(mname, &mnamestr) )
     {
-#ifdef WINDOWS_CPP
+#ifndef USE_MONO
 
 
       System::Reflection::Assembly^assembly = nullptr;
@@ -165,14 +167,14 @@ extern "C" {
       MonoMethod* method = mono_method_desc_search_in_image(desc,image);
       if ( !method ) return PL_warning("No method %s", str);
 
-      void *args[0];
+      void **args = NULL;
       mono_runtime_invoke(method, NULL, args, NULL);
 
       // we exit from our host app
       //retval = mono_environment_exitcode_get ();
       //mono_jit_cleanup (domain);
 
-#endif //WINDOWS_CPP
+#endif //!USE_MONO
 
       PL_succeed;
     }

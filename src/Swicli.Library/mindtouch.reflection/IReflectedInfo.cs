@@ -32,4 +32,4 @@ namespace Swicli.Library {
         string FilePath { get; }
         ReflectedTypeInfo Type { get; }
     }
-}
+} 

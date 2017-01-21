@@ -318,6 +318,7 @@ namespace Swicli.Library
         }
 
         private static IDictionary<string, Type> ShortNameType;
+        private static IDictionary<string, Type> LongNameType = new Dictionary<string,Type>();
         private static readonly Dictionary<Type, string> TypeShortName = new Dictionary<Type, string>();
         private static object NEW_OBJECTFORTYPE = new object();
 
@@ -648,6 +649,7 @@ namespace Swicli.Library
                 Type t = ResolveType(name.Substring(0, name.Length - 1));
                 return t.MakePointerType();
             }
+
             var s1 = ResolveType1(name);
             if (s1 != null) return s1;
             var name2 = name.Replace("/", ".");
@@ -696,7 +698,7 @@ namespace Swicli.Library
 
         public static Type ResolveType2(string typeName)
         {
-            Type type = null;
+            Type type;
             if (!typeName.Contains("."))
             {
                 lock (ShortNameType)
@@ -706,76 +708,91 @@ namespace Swicli.Library
                         return type;
                     }
                 }
-            }
-            
-            if (type == null)
-            {
                 type = ResolveTypeInNameSpaces(typeName, false) ?? ResolveTypeInNameSpaces(typeName, true);
-
-                //JClass obj = null;
-#if USE_IKVM
-
-                try
-                {
-                    JavaClass obj = JavaClass.forName(typeName);
-                    if (obj != null)
-                    {
-                        type = ikvm.runtime.Util.getInstanceTypeFromClass((JavaClass)obj);
-                    }
-                }
-                catch (java.lang.ClassNotFoundException e)
-                {
-                }
-                catch (Exception e)
-                {
-                }
-#endif
-// ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (type == null)
                 {
                     type = GetPrimitiveType(typeName);
                 }
-                if (type == null)
+
+
+                if (type != null)
                 {
-                    type = Type.GetTypeFromProgID(typeName);
-                } if (type == null)
-                {
-                    try
+                    lock (ShortNameType)
                     {
-                        type = Type.GetTypeFromCLSID(new Guid(typeName));
+                        ShortNameType[typeName] = type;
                     }
-                    catch (FormatException)
-                    {
-                    }
+                    return type;
                 }
             }
+            type = Type.GetType(typeName);
+            if (type != null) return type;
+
+            type = Type.GetTypeFromProgID(typeName);
+            if (type != null) return type;
+
+
+            try
+            {
+                type = Type.GetTypeFromCLSID(new Guid(typeName));
+                if (type != null) return type;
+            }
+            catch (FormatException)
+            {
+            }
+
+
+            type = ResolveTypeWithoutNameSpaces(typeName, false) ?? ResolveTypeWithoutNameSpaces(typeName, true);
             return type;
         }
 
+        public static Type ResolveTypeWithoutNameSpaces(string typeName0, bool ignoreCase)
+        {
+           
+            Type t =  Type.GetType(typeName0, false, ignoreCase) ??
+                     AssembliesLoaded.Select(loaded => loaded.GetType(typeName0, false, ignoreCase))
+                       .FirstOrDefault(tt => tt != null);
+            if (t != null)
+            {
+                return t;
+            }
+            if (ignoreCase) return null;
+#if USE_IKVM
+            try
+            {
+                JavaClass javaClass = java.lang.Class.forName(typeName0, true, scriptingClassLoader);
+                if (javaClass != null)
+                {
+                    Type type = getInstanceTypeFromClass(javaClass);
+                    LongNameType[typeName0] = type;
+                    String lower = typeName0.ToLower();
+                    if (!lower.Equals(typeName0))
+                    {
+                        LongNameType[lower] = type;
+                    }
+                    return type;
+                }
+
+            }
+            catch (java.lang.ClassNotFoundException e)
+            {
+                //  java.lang.Class.forName(typeName0, true, scriptingClassLoader);
+            }
+#endif
+            return null;
+        }
         public static Type ResolveTypeInNameSpaces(string typeName, bool ignoreCase)
         {
             string name0 = typeName;
-            Type t = Type.GetType(typeName, false, ignoreCase) ??
-                     AssembliesLoaded.Select(loaded => loaded.GetType(name0, false, ignoreCase))
-                         .FirstOrDefault(tt => tt != null);
+            Type t = t = ResolveTypeWithoutNameSpaces(typeName, ignoreCase); 
             if (t != null) return t;
 
             System.Diagnostics.Debug.Assert(PrefixStrings != null, "PrefixStrings != null");
             if (PrefixStrings != null && PrefixStrings.Count != 0)
                 foreach (string prefix0 in PrefixStrings)
                 {
-                    string typeName0 = prefix0 + typeName;
-                    t = Type.GetType(typeName0, false, ignoreCase);
+                    t = ResolveTypeWithoutNameSpaces(prefix0 + typeName, ignoreCase);
                     if (t != null) return t;
-                    foreach (Assembly loaded in AssembliesLoaded)
-                    {
-                        t = loaded.GetType(typeName0, false, ignoreCase);
-                        if (t != null)
-                        {
-                            return t;
-                        }
 
-                    }
                 }
             return null;
         }

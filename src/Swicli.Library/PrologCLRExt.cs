@@ -49,6 +49,7 @@
 -------------------------------------------------------------------------------------------*/
 
 using System.Runtime.InteropServices;
+using System.Threading;
 #if USE_IKVM
 using JavaClass = java.lang.Class;
 using Type = System.Type;
@@ -1034,7 +1035,7 @@ namespace Swicli.Library
             }
             try
             {
-                value = Convert.ChangeType(argarray, type);
+                value = PrologCLR.RecastObject(null,argarray, type);
                 return (value != null);
             }
             catch
@@ -1138,11 +1139,16 @@ namespace Swicli.Library
                         if (names.Length != args.Length)
                             throw new ArgumentException("names and args must have the same number of elements.");
                         for (int k = 0; k < names.Length; k++)
-                            if (string.Compare(parameters[j].Name, names[k].ToString().ToString()) == 0)
+                        {
+                            string ns = names[k];
+                            if (ns == null) continue;
+                            if (System.String.CompareOrdinal(parameters[j].Name, ns) == 0)
                                 args[j] = myBinderState.args[k];
+                        }
                     }
                     // Determine whether the types specified by the user can be converted to the parameter type.
-                    if (ChangeType(args[j], parameters[j].ParameterType, culture) != null)
+                    Object changedTo = ChangeType(args[j], parameters[j].ParameterType, culture);
+                    if (changedTo != null)
                         count += 1;
                     else
                         break;
@@ -1159,8 +1165,19 @@ namespace Swicli.Library
             // Determine whether the value parameter can be converted to a value of type myType.
             if (CanConvertFrom(value.GetType(), myChangeType))
                 // Return the converted object.
-                return Convert.ChangeType(value, myChangeType);
-            else
+            {
+                try
+                {
+                    object o = Convert.ChangeType(value, myChangeType, culture);
+                    if (myChangeType.IsInstanceOfType(o)) return o;
+                }
+                catch (InvalidCastException e)
+                {
+                }
+
+                return PrologCLR.RecastObject(null, value, myChangeType);
+            }
+            //else
                 // Return null.
                 return null;
         }

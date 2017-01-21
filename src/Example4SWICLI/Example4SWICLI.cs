@@ -18,7 +18,7 @@ namespace Example4SWICLI
             if (dt == null) return;
             var m = dt.GetMethod("Main", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
             m.Invoke(null, new object[] { new String[0] });
-        }
+        } 
         public static void Main(string[] args0)
         {
             Message("Example4SWICLI::SWICLITestClass.install()");

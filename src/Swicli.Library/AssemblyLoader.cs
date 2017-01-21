@@ -91,7 +91,7 @@ namespace Swicli.Library
             return LoadAssemblyByFile(assemblyName);
         }
 
-        private static Assembly LoadAssemblyByFile(string assemblyName)
+        public static Assembly LoadAssemblyByFile(string assemblyName)
         {
             if (File.Exists(assemblyName))
             {
@@ -353,10 +353,7 @@ namespace Swicli.Library
             try
             {
                 string name = AsString(term1);
-                lock (AssemblySearchPaths)
-                {
-                    if (!AssemblySearchPaths.Contains(name)) AssemblySearchPaths.Add(name);
-                }
+                AddAssemblySearchPath(name);
             }
             catch (Exception e)
             {
@@ -365,6 +362,21 @@ namespace Swicli.Library
             }
             return true;
         }
+
+        public static bool AddAssemblySearchPath(String name)
+        {
+
+            lock (AssemblySearchPaths)
+            {
+                if (!AssemblySearchPaths.Contains(name))
+                {
+                    AssemblySearchPaths.Add(name);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>
         /// cliRemoveAssemblySearchPath('.').
         /// </summary>
